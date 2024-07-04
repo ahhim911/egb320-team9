@@ -214,6 +214,14 @@ class CalibrateColor:
                 self.current_color_key = 'black'
                 print("Selected 'black' for calibration")
                 self.reset()
+            elif key == ord('5'):
+                self.current_color_key = 'white'
+                print("Selected 'white' for calibration")
+                self.reset()
+            elif key == ord('6'):
+                self.current_color_key = 'yellow'
+                print("Selected 'yellow' for calibration")
+                self.reset()
 
         self.cap.close()
         cv2.destroyAllWindows()

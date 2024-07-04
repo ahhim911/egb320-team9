@@ -61,6 +61,8 @@ if __name__ == "__main__":
 - '2' to select green
 - '3' to select blue
 - '4' to select black
+- '5' to select white
+- '6' to select yellow
 
 # Homography calibration
 1. Capture an image of the ground plane with the calibration mat
