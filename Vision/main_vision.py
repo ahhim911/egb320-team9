@@ -57,6 +57,8 @@ class Vision(DetectionBase):
 
     def start(self):
         self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
+        shelf_detector = Shelf(homography_matrix=self.homography_matrix)
+        
         Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
         Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges, self.calibration,)).start()
         return
@@ -67,9 +69,14 @@ class Vision(DetectionBase):
             if frame is None:
                 continue
             self.local_frame = frame.copy()
-            
-            blurred_image = Preprocessing.preprocess(self.local_frame)
-            image_width = blurred_image.shape[1]
+            now = time.time()
+            # blurred_image = Preprocessing.preprocess(self.local_frame)
+            detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
+        
+            cv2.imshow('Shelf Detection', shelf_frame)
+            elapsed = time.time() - now
+            fps = 1/elapsed
+            print('Time: ', elapsed, ' - FPS: ',fps)
         return
 
     
