@@ -13,12 +13,11 @@ def initialize_camera(frame_height=1080, frame_width=1920, format='XRGB8888'):
     
     # Adjust the white balance to cool down the image
     # Reduce the red gain and increase the blue gain
-    picam2.set_controls({
-        "ColourGains": (1.2, 1.8),  # Adjust these values to fine-tune the color balance
-        "AfMode": 1,                 # Auto-focus mode for better image clarity
-        "LensPosition": 0.0,         # Adjust this value if your camera supports manual focus control
-        "AwbMode": 2,                # Set Auto White Balance mode, 2 typically corresponds to daylight which might cool down the image
-    })
+    # picam2.set_controls({
+    #     "ColourGains": (1.2, 1.8),  # Adjust these values to fine-tune the color balance
+    #     "LensPosition": 0.0,         # Adjust this value if your camera supports manual focus control
+    #     "AwbMode": 2,                # Set Auto White Balance mode, 2 typically corresponds to daylight which might cool down the image
+    # })
     
     picam2.start()
     return picam2

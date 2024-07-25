@@ -24,7 +24,7 @@ def onClick(event, x, y, flags, params):
             print(pred_point)
 
 # Define ground plane points relative to the robot (in meters)
-ground_points = np.float32([[-11, 20], [-11, 30], [10, 30], [10, 20]])
+ground_points = np.float32([[-6, 10], [-6, 22], [6, 22], [6, 10]])
 
 # Initialize the camera
 cap = Picamera2()
@@ -54,6 +54,10 @@ try:
             print("Found homography matrix:")
             print(M)
 
+		if found_homography == True:
+			if event == cv2.EVENT_LBUTTONDOWN:
+				print(f"Clicked coordinates: ({x}, {y})")
+				
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
