@@ -1,10 +1,9 @@
 # Welcome to EGB320 Team 9 codespace
 This codespace is 
 
-# Instructions
+# Instructions to clone from Git
 After you ssh to your raspberry pi or connect it to a monitor and keyboard mouse, you can clone this repo to start your happy coding journey.
 
-## Cloning from Git
 To clone this codespace to your raspberry pi, you first need to install `git` on your pi, please run this code in the terminal:
 ```
 sudo apt install git
