@@ -1,5 +1,5 @@
 # Welcome to EGB320 Team 9 codespace
-This codespace is 
+This codespace is for egb320 team 9 teammates. We learned from the resources from QUT Robtoics Club - Robotics101 and thanks for all the contributers and teachers
 
 # Instructions to clone from Git
 After you ssh to your raspberry pi or connect it to a monitor and keyboard mouse, you can clone this repo to start your happy coding journey.
