@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Feed Versions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1f1f1f;
+            color: #ccc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column; /* Stack children vertically */
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
+            height: 100vh; /* Make the body full height of the viewport */
+        }
+
+        h1 {
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            width: 90%; /* Adjusted to take up majority of the screen */
+            padding: 20px;
+            background-color: #222;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            gap: 20px; /* Add some space between the videos */
+        }
+
+        .camera {
+            flex: 1; /* Each video takes equal space */
+            max-width: 30%; /* Limit the width to prevent overflow */
+            text-align: center; /* Center align the content inside */
+        }
+
+        .camera h1 {
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+
+        .camera img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            object-fit: cover; /* Ensure the videos maintain aspect ratio */
+        }
+
+        .camera a {
+            display: block;
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .camera a:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Real-Time Color Thresholding/Computer Vision</h1>
+
+<div class="container">
+    <div class="camera">
+        <h2>Processed Camera Feed</h2>
+        <img src="http://127.0.0.1:5000/video_feed/0" alt="Processed Camera Feed">
+        <a href="http://127.0.0.1:5000/video_feed/0">View Smoother/Singular</a>
+    </div>
+
+    <div class="camera">
+        <h2>Processed Mask</h2>
+        <img src="http://127.0.0.1:5000/video_feed/1" alt="Processed Mask">
+        <a href="http://127.0.0.1:5000/video_feed/1">View Smoother/Singular</a>
+    </div>
+
+    <div class="camera">
+        <h2>Raw Color Mask</h2>
+        <img src="http://127.0.0.1:5000/video_feed/2" alt="Raw Color Mask">
+        <a href="http://127.0.0.1:5000/video_feed/2">View Smoother/Singular</a>
+    </div>
+</div>
+
+</body>
+</html>
