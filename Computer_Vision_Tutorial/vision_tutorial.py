@@ -13,11 +13,14 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     picam2.start()
     return picam2
 
-# Define the HSV ranges for blue, green, and orange colors
-blue_lower = np.array([80, 50, 50])
+# Initialize the camera
+picam2 = initialize_camera()
+
+# Define default HSV ranges for blue, green, and orange colors
+blue_lower = np.array([80, 100, 100])
 blue_upper = np.array([130, 255, 255])
 
-green_lower = np.array([35, 50, 50])
+green_lower = np.array([35, 100, 100])
 green_upper = np.array([79, 255, 255])
 
 orange_lower = np.array([10, 100, 100])
@@ -27,9 +30,20 @@ orange_upper = np.array([25, 255, 255])
 cv2.namedWindow('Blue Mask')
 cv2.namedWindow('Green Mask')
 cv2.namedWindow('Orange Mask')
+cv2.namedWindow('Contour Frame')
 
-# Initialize the camera
-picam2 = initialize_camera()
+# Create trackbars for adjusting the Hue values
+def nothing(x):
+    pass
+
+cv2.createTrackbar('Blue HMin', 'Blue Mask', 80, 179, nothing)
+cv2.createTrackbar('Blue HMax', 'Blue Mask', 130, 179, nothing)
+
+cv2.createTrackbar('Green HMin', 'Green Mask', 35, 179, nothing)
+cv2.createTrackbar('Green HMax', 'Green Mask', 79, 179, nothing)
+
+cv2.createTrackbar('Orange HMin', 'Orange Mask', 10, 179, nothing)
+cv2.createTrackbar('Orange HMax', 'Orange Mask', 25, 179, nothing)
 
 def find_contours(filtered_image):
     contours = cv2.findContours(filtered_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -60,6 +74,22 @@ try:
         # Convert frame to HSV color space
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+        # Get current positions of the trackbars for Hue values
+        blue_h_min = cv2.getTrackbarPos('Blue HMin', 'Blue Mask')
+        blue_h_max = cv2.getTrackbarPos('Blue HMax', 'Blue Mask')
+        green_h_min = cv2.getTrackbarPos('Green HMin', 'Green Mask')
+        green_h_max = cv2.getTrackbarPos('Green HMax', 'Green Mask')
+        orange_h_min = cv2.getTrackbarPos('Orange HMin', 'Orange Mask')
+        orange_h_max = cv2.getTrackbarPos('Orange HMax', 'Orange Mask')
+
+        # Update the HSV ranges for each color based on trackbar positions
+        blue_lower = np.array([blue_h_min, 100, 100])
+        blue_upper = np.array([blue_h_max, 255, 255])
+        green_lower = np.array([green_h_min, 100, 100])
+        green_upper = np.array([green_h_max, 255, 255])
+        orange_lower = np.array([orange_h_min, 100, 100])
+        orange_upper = np.array([orange_h_max, 255, 255])
+
         # Create masks for blue, green, and orange colors
         blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper)
         green_mask = cv2.inRange(hsv_frame, green_lower, green_upper)
@@ -70,21 +100,14 @@ try:
         green_contours, _ = find_contours(green_mask)
         orange_contours, _ = find_contours(orange_mask)
 
-        # Draw contours and bounding boxes on the original frame for each color
-        for contour in blue_contours:
-            if cv2.contourArea(contour) > 500:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Blue color bounding box
+        # Draw contours on the original frame for each color
+        contour_frame = frame.copy()
+        cv2.drawContours(contour_frame, blue_contours, -1, (255, 0, 0), 2)   # Blue contours
+        cv2.drawContours(contour_frame, green_contours, -1, (0, 255, 0), 2)  # Green contours
+        cv2.drawContours(contour_frame, orange_contours, -1, (0, 165, 255), 2)  # Orange contours
 
-        for contour in green_contours:
-            if cv2.contourArea(contour) > 500:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green color bounding box
-
-        for contour in orange_contours:
-            if cv2.contourArea(contour) > 500:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 165, 255), 2)  # Orange color bounding box
+        # Display the original frame with contours
+        cv2.imshow('Contour Frame', contour_frame)
 
         # Display the masks in separate windows
         cv2.imshow('Blue Mask', cv2.bitwise_and(frame, frame, mask=blue_mask))
