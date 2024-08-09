@@ -30,11 +30,12 @@ orange_upper = np.array([25, 255, 255])
 real_world_width = 0.1  # Example: 10 cm object width in the real world
 focal_length = 800  # Example: focal length in pixels
 
-# Create windows for the masks
+# Create windows for the masks and contour visualization
 cv2.namedWindow('Blue Mask')
 cv2.namedWindow('Green Mask')
 cv2.namedWindow('Orange Mask')
 cv2.namedWindow('Contour Frame')
+cv2.namedWindow('Bounding Box and Distance')
 
 # Create trackbars for adjusting the Hue values
 def nothing(x):
@@ -102,29 +103,38 @@ try:
         green_contours = find_contours(green_mask, min_area=500)
         orange_contours = find_contours(orange_mask, min_area=500)
 
-        # Draw contours on the original frame for each color and calculate the distance
+        # Draw contours on the original frame for each color
         contour_frame = frame.copy()
+        cv2.drawContours(contour_frame, blue_contours, -1, (255, 0, 0), 2)   # Blue contours
+        cv2.drawContours(contour_frame, green_contours, -1, (0, 255, 0), 2)  # Green contours
+        cv2.drawContours(contour_frame, orange_contours, -1, (0, 165, 255), 2)  # Orange contours
+
+        # Create a new frame to draw bounding boxes and display distances
+        bbox_frame = frame.copy()
         
         for contour in blue_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
-            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
         for contour in green_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
-            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         for contour in orange_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
-            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (0, 165, 255), 2)
-            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
+            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (0, 165, 255), 2)
+            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
 
-        # Display the original frame with contours and distance labels
+        # Display the original frame with contours
         cv2.imshow('Contour Frame', contour_frame)
+
+        # Display the bounding boxes and distances in a separate window
+        cv2.imshow('Bounding Box and Distance', bbox_frame)
 
         # Display the masks in separate windows
         cv2.imshow('Blue Mask', cv2.bitwise_and(frame, frame, mask=blue_mask))
