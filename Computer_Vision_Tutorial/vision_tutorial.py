@@ -1,7 +1,6 @@
 import cv2
 import picamera2
 import numpy as np
-import time
 import imutils
 
 # Initialize the camera with custom settings
@@ -29,6 +28,14 @@ orange_upper = np.array([25, 255, 255])
 # Define the real-world width of the object (in meters) and the camera's focal length (in pixels)
 real_world_width = 0.05  # Example: 5 cm object width in the real world
 focal_length = 1542  # Example: focal length in pixels
+
+# Define the distance threshold for the alert (e.g., 10 cm)
+distance_threshold = 0.1  # in meters
+
+# Initialize a dictionary to store the positions of objects and assign unique IDs
+object_id_counter = 1
+objects = {}
+previous_frame_objects = {}
 
 # Create windows for the masks and contour visualization
 cv2.namedWindow('Blue Mask')
@@ -59,10 +66,28 @@ def find_contours(filtered_image, min_area=500):
 def calculate_distance(pixel_width, real_world_width, focal_length):
     return (real_world_width * focal_length) / pixel_width
 
+def assign_object_id(centroid, objects, object_id_counter):
+    min_distance = float("inf")
+    assigned_id = None
+
+    for obj_id, data in objects.items():
+        dist = np.linalg.norm(np.array(data['centroid']) - np.array(centroid))
+        if dist < min_distance:
+            min_distance = dist
+            assigned_id = obj_id
+
+    # If the object is close to a known object, reuse the ID
+    if min_distance < 50:  # Adjust the threshold as needed
+        objects[assigned_id]['centroid'] = centroid
+        return assigned_id, objects, object_id_counter
+    else:
+        # Assign a new ID
+        objects[object_id_counter] = {'centroid': centroid}
+        object_id_counter += 1
+        return object_id_counter - 1, objects, object_id_counter
+
 try:
     while True:
-        start = time.time()
-
         # Capture an image
         frame = picam2.capture_array()
 
@@ -103,46 +128,100 @@ try:
         green_contours = find_contours(green_mask, min_area=500)
         orange_contours = find_contours(orange_mask, min_area=500)
 
+        # Track object IDs in the current frame
+        current_frame_objects = {}
+
         # Draw contours on the original frame for each color
         contour_frame = frame.copy()
         cv2.drawContours(contour_frame, blue_contours, -1, (255, 0, 0), 2)   # Blue contours
         cv2.drawContours(contour_frame, green_contours, -1, (0, 255, 0), 2)  # Green contours
         cv2.drawContours(contour_frame, orange_contours, -1, (0, 165, 255), 2)  # Orange contours
 
-        # Create a new frame to draw bounding boxes and display distances
+        # Create a new frame to draw bounding boxes, display distances, and color labels
         bbox_frame = frame.copy()
         
+        # Process blue contours
         for contour in blue_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
-            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            color_label = "Blue"
 
+            # Check if the object is too close
+            if distance < distance_threshold:
+                print(f"Alert: {color_label} object is too close!")
+
+            # Calculate the centroid
+            centroid = (x + w // 2, y + h // 2)
+            object_id, objects, object_id_counter = assign_object_id(centroid, objects, object_id_counter)
+
+            # Record the object ID and color for the current frame
+            current_frame_objects[object_id] = {'centroid': centroid, 'color': color_label}
+
+            # Draw the bounding box, display the distance and color label
+            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.putText(bbox_frame, f"ID: {object_id} {color_label} Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+        # Process green contours
         for contour in green_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
-            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            color_label = "Green"
 
+            # Check if the object is too close
+            if distance < distance_threshold:
+                print(f"Alert: {color_label} object is too close!")
+
+            # Calculate the centroid
+            centroid = (x + w // 2, y + h // 2)
+            object_id, objects, object_id_counter = assign_object_id(centroid, objects, object_id_counter)
+
+            # Record the object ID and color for the current frame
+            current_frame_objects[object_id] = {'centroid': centroid, 'color': color_label}
+
+            # Draw the bounding box, display the distance and color label
+            cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(bbox_frame, f"ID: {object_id} {color_label} Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Process orange contours
         for contour in orange_contours:
             x, y, w, h = cv2.boundingRect(contour)
             distance = calculate_distance(w, real_world_width, focal_length)
+            color_label = "Orange"
+
+            # Check if the object is too close
+            if distance < distance_threshold:
+                print(f"Alert: {color_label} object is too close!")
+
+            # Calculate the centroid
+            centroid = (x + w // 2, y + h // 2)
+            object_id, objects, object_id_counter = assign_object_id(centroid, objects, object_id_counter)
+
+            # Record the object ID and color for the current frame
+            current_frame_objects[object_id] = {'centroid': centroid, 'color': color_label}
+
+            # Draw the bounding box, display the distance and color label
             cv2.rectangle(bbox_frame, (x, y), (x + w, y + h), (0, 165, 255), 2)
-            cv2.putText(bbox_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
+            cv2.putText(bbox_frame, f"ID: {object_id} {color_label} Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
+
+        # Detect objects that have moved out of the frame
+        for obj_id in list(objects.keys()):
+            if obj_id not in current_frame_objects:
+                print(f"Alert: Object ID {obj_id} has moved out of frame.")
+                del objects[obj_id]  # Optionally remove the object from tracking
+
+        # Update previous frame objects
+        previous_frame_objects = current_frame_objects
 
         # Display the original frame with contours
         cv2.imshow('Contour Frame', contour_frame)
 
-        # Display the bounding boxes and distances in a separate window
+        # Display the bounding boxes, distances, and color labels in a separate window
         cv2.imshow('Bounding Box and Distance', bbox_frame)
 
         # Display the masks in separate windows
         cv2.imshow('Blue Mask', cv2.bitwise_and(frame, frame, mask=blue_mask))
         cv2.imshow('Green Mask', cv2.bitwise_and(frame, frame, mask=green_mask))
         cv2.imshow('Orange Mask', cv2.bitwise_and(frame, frame, mask=orange_mask))
-
-        # Print the processing time
-        print("Processing time:", time.time() - start)
 
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
