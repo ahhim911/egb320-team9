@@ -12,9 +12,9 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     picam2.start()
     return picam2
 
-# Define the HSV range for blue color based on your input
-blue_lower = np.array([90, 50, 50])
-blue_upper = np.array([130, 255, 255])
+# Define the HSV range for blue color based on fine-tuning
+blue_lower = np.array([90, 50, 50])  # Lower threshold for blue
+blue_upper = np.array([130, 255, 255])  # Upper threshold for blue
 
 # Create a window for the blue mask
 cv2.namedWindow('Blue Mask')
@@ -33,7 +33,9 @@ try:
         frame = cv2.resize(frame, (320, 240))
         frame = cv2.rotate(frame, cv2.ROTATE_180)
         frame = cv2.flip(frame, 1)  # Flip the image horizontally
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        
+        # Ensure the frame is converted to BGR format before converting to HSV
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Create a mask for the blue color
         blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper)
