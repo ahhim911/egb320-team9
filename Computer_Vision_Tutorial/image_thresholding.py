@@ -11,7 +11,7 @@ cap.set_controls({"ColourGains": (1.4, 1.5)})
 # Start the camera
 cap.start()
 frame = cap.capture_array()
-frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 # Extract the blue channel and apply binary thresholding
 frame_blue = frame[:, :, 0]
