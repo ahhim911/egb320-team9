@@ -37,9 +37,10 @@ try:
 
         # Create a mask for the blue color
         blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper)
+        result = cv2.bitwise_and(frame, frame, mask=blue_mask)
 
         # Display the blue mask in the window
-        cv2.imshow('Blue Mask', blue_mask)
+        cv2.imshow('Blue Mask', result)
 
         # Print the processing time
         print("Processing time:", time.time() - start)
