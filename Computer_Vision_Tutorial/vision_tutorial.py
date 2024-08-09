@@ -13,8 +13,8 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     return picam2
 
 # Define the HSV range for blue color based on your input
-blue_lower = np.array([90, 50, 50])
-blue_upper = np.array([130, 255, 255])
+blue_lower = np.array([135, 50, 50])
+blue_upper = np.array([190, 255, 255])
 
 # Create a window for the blue mask
 cv2.namedWindow('Blue Mask')
