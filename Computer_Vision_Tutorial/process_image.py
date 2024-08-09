@@ -15,14 +15,14 @@ def initialize_camera(frame_height=480*2, frame_width=320*2, format='XRGB8888'):
 picam2 = initialize_camera()
 
 # Define the HSV ranges for color thresholding
-blue_lower = np.array([90, 50, 50])
+blue_lower = np.array([100, 100, 100])
 blue_upper = np.array([130, 255, 255])
 
-green_lower = np.array([35, 50, 50])
-green_upper = np.array([85, 255, 255])
+green_lower = np.array([40, 100, 100])
+green_upper = np.array([80, 255, 255])
 
 orange_lower = np.array([10, 100, 100])
-orange_upper = np.array([25, 255, 255])
+orange_upper = np.array([20, 255, 255])
 
 # Create a window to display the video feed
 cv2.namedWindow('Video Feed')
