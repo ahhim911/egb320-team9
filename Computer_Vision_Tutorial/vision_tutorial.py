@@ -14,11 +14,11 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     return picam2
 
 # Define the HSV ranges for blue, green, and orange colors
-blue_lower = np.array([90, 50, 50])
+blue_lower = np.array([80, 50, 50])
 blue_upper = np.array([130, 255, 255])
 
 green_lower = np.array([35, 50, 50])
-green_upper = np.array([85, 255, 255])
+green_upper = np.array([79, 255, 255])
 
 orange_lower = np.array([10, 100, 100])
 orange_upper = np.array([25, 255, 255])
