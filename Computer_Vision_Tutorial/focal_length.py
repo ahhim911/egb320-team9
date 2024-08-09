@@ -21,6 +21,11 @@ picam2 = initialize_camera()
 # Capture an image from the camera
 frame = picam2.capture_array()
 
+# Pre-processing: Resize, rotate, flip, and convert to HSV
+frame = cv2.resize(frame, (320, 240))
+frame = cv2.rotate(frame, cv2.ROTATE_180)
+frame = cv2.flip(frame, 1)  # Flip the image horizontally
+
 # Convert the image to HSV color space
 hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
