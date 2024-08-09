@@ -17,13 +17,13 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
 picam2 = initialize_camera()
 
 # Define default HSV ranges for blue, green, and orange colors
-blue_lower = np.array([80, 50, 50])
+blue_lower = np.array([80, 0, 0])
 blue_upper = np.array([130, 255, 255])
 
-green_lower = np.array([31, 50, 50])
+green_lower = np.array([31, 0, 0])
 green_upper = np.array([75, 255, 255])
 
-orange_lower = np.array([0, 100, 100])
+orange_lower = np.array([0, 50, 50])
 orange_upper = np.array([21, 255, 255])
 
 # Create windows for the masks
@@ -45,19 +45,11 @@ cv2.createTrackbar('Green HMax', 'Green Mask', 75, 179, nothing)
 cv2.createTrackbar('Orange HMin', 'Orange Mask', 0, 179, nothing)
 cv2.createTrackbar('Orange HMax', 'Orange Mask', 21, 179, nothing)
 
-def find_contours(filtered_image):
+def find_contours(filtered_image, min_area=500):
     contours = cv2.findContours(filtered_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = imutils.grab_contours(contours)
-    contour_exist = (len(contours) != 0)
-    width_px = []
-
-    if contour_exist:
-        for item in contours:
-            width_px.append(int(cv2.minAreaRect(item)[1][0]))
-    else:
-        width_px.append(-1)
-
-    return contours, width_px
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
+    return filtered_contours
 
 try:
     while True:
@@ -95,10 +87,10 @@ try:
         green_mask = cv2.inRange(hsv_frame, green_lower, green_upper)
         orange_mask = cv2.inRange(hsv_frame, orange_lower, orange_upper)
 
-        # Find contours for each mask
-        blue_contours, _ = find_contours(blue_mask)
-        green_contours, _ = find_contours(green_mask)
-        orange_contours, _ = find_contours(orange_mask)
+        # Find contours for each mask, filtering out small contours
+        blue_contours = find_contours(blue_mask, min_area=500)
+        green_contours = find_contours(green_mask, min_area=500)
+        orange_contours = find_contours(orange_mask, min_area=500)
 
         # Draw contours on the original frame for each color
         contour_frame = frame.copy()
