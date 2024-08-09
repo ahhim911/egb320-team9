@@ -14,6 +14,16 @@ def initialize_camera(frame_height=480*2, frame_width=320*2, format='XRGB8888'):
 # Initialize the camera
 picam2 = initialize_camera()
 
+# Define the HSV ranges for color thresholding
+blue_lower = np.array([90, 50, 50])
+blue_upper = np.array([130, 255, 255])
+
+green_lower = np.array([35, 50, 50])
+green_upper = np.array([85, 255, 255])
+
+orange_lower = np.array([10, 100, 100])
+orange_upper = np.array([25, 255, 255])
+
 # Create a window to display the video feed
 cv2.namedWindow('Video Feed')
 
@@ -46,11 +56,23 @@ try:
                 cv2.destroyWindow('Video Feed')
 
         else:
-            # Display the captured image
-            cv2.imshow('Captured Image', captured_frame)
+            # Convert the captured frame to HSV color space
+            hsv_frame = cv2.cvtColor(captured_frame, cv2.COLOR_BGR2HSV)
 
-            # Perform image processing on the captured frame
-            gray_frame = cv2.cvtColor(captured_frame, cv2.COLOR_BGR2GRAY)
+            # Apply color thresholding to isolate blue, green, and orange regions
+            blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper)
+            green_mask = cv2.inRange(hsv_frame, green_lower, green_upper)
+            orange_mask = cv2.inRange(hsv_frame, orange_lower, orange_upper)
+
+            # Combine the masks to focus on all specified colors
+            combined_mask = cv2.bitwise_or(blue_mask, green_mask)
+            combined_mask = cv2.bitwise_or(combined_mask, orange_mask)
+
+            # Apply the mask to the captured frame
+            masked_frame = cv2.bitwise_and(captured_frame, captured_frame, mask=combined_mask)
+
+            # Perform edge detection on the masked frame
+            gray_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2GRAY)
             edges = cv2.Canny(gray_frame, 100, 200)
 
             # Find contours from the edge-detected image
@@ -60,10 +82,10 @@ try:
             contour_image = captured_frame.copy()
             cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
-            # Display the processed image (edges)
+            # Display the captured image, masked image, and contours
+            cv2.imshow('Captured Image', captured_frame)
+            cv2.imshow('Masked Image', masked_frame)
             cv2.imshow('Processed Image (Edges)', edges)
-
-            # Display the image with contours drawn
             cv2.imshow('Contours', contour_image)
 
             # Check for key presses to exit
