@@ -13,14 +13,14 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     return picam2
 
 # Define the HSV ranges for different colors
-blue_lower = np.array([100, 150, 50])
-blue_upper = np.array([140, 255, 255])
+blue_lower = np.array([80, 85, 0])
+blue_upper = np.array([120, 255, 255])
 
-green_lower = np.array([35, 100, 50])
-green_upper = np.array([85, 255, 255])
+orange_lower = np.array([0, 70, 0])
+orange_upper = np.array([18, 255, 255])
 
-orange_lower = np.array([10, 100, 100])
-orange_upper = np.array([25, 255, 255])
+green_lower = np.array([60, 32, 0])
+green_upper = np.array([100, 255, 255])
 
 # Create windows for each mask
 cv2.namedWindow('Blue Mask')
@@ -60,7 +60,7 @@ try:
         orange_mask = cv2.erode(orange_mask, kernel, iterations=1)
         orange_mask = cv2.dilate(orange_mask, kernel, iterations=1)
 
-        # Combine the masks (if you want to detect all colors together)
+        # Combine the masks
         combined_mask = cv2.bitwise_or(blue_mask, green_mask)
         combined_mask = cv2.bitwise_or(combined_mask, orange_mask)
 
