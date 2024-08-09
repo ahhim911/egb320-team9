@@ -17,14 +17,14 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
 picam2 = initialize_camera()
 
 # Define default HSV ranges for blue, green, and orange colors
-blue_lower = np.array([80, 100, 100])
+blue_lower = np.array([80, 50, 50])
 blue_upper = np.array([130, 255, 255])
 
-green_lower = np.array([35, 100, 100])
-green_upper = np.array([79, 255, 255])
+green_lower = np.array([31, 50, 50])
+green_upper = np.array([75, 255, 255])
 
-orange_lower = np.array([10, 100, 100])
-orange_upper = np.array([25, 255, 255])
+orange_lower = np.array([0, 100, 100])
+orange_upper = np.array([21, 255, 255])
 
 # Create windows for the masks
 cv2.namedWindow('Blue Mask')
@@ -39,11 +39,11 @@ def nothing(x):
 cv2.createTrackbar('Blue HMin', 'Blue Mask', 80, 179, nothing)
 cv2.createTrackbar('Blue HMax', 'Blue Mask', 130, 179, nothing)
 
-cv2.createTrackbar('Green HMin', 'Green Mask', 35, 179, nothing)
-cv2.createTrackbar('Green HMax', 'Green Mask', 79, 179, nothing)
+cv2.createTrackbar('Green HMin', 'Green Mask', 31, 179, nothing)
+cv2.createTrackbar('Green HMax', 'Green Mask', 75, 179, nothing)
 
-cv2.createTrackbar('Orange HMin', 'Orange Mask', 10, 179, nothing)
-cv2.createTrackbar('Orange HMax', 'Orange Mask', 25, 179, nothing)
+cv2.createTrackbar('Orange HMin', 'Orange Mask', 0, 179, nothing)
+cv2.createTrackbar('Orange HMax', 'Orange Mask', 21, 179, nothing)
 
 def find_contours(filtered_image):
     contours = cv2.findContours(filtered_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
