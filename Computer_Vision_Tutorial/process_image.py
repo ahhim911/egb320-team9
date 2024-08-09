@@ -3,7 +3,7 @@ import picamera2
 import numpy as np
 
 # Initialize the camera with custom settings
-def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
+def initialize_camera(frame_height=480*2, frame_width=320*2, format='XRGB8888'):
     picam2 = picamera2.Picamera2()
     config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
     picam2.configure(config)
@@ -25,6 +25,10 @@ try:
         if captured_frame is None:
             # Capture an image from the camera
             frame = picam2.capture_array()
+
+            # Pre-processing: Resize, flip to correct orientation, and display
+            frame = cv2.resize(frame, (640, 480))  # Higher resolution for clarity
+            frame = cv2.flip(frame, -1)  # Flip both horizontally and vertically
 
             # Display the video feed
             cv2.imshow('Video Feed', frame)
