@@ -12,21 +12,12 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     picam2.start()
     return picam2
 
-# Define the HSV ranges for different colors
+# Define the HSV range for blue color based on your input
 blue_lower = np.array([80, 85, 0])
 blue_upper = np.array([120, 255, 255])
 
-orange_lower = np.array([0, 70, 0])
-orange_upper = np.array([18, 255, 255])
-
-green_lower = np.array([60, 32, 0])
-green_upper = np.array([100, 255, 255])
-
-# Create windows for each mask
+# Create a window for the blue mask
 cv2.namedWindow('Blue Mask')
-cv2.namedWindow('Green Mask')
-cv2.namedWindow('Orange Mask')
-cv2.namedWindow('Combined Mask')
 
 # Initialize the camera
 picam2 = initialize_camera()
@@ -38,45 +29,17 @@ try:
         # Capture an image
         frame = picam2.capture_array()
 
-        # Pre-processing: Resize, rotate, blur, and convert to HSV
+        # Pre-processing: Resize, rotate, flip, and convert to HSV
         frame = cv2.resize(frame, (320, 240))
         frame = cv2.rotate(frame, cv2.ROTATE_180)
-        blurred_frame = cv2.GaussianBlur(frame, (5, 5), 0)
-        hsv_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_RGB2HSV)
+        frame = cv2.flip(frame, 1)  # Flip the image horizontally
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
 
-        # Create masks for each color
+        # Create a mask for the blue color
         blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper)
-        green_mask = cv2.inRange(hsv_frame, green_lower, green_upper)
-        orange_mask = cv2.inRange(hsv_frame, orange_lower, orange_upper)
 
-        # Apply morphological operations to clean the masks
-        kernel = np.ones((5, 5), np.uint8)
-        blue_mask = cv2.erode(blue_mask, kernel, iterations=1)
-        blue_mask = cv2.dilate(blue_mask, kernel, iterations=1)
-
-        green_mask = cv2.erode(green_mask, kernel, iterations=1)
-        green_mask = cv2.dilate(green_mask, kernel, iterations=1)
-
-        orange_mask = cv2.erode(orange_mask, kernel, iterations=1)
-        orange_mask = cv2.dilate(orange_mask, kernel, iterations=1)
-
-        # Combine the masks
-        combined_mask = cv2.bitwise_or(blue_mask, green_mask)
-        combined_mask = cv2.bitwise_or(combined_mask, orange_mask)
-
-        # Find contours for each color mask
-        contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in contours:
-            if cv2.contourArea(cnt) > 500:  # Filter out small contours
-                x, y, w, h = cv2.boundingRect(cnt)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame, "Detected", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        # Display each mask in its own window
+        # Display the blue mask in the window
         cv2.imshow('Blue Mask', blue_mask)
-        cv2.imshow('Green Mask', green_mask)
-        cv2.imshow('Orange Mask', orange_mask)
-        cv2.imshow('Combined Mask', frame)
 
         # Print the processing time
         print("Processing time:", time.time() - start)
