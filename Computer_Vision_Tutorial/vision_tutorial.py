@@ -27,8 +27,8 @@ orange_lower = np.array([10, 100, 100])
 orange_upper = np.array([25, 255, 255])
 
 # Define the real-world width of the object (in meters) and the camera's focal length (in pixels)
-real_world_width = 0.1  # Example: 10 cm object width in the real world
-focal_length = 800  # Example: focal length in pixels
+real_world_width = 0.05  # Example: 5 cm object width in the real world
+focal_length = 1542  # Example: focal length in pixels
 
 # Create windows for the masks and contour visualization
 cv2.namedWindow('Blue Mask')
