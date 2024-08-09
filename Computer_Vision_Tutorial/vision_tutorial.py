@@ -17,14 +17,18 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
 picam2 = initialize_camera()
 
 # Define default HSV ranges for blue, green, and orange colors
-blue_lower = np.array([80, 0, 0])
+blue_lower = np.array([80, 100, 100])
 blue_upper = np.array([130, 255, 255])
 
-green_lower = np.array([31, 0, 0])
-green_upper = np.array([75, 255, 255])
+green_lower = np.array([35, 100, 100])
+green_upper = np.array([79, 255, 255])
 
-orange_lower = np.array([0, 50, 50])
-orange_upper = np.array([21, 255, 255])
+orange_lower = np.array([10, 100, 100])
+orange_upper = np.array([25, 255, 255])
+
+# Define the real-world width of the object (in meters) and the camera's focal length (in pixels)
+real_world_width = 0.1  # Example: 10 cm object width in the real world
+focal_length = 800  # Example: focal length in pixels
 
 # Create windows for the masks
 cv2.namedWindow('Blue Mask')
@@ -39,17 +43,20 @@ def nothing(x):
 cv2.createTrackbar('Blue HMin', 'Blue Mask', 80, 179, nothing)
 cv2.createTrackbar('Blue HMax', 'Blue Mask', 130, 179, nothing)
 
-cv2.createTrackbar('Green HMin', 'Green Mask', 31, 179, nothing)
-cv2.createTrackbar('Green HMax', 'Green Mask', 75, 179, nothing)
+cv2.createTrackbar('Green HMin', 'Green Mask', 35, 179, nothing)
+cv2.createTrackbar('Green HMax', 'Green Mask', 79, 179, nothing)
 
-cv2.createTrackbar('Orange HMin', 'Orange Mask', 0, 179, nothing)
-cv2.createTrackbar('Orange HMax', 'Orange Mask', 21, 179, nothing)
+cv2.createTrackbar('Orange HMin', 'Orange Mask', 10, 179, nothing)
+cv2.createTrackbar('Orange HMax', 'Orange Mask', 25, 179, nothing)
 
 def find_contours(filtered_image, min_area=500):
     contours = cv2.findContours(filtered_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = imutils.grab_contours(contours)
     filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
     return filtered_contours
+
+def calculate_distance(pixel_width, real_world_width, focal_length):
+    return (real_world_width * focal_length) / pixel_width
 
 try:
     while True:
@@ -62,9 +69,12 @@ try:
         frame = cv2.resize(frame, (320, 240))
         frame = cv2.rotate(frame, cv2.ROTATE_180)
         frame = cv2.flip(frame, 1)  # Flip the image horizontally
+
+        # Apply Gaussian Blur to reduce noise and smooth the image
+        blurred_frame = cv2.GaussianBlur(frame, (5, 5), 0)
         
         # Convert frame to HSV color space
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        hsv_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
 
         # Get current positions of the trackbars for Hue values
         blue_h_min = cv2.getTrackbarPos('Blue HMin', 'Blue Mask')
@@ -92,13 +102,28 @@ try:
         green_contours = find_contours(green_mask, min_area=500)
         orange_contours = find_contours(orange_mask, min_area=500)
 
-        # Draw contours on the original frame for each color
+        # Draw contours on the original frame for each color and calculate the distance
         contour_frame = frame.copy()
-        cv2.drawContours(contour_frame, blue_contours, -1, (255, 0, 0), 2)   # Blue contours
-        cv2.drawContours(contour_frame, green_contours, -1, (0, 255, 0), 2)  # Green contours
-        cv2.drawContours(contour_frame, orange_contours, -1, (0, 165, 255), 2)  # Orange contours
+        
+        for contour in blue_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            distance = calculate_distance(w, real_world_width, focal_length)
+            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-        # Display the original frame with contours
+        for contour in green_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            distance = calculate_distance(w, real_world_width, focal_length)
+            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        for contour in orange_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            distance = calculate_distance(w, real_world_width, focal_length)
+            cv2.rectangle(contour_frame, (x, y), (x + w, y + h), (0, 165, 255), 2)
+            cv2.putText(contour_frame, f"Dist: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
+
+        # Display the original frame with contours and distance labels
         cv2.imshow('Contour Frame', contour_frame)
 
         # Display the masks in separate windows
