@@ -23,8 +23,17 @@ if __name__ == '__main__':
 		packerBotSim.StartSimulator()
 
 		while True:
-			packerBotSim.SetTargetVelocities(0.1, 0)  # forward 0.1 m/s and 0 rotational velocity
-			
+			packerBotSim.SetTargetVelocities(0, 0.1)  # forward 0.1 m/s and 0 rotational velocity
+			packerBotSim.GetDetectedObjects(objects = [warehouseObjects.row_markers]) 
+
+
+
+
+
+
+
+
+
 			packerBotSim.UpdateObjectPositions() # needs to be called once at the end of the main code loop
 
 	except KeyboardInterrupt as e:

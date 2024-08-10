@@ -1118,8 +1118,8 @@ class SceneParameters(object):
 
 
 		# Obstacles Starting Positions - set to none if you do not want a specific obstacle in the scene
-		self.obstacle0_StartingPosition = [-0.45, 0.5]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current coppelia position, or none if not wanted in the scene
-		self.obstacle1_StartingPosition = [-0.25,-0.675]   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current coppelia position, or none if not wanted in the scene
+		self.obstacle0_StartingPosition = None # [-0.45, 0.5]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current coppelia position, or none if not wanted in the scene
+		self.obstacle1_StartingPosition = None # [-0.25,-0.675]   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current coppelia position, or none if not wanted in the scene
 		self.obstacle2_StartingPosition = None   # starting position of obstacle 2 [x, y] (in metres), -1 if want to use current coppelia position, or none if not wanted in the scene
 
 
