@@ -24,11 +24,11 @@ if __name__ == '__main__':
 
 		while True:
 			packerBotSim.SetTargetVelocities(0, 0.1)  # forward 0.1 m/s and 0 rotational velocity
-			packerBotSim.GetDetectedObjects(objects = [warehouseObjects.row_markers]) 
+			print(packerBotSim.GetDetectedObjects()) #objects = [warehouseObjects.row_markers]
 
 
 
-
+ 
 
 
 

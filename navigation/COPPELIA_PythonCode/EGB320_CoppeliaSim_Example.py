@@ -71,6 +71,10 @@ if __name__ == '__main__':
 			# move the robot at a forward velocity of 0.05m/s with a rotational velocity of 0.1 rad/s.
 			warehouseBotSim.SetTargetVelocities(0.00, 0.1)
 
+			
+
+
+
 			# Get Detected Objects
 			objectsRB = warehouseBotSim.GetDetectedObjects(
 				[
