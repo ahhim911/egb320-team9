@@ -4,13 +4,25 @@ import imutils
 from picamera2 import Picamera2
 
 # Initialize the camera with custom settings
-def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
+def initialize_camera(frame_height=1080, frame_width=1920, format='XRGB8888'):
     picam2 = Picamera2()
+    
+    # Set camera configuration with a larger resolution
     config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
     picam2.configure(config)
-    picam2.set_controls({"ColourGains": (1.4, 1.5)})
+    
+    # Adjust the white balance to cool down the image
+    # Reduce the red gain and increase the blue gain
+    picam2.set_controls({
+        "ColourGains": (1.2, 1.8),  # Adjust these values to fine-tune the color balance
+        "AfMode": 1,                 # Auto-focus mode for better image clarity
+        "LensPosition": 0.0,         # Adjust this value if your camera supports manual focus control
+        "AwbMode": 2,                # Set Auto White Balance mode, 2 typically corresponds to daylight which might cool down the image
+    })
+    
     picam2.start()
     return picam2
+
 
 # Initialize the camera
 picam2 = initialize_camera()
