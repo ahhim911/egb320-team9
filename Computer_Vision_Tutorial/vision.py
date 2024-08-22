@@ -10,18 +10,19 @@ def initialize_camera(frame_height=1080, frame_width=1920, format='XRGB8888'):
     # Set camera configuration with a larger resolution
     config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
     picam2.configure(config)
-    
-    # Adjust the white balance to cool down the image
-    # Reduce the red gain and increase the blue gain
-    # picam2.set_controls({
-    #     "ColourGains": (1.2, 1.8),  # Adjust these values to fine-tune the color balance
-    #     "LensPosition": 0.0,         # Adjust this value if your camera supports manual focus control
-    #     "AwbMode": 2,                # Set Auto White Balance mode, 2 typically corresponds to daylight which might cool down the image
-    # })
-    
     picam2.start()
     return picam2
 
+# Homography matrix
+M = np.array([[ -1.98213666e-02,  5.25959025e-03, 6.59735964e+00],
+              [ 2.75902675e-03,  1.38871335e-03,   -1.44504172e+01],
+              [ 1.12711318e-04,   -4.39422194e-03,     1.0]])
+
+def apply_homography_to_point(x, y, M):
+    point = np.array([[x, y]], dtype='float32')
+    point = np.array([point])
+    transformed_point = cv2.perspectiveTransform(point, M)
+    return transformed_point[0][0]
 
 # Initialize the camera
 picam2 = initialize_camera()
@@ -69,8 +70,14 @@ def find_contours(filtered_image, min_area=500):
     filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
     return filtered_contours
 
-def calculate_distance(pixel_width, real_world_width, focal_length):
-    return (real_world_width * focal_length) / pixel_width
+def calculate_distance_to_ground_plane(bottom_point, homography_matrix):
+    # Apply the homography matrix to the bottom point of the contour
+    ground_coords = apply_homography_to_point(bottom_point[0], bottom_point[1], homography_matrix)
+    
+    # For simplicity, assuming the camera is at the origin on the ground plane
+    # and we are calculating the Euclidean distance to the ground coordinates
+    distance = np.sqrt(ground_coords[0]**2 + ground_coords[1]**2)
+    return distance
 
 try:
     while True:
@@ -126,7 +133,10 @@ try:
         # Process blue contours
         for contour in blue_contours:
             x, y, w, h = cv2.boundingRect(contour)
-            distance = calculate_distance(w, real_world_width, focal_length)
+            bottom_point = (x + w // 2, y + h)  # Bottom center point of the bounding box
+            
+            # Calculate the distance to the ground plane using the homography matrix
+            distance = calculate_distance_to_ground_plane(bottom_point, M)
             color_label = "Blue"
 
             # Check if the object is too close
@@ -140,7 +150,10 @@ try:
         # Process green contours
         for contour in green_contours:
             x, y, w, h = cv2.boundingRect(contour)
-            distance = calculate_distance(w, real_world_width, focal_length)
+            bottom_point = (x + w // 2, y + h)  # Bottom center point of the bounding box
+            
+            # Calculate the distance to the ground plane using the homography matrix
+            distance = calculate_distance_to_ground_plane(bottom_point, M)
             color_label = "Green"
 
             # Check if the object is too close
@@ -154,7 +167,10 @@ try:
         # Process orange contours
         for contour in orange_contours:
             x, y, w, h = cv2.boundingRect(contour)
-            distance = calculate_distance(w, real_world_width, focal_length)
+            bottom_point = (x + w // 2, y + h)  # Bottom center point of the bounding box
+            
+            # Calculate the distance to the ground plane using the homography matrix
+            distance = calculate_distance_to_ground_plane(bottom_point, M)
             color_label = "Orange"
 
             # Check if the object is too close
