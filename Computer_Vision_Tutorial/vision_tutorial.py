@@ -8,7 +8,7 @@ def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
     picam2 = picamera2.Picamera2()
     config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
     picam2.configure(config)
-    picam2.set_controls({"ColourGains": (1.4, 1.5)})
+    picam2.set_controls({"ColourGains": (1.4, 1.5)}) # Test different colour gains, might be too yellow, auto?
     picam2.start()
     return picam2
 
