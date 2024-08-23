@@ -21,42 +21,57 @@ def color_threshold(image, lower_hsv, upper_hsv):
     
     return mask
 
-# Function to apply erosion followed by dilation on a thresholded image
-def apply_morphological_filters(mask):
+# Function to apply morphological operations on a thresholded image
+def apply_morphological_filters(mask, kernel_size=(5, 5)):
     # Define a kernel (structuring element)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
 
-    # Apply erosion
-    eroded_image = cv2.erode(mask, kernel, iterations=1)
+    # Apply opening to remove noise (erosion followed by dilation)
+    opened_image = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
-    # Apply dilation on the eroded image
-    dilated_image = cv2.dilate(eroded_image, kernel, iterations=1)
+    # Apply closing to close small holes inside the foreground objects
+    closed_image = cv2.morphologyEx(opened_image, cv2.MORPH_CLOSE, kernel)
 
-    return eroded_image, dilated_image
+    return closed_image
 
-# Function to analyze blobs/contours
-def analyze_contours(image, mask):
+# Improved contour analysis function with filtering and classification
+def analyze_contours(image, mask, min_area=250, min_aspect_ratio=0.2, max_aspect_ratio=5.0):
     # Find contours in the mask
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Draw contours on the original image
-    contour_image = cv2.drawContours(image.copy(), contours, -1, (0, 255, 0), 2)
+    contour_image = image.copy()
     
-    # Analyze each contour
     for contour in contours:
-        # Calculate area and perimeter
+        # Filter contours based on area
         area = cv2.contourArea(contour)
-        perimeter = cv2.arcLength(contour, True)
+        if area < min_area:
+            continue
         
-        # Get the bounding box coordinates
-        x, y, w, h = cv2.boundingRect(contour)
+        # Approximate the contour to reduce the number of points
+        epsilon = 0.02 * cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, epsilon, True)
         
-        # Draw the bounding box
+        # Get the bounding box and calculate aspect ratio
+        x, y, w, h = cv2.boundingRect(approx)
+        aspect_ratio = float(w) / h
+        
+        # Further filter contours based on aspect ratio
+        if not (min_aspect_ratio <= aspect_ratio <= max_aspect_ratio):
+            continue
+
+        # Calculate the solidity (area/convex hull area)
+        hull = cv2.convexHull(contour)
+        hull_area = cv2.contourArea(hull)
+        solidity = float(area) / hull_area if hull_area > 0 else 0
+        
+        # Draw the bounding box and convex hull
         cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        cv2.drawContours(contour_image, [hull], 0, (0, 255, 0), 2)
         
         # Display contour properties on the image
         cv2.putText(contour_image, f"Area: {int(area)}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(contour_image, f"Perimeter: {int(perimeter)}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(contour_image, f"Aspect Ratio: {aspect_ratio:.2f}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(contour_image, f"Solidity: {solidity:.2f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
     
     return contour_image
 
@@ -106,23 +121,22 @@ def main():
     for category, (lower_hsv, upper_hsv) in color_ranges.items():
         masks[category] = color_threshold(blurred_image, lower_hsv, upper_hsv)
     
-    # Apply morphological filters (erosion followed by dilation) and analyze contours on each mask
+    # Apply morphological filters (opening followed by closing) and analyze contours on each mask
     processed_masks = {}
     for category, mask in masks.items():
-        eroded_image, dilated_image = apply_morphological_filters(mask)
-        contour_image = analyze_contours(blurred_image, dilated_image)
-        processed_masks[category] = (mask, eroded_image, dilated_image, contour_image)
+        processed_mask = apply_morphological_filters(mask)
+        contour_image = analyze_contours(blurred_image, processed_mask)
+        processed_masks[category] = (mask, processed_mask, contour_image)
     
     # Create a sequence of images to display with descriptive titles
     image_sequence = [blurred_image]
     titles = ['Blurred and Resized Image']
     
-    for category, (mask, eroded_image, dilated_image, contour_image) in processed_masks.items():
-        image_sequence.extend([mask, eroded_image, dilated_image, contour_image])
+    for category, (mask, processed_mask, contour_image) in processed_masks.items():
+        image_sequence.extend([mask, processed_mask, contour_image])
         titles.extend([
             f'{category} Thresholded Image',
-            f'{category} Eroded Image',
-            f'{category} Dilated Image After Erosion',
+            f'{category} Morphologically Processed Image',
             f'{category} Contour Analysis'
         ])
     
