@@ -34,6 +34,53 @@ def apply_morphological_filters(mask, kernel_size=(5, 5)):
 
     return closed_image
 
+# Function to calculate HOG features manually
+def calculate_hog_features(roi):
+    cell_size = 8
+    h_cells = roi.shape[0] // cell_size
+    w_cells = roi.shape[1] // cell_size
+
+    # Check if the ROI is large enough
+    if h_cells < 2 or w_cells < 2:
+        return np.array([])  # Return an empty array if ROI is too small
+
+    # Calculate gradients along the x and y axis
+    gx = cv2.Sobel(roi, cv2.CV_32F, 1, 0, ksize=1)
+    gy = cv2.Sobel(roi, cv2.CV_32F, 0, 1, ksize=1)
+
+    # Compute magnitude and direction (angle) of the gradient
+    magnitude, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+
+    # Quantize angles into 9 bins (0 to 180 degrees)
+    bins = np.int32(9 * angle / 180)  # Angles are mapped to [0, 9]
+
+    # Create a histogram for each cell (8x8 pixels)
+    histogram = np.zeros((h_cells, w_cells, 9))
+
+    for i in range(h_cells):
+        for j in range(w_cells):
+            cell_mag = magnitude[i * cell_size:(i + 1) * cell_size, j * cell_size:(j + 1) * cell_size]
+            cell_bins = bins[i * cell_size:(i + 1) * cell_size, j * cell_size:(j + 1) * cell_size]
+            hist, _ = np.histogram(cell_bins, bins=9, range=(0, 9), weights=cell_mag)
+            histogram[i, j, :] = hist
+
+    # Normalize the histograms over blocks (2x2 cells)
+    block_size = 2
+    blocks = []
+    for i in range(h_cells - block_size + 1):
+        for j in range(w_cells - block_size + 1):
+            block = histogram[i:i + block_size, j:j + block_size, :].flatten()
+            norm_block = block / np.linalg.norm(block) if np.linalg.norm(block) != 0 else block
+            blocks.append(norm_block)
+    
+    # Flatten the blocks to create the feature vector
+    if blocks:
+        hog_features = np.hstack(blocks)
+    else:
+        hog_features = np.array([])  # Return an empty array if no blocks are available
+    
+    return hog_features
+
 # Improved contour analysis function with filtering and classification
 def analyze_contours(image, mask, min_area=250, min_aspect_ratio=0.2, max_aspect_ratio=5.0):
     # Find contours in the mask
@@ -68,10 +115,14 @@ def analyze_contours(image, mask, min_area=250, min_aspect_ratio=0.2, max_aspect
         cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
         cv2.drawContours(contour_image, [hull], 0, (0, 255, 0), 2)
         
-        # Display contour properties on the image
-        cv2.putText(contour_image, f"Area: {int(area)}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(contour_image, f"Aspect Ratio: {aspect_ratio:.2f}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(contour_image, f"Solidity: {solidity:.2f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        # Extract the region of interest (ROI) and compute custom HOG features
+        roi = cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2GRAY)
+        hog_features = calculate_hog_features(roi)
+        if hog_features.size > 0:
+            # Display contour properties on the image
+            cv2.putText(contour_image, f"Area: {int(area)}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(contour_image, f"Aspect Ratio: {aspect_ratio:.2f}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(contour_image, f"Solidity: {solidity:.2f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
     
     return contour_image
 
@@ -110,7 +161,7 @@ def display_image_sequence(image_sequence, titles):
 
 def main():
     # Load the image
-    image = cv2.imread('captured_image_9.png')
+    image = cv2.imread('captured_image_1.png')
     
     # Preprocess the image with resizing and Gaussian blur
     scale = 0.5  # Adjust this scale factor as needed
@@ -137,7 +188,7 @@ def main():
         titles.extend([
             f'{category} Thresholded Image',
             f'{category} Morphologically Processed Image',
-            f'{category} Contour Analysis'
+            f'{category} Contour Analysis with HOG'
         ])
     
     # Display the images in a sequence with navigation controls
