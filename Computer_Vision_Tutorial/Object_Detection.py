@@ -1,72 +1,130 @@
 import cv2
-import picamera2
 import numpy as np
 
-# Initialize the camera with high resolution and wide FOV
-def initialize_camera(frame_height=1080, frame_width=1920, format='XRGB8888'):
-    picam2 = picamera2.Picamera2()
-    config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
-    picam2.configure(config)
-    picam2.set_controls({
-        "ExposureTime": 15000,  # Adjust based on your environment
-        "AnalogueGain": 1.0,    # Adjust the gain; lower values reduce noise
-        "ColourGains": (1.4, 1.5)  # Adjust color gains as needed
-    })
-    picam2.start()
-    return picam2
+# Function to preprocess the image: resize and return the resized image
+def preprocess_image(image, scale=0.5):
+    # Resize the image
+    resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
+    return resized_image
 
-# Define HSV color ranges for different objects
-color_ranges = {
-    "orange_item": ([10, 100, 100], [25, 255, 255]),  # Orange
-    "green_obstacle": ([35, 100, 100], [79, 255, 255]),  # Green
-    "blue_shelf": ([80, 100, 100], [130, 255, 255]),  # Blue
-    "yellow_packing_station": ([20, 100, 100], [30, 255, 255]),  # Yellow
-    "black_marker": ([0, 0, 0], [179, 255, 30]),  # Black
-    "white_wall": ([0, 0, 231], [179, 18, 255]),  # White
-    "grey_floor": ([0, 0, 50], [179, 18, 230])  # Grey
-}
+# Function to apply color thresholding
+def color_threshold(image, lower_hsv, upper_hsv):
+    # Convert the image to HSV color space
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    # Apply color thresholding
+    mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
+    
+    return mask
 
-# Initialize the camera
-cap = initialize_camera()
+# Trackbar callback function (no operation)
+def nothing(x):
+    pass
 
-# Function to detect objects based on color ranges
-def detect_objects(frame, hsv_frame, color_name, lower_hsv, upper_hsv):
-    mask = cv2.inRange(hsv_frame, np.array(lower_hsv), np.array(upper_hsv))
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+# Function to create trackbars for adjusting HSV values
+def create_trackbars():
+    cv2.namedWindow('Threshold Adjustment')
+    cv2.createTrackbar('Hue Min', 'Threshold Adjustment', 0, 179, nothing)
+    cv2.createTrackbar('Hue Max', 'Threshold Adjustment', 179, 179, nothing)
+    cv2.createTrackbar('Sat Min', 'Threshold Adjustment', 0, 255, nothing)
+    cv2.createTrackbar('Sat Max', 'Threshold Adjustment', 255, 255, nothing)
+    cv2.createTrackbar('Val Min', 'Threshold Adjustment', 0, 255, nothing)
+    cv2.createTrackbar('Val Max', 'Threshold Adjustment', 255, 255, nothing)
 
-    for contour in contours:
-        if cv2.contourArea(contour) > 500:  # Filter out small contours
-            x, y, w, h = cv2.boundingRect(contour)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)  # Black rectangle
-            cv2.putText(frame, color_name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+# Function to read trackbar positions
+def get_trackbar_values():
+    h_min = cv2.getTrackbarPos('Hue Min', 'Threshold Adjustment')
+    h_max = cv2.getTrackbarPos('Hue Max', 'Threshold Adjustment')
+    s_min = cv2.getTrackbarPos('Sat Min', 'Threshold Adjustment')
+    s_max = cv2.getTrackbarPos('Sat Max', 'Threshold Adjustment')
+    v_min = cv2.getTrackbarPos('Val Min', 'Threshold Adjustment')
+    v_max = cv2.getTrackbarPos('Val Max', 'Threshold Adjustment')
+    return np.array([h_min, s_min, v_min]), np.array([h_max, s_max, v_max])
 
-    return frame
+# Function to apply erosion followed by dilation on a thresholded image
+def apply_morphological_filters(mask):
+    # Define a kernel (structuring element)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
-try:
+    # Apply erosion
+    eroded_image = cv2.erode(mask, kernel, iterations=1)
+
+    # Apply dilation on the eroded image
+    dilated_image = cv2.dilate(eroded_image, kernel, iterations=1)
+
+    return eroded_image, dilated_image
+
+def display_image_sequence(image_sequence, titles):
+    idx = 0
     while True:
-        # Capture a frame from the camera
-        frame = cap.capture_array()
+        # Display the current image with a descriptive title
+        cv2.imshow(titles[idx], image_sequence[idx])
 
-        frame = cv2.flip(frame, 0)  # Flip the image
+        # Wait for user input
+        key = cv2.waitKey(0) & 0xFF
 
-        # Convert the frame to HSV color space
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # 'd' for next image
+        if key == ord('d'):
+            cv2.destroyWindow(titles[idx])
+            idx = (idx + 1) % len(image_sequence)
 
-        # Detect and label each object based on its color
-        for color_name, (lower_hsv, upper_hsv) in color_ranges.items():
-            frame = detect_objects(frame, hsv_frame, color_name, lower_hsv, upper_hsv)
+        # 'a' for previous image
+        elif key == ord('a'):
+            cv2.destroyWindow(titles[idx])
+            idx = (idx - 1) % len(image_sequence)
 
-        # Display the frame with detected objects
-        cv2.imshow("Object Detection", frame)
-
-        # Wait for a key press for 1ms
-        key = cv2.waitKey(1) & 0xFF
-
-        # If 'q' is pressed, exit the loop
-        if key == ord('q'):
+        # 'q' to quit and close all images
+        elif key == ord('q'):
+            cv2.destroyAllWindows()
             break
 
-finally:
-    # Clean up
-    cap.close()
-    cv2.destroyAllWindows()
+def main():
+    # Load the image
+    image = cv2.imread('captured_image_9.png')
+    
+    # Preprocess the image with resizing
+    scale = 0.5  # You can adjust this scale factor
+    resized_image = preprocess_image(image, scale)
+    
+    # Create trackbars for adjusting HSV thresholds
+    create_trackbars()
+
+    while True:
+        # Get the current positions of the trackbars
+        lower_hsv, upper_hsv = get_trackbar_values()
+        
+        # Apply color thresholding using the current trackbar positions
+        thresholded_image = color_threshold(resized_image, lower_hsv, upper_hsv)
+        
+        # Display the thresholded image
+        cv2.imshow('Threshold Adjustment', thresholded_image)
+
+        # Wait for the user to press 'd' to proceed with the morphological filters
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('d'):
+            break
+
+    # Apply morphological filters (erosion followed by dilation)
+    eroded_image, dilated_image = apply_morphological_filters(thresholded_image)
+    
+    # Create a sequence of images to display with descriptive titles
+    image_sequence = [
+        cv2.resize(image, (0, 0), fx=scale, fy=scale),  # Display the resized original image
+        thresholded_image,                               # Display the thresholded image
+        eroded_image,                                    # Display the eroded image
+        dilated_image                                    # Display the image after dilation (following erosion)
+    ]
+    
+    # Corresponding titles for each image stage
+    titles = [
+        'Resized Original Image', 
+        'Thresholded Image',
+        'Eroded Image', 
+        'Dilated Image After Erosion'
+    ]
+    
+    # Display the images in a sequence with navigation controls
+    display_image_sequence(image_sequence, titles)
+
+if __name__ == "__main__":
+    main()
