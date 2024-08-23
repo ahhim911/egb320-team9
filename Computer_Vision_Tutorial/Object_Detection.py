@@ -54,10 +54,13 @@ def analyze_contours(image, mask, category, min_area=400, min_aspect_ratio=0.3, 
 
         cv2.putText(contour_image, f"Area: {int(area)}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(contour_image, f"Aspect Ratio: {aspect_ratio:.2f}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(contour_image, f"Solidity: {solidity:.2f}", (x, y + h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         distance = None
         if category == "Marker":
-            distance = estimate_distance(w)  # Only estimate distance for Markers
+            distance = estimate_distance(w, real_object_width=0.07)  # Estimate distance for Markers
+        elif category == "Obstacle":
+            distance = estimate_distance(w, real_object_width=0.05)  # Estimate distance for Obstacles, assuming a known width
 
         tracking_id = len(detected_objects) + 1
         detected_objects.append({
@@ -70,17 +73,30 @@ def analyze_contours(image, mask, category, min_area=400, min_aspect_ratio=0.3, 
             "occluded": False
         })
 
-        # Display object information on the info_image
-        cv2.putText(info_image, f"ID: {tracking_id} Type: {category}", (x, y - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(info_image, f"Pos: {x}, {y} Size: {w}x{h}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        if distance is not None:
-            cv2.putText(info_image, f"Dist: {distance:.2f}m Conf: {solidity:.2f}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(info_image, f"Fill Ratio: {fill_ratio:.2f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    # If there are any markers detected, classify them and draw a bounding box around all of them
+    if category == "Marker" and detected_objects:
+        detected_objects = classify_markers(detected_objects)
+        x_min = min(obj['position'][0] for obj in detected_objects)
+        y_min = min(obj['position'][1] for obj in detected_objects)
+        x_max = max(obj['position'][0] + obj['position'][2] for obj in detected_objects)
+        y_max = max(obj['position'][1] + obj['position'][3] for obj in detected_objects)
+        
+        cv2.rectangle(info_image, (x_min, y_min), (x_max, y_max), (0, 255, 255), 2)
+        cv2.putText(info_image, f"Marker Type: {detected_objects[0]['type']}", (x_min, y_max + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        cv2.putText(info_image, f"Distance: {detected_objects[0]['distance']:.2f}m", (x_min, y_max + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+    if category == "Obstacle" and detected_objects:
+        for obj in detected_objects:
+            x, y, w, h = obj['position']
+            distance = obj['distance']
+            cv2.rectangle(info_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(info_image, f"Distance: {distance:.2f}m", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(info_image, f"Object Type: {category}", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
     return contour_image, detected_objects, info_image
 
-# Function to estimate distance based on object width (only for markers)
-def estimate_distance(object_width, focal_length=1309.29, real_object_width=0.07):
+# Function to estimate distance based on object width
+def estimate_distance(object_width, real_object_width, focal_length=1309.29):
     return (real_object_width * focal_length) / object_width
 
 # Function to classify markers based on fill ratio and number of visible markers
@@ -127,8 +143,6 @@ def detect_occlusion(detected_objects):
 
     return detected_objects
 
-
-
 # Function to generate actionable signals for navigation
 def generate_navigation_signals(detected_objects):
     signals = {
@@ -149,10 +163,10 @@ def generate_navigation_signals(detected_objects):
 
 # Predefined color ranges for different categories
 color_ranges = {
-    'Shelf': (np.array([75, 0, 15]), np.array([130, 255, 230])),
+    'Shelf': (np.array([97, 0, 15]), np.array([125, 255, 230])),
     'Obstacle': (np.array([34, 98, 28]), np.array([75, 255, 225])),
     'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
-    'Marker': (np.array([4, 68, 50]), np.array([34, 153, 92]))
+    'Marker': (np.array([0, 0, 0]), np.array([155, 155, 70]))
 }
 
 # Function to display images in sequence
@@ -172,7 +186,7 @@ def display_image_sequence(image_sequence, titles):
             break
 
 def main():
-    image = cv2.imread('captured_image_0.png')
+    image = cv2.imread('captured_image_1.png')
     scale = 0.5
     blurred_image = preprocess_image(image, scale)
     

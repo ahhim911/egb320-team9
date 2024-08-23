@@ -51,14 +51,22 @@ def process_frame(frame):
 "*** The below code creates the website to view the camera Feed, and is easily broken ***"
 
 import cv2
+import picamera2
 import threading
 from flask import Flask, Response, render_template
 
 app = Flask(__name__)
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 240)  # Width
-cap.set(4, 240)  # Height
+# cap = cv2.VideoCapture(0)
+# cap.set(3, 240)  # Width
+# cap.set(4, 240)  # Height
+
+def initialize_camera(frame_height=320*2, frame_width=240*2, format='XRGB8888'):
+    cap = picamera2.Picamera2()
+    config = cap.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
+    cap.configure(config)
+    cap.start()
+    return cap
 
 capture_frames = True 
 
@@ -66,7 +74,7 @@ capture_frames = True
 def generate_frames(stream_index):
 
     while capture_frames:
-        ret, frame = cap.read()
+        ret, frame = initialize_camera().read()
         if not ret:
             break
         else:

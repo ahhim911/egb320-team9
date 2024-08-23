@@ -41,18 +41,12 @@ def get_trackbar_values():
     v_max = cv2.getTrackbarPos('Val Max', 'Threshold Adjustment')
     return np.array([h_min, s_min, v_min]), np.array([h_max, s_max, v_max])
 
-# Function to apply erosion followed by dilation on a thresholded image
-def apply_morphological_filters(mask):
-    # Define a kernel (structuring element)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-
-    # Apply erosion
-    eroded_image = cv2.erode(mask, kernel, iterations=1)
-
-    # Apply dilation on the eroded image
-    dilated_image = cv2.dilate(eroded_image, kernel, iterations=1)
-
-    return eroded_image, dilated_image
+# Function to apply morphological operations on a thresholded image
+def apply_morphological_filters(mask, kernel_size=(5, 5)):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
+    opened_image = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    closed_image = cv2.morphologyEx(opened_image, cv2.MORPH_CLOSE, kernel)
+    return opened_image, closed_image
 
 def display_image_sequence(image_sequence, titles):
     idx = 0
@@ -80,7 +74,7 @@ def display_image_sequence(image_sequence, titles):
 
 def main():
     # Load the image
-    image = cv2.imread('captured_image_9.png')
+    image = cv2.imread('captured_image_2.png')
     
     # Preprocess the image with resizing
     scale = 0.5  # You can adjust this scale factor
@@ -105,14 +99,14 @@ def main():
             break
 
     # Apply morphological filters (erosion followed by dilation)
-    eroded_image, dilated_image = apply_morphological_filters(thresholded_image)
+    opened_image, closed_image = apply_morphological_filters(thresholded_image)
     
     # Create a sequence of images to display with descriptive titles
     image_sequence = [
         cv2.resize(image, (0, 0), fx=scale, fy=scale),  # Display the resized original image
         thresholded_image,                               # Display the thresholded image
-        eroded_image,                                    # Display the eroded image
-        dilated_image                                    # Display the image after dilation (following erosion)
+        opened_image,                                    # Display the eroded image
+        closed_image                                    # Display the image after dilation (following erosion)
     ]
     
     # Corresponding titles for each image stage
