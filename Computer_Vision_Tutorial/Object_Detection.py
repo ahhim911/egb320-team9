@@ -1,11 +1,15 @@
 import cv2
 import numpy as np
 
-# Function to preprocess the image: resize and return the resized image
-def preprocess_image(image, scale=0.5):
+# Function to preprocess the image: resize and apply Gaussian blur
+def preprocess_image(image, scale=0.5, blur_ksize=(5, 5), sigmaX=2):
     # Resize the image
     resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-    return resized_image
+    
+    # Apply Gaussian Blur to smooth the image and reduce noise
+    blurred_image = cv2.GaussianBlur(resized_image, blur_ksize, sigmaX)
+    
+    return blurred_image
 
 # Function to apply color thresholding
 def color_threshold(image, lower_hsv, upper_hsv):
@@ -16,30 +20,6 @@ def color_threshold(image, lower_hsv, upper_hsv):
     mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
     
     return mask
-
-# Trackbar callback function (no operation)
-def nothing(x):
-    pass
-
-# Function to create trackbars for adjusting HSV values
-def create_trackbars():
-    cv2.namedWindow('Threshold Adjustment')
-    cv2.createTrackbar('Hue Min', 'Threshold Adjustment', 0, 179, nothing)
-    cv2.createTrackbar('Hue Max', 'Threshold Adjustment', 179, 179, nothing)
-    cv2.createTrackbar('Sat Min', 'Threshold Adjustment', 0, 255, nothing)
-    cv2.createTrackbar('Sat Max', 'Threshold Adjustment', 255, 255, nothing)
-    cv2.createTrackbar('Val Min', 'Threshold Adjustment', 0, 255, nothing)
-    cv2.createTrackbar('Val Max', 'Threshold Adjustment', 255, 255, nothing)
-
-# Function to read trackbar positions
-def get_trackbar_values():
-    h_min = cv2.getTrackbarPos('Hue Min', 'Threshold Adjustment')
-    h_max = cv2.getTrackbarPos('Hue Max', 'Threshold Adjustment')
-    s_min = cv2.getTrackbarPos('Sat Min', 'Threshold Adjustment')
-    s_max = cv2.getTrackbarPos('Sat Max', 'Threshold Adjustment')
-    v_min = cv2.getTrackbarPos('Val Min', 'Threshold Adjustment')
-    v_max = cv2.getTrackbarPos('Val Max', 'Threshold Adjustment')
-    return np.array([h_min, s_min, v_min]), np.array([h_max, s_max, v_max])
 
 # Function to apply erosion followed by dilation on a thresholded image
 def apply_morphological_filters(mask):
@@ -54,6 +34,41 @@ def apply_morphological_filters(mask):
 
     return eroded_image, dilated_image
 
+# Function to analyze blobs/contours
+def analyze_contours(image, mask):
+    # Find contours in the mask
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Draw contours on the original image
+    contour_image = cv2.drawContours(image.copy(), contours, -1, (0, 255, 0), 2)
+    
+    # Analyze each contour
+    for contour in contours:
+        # Calculate area and perimeter
+        area = cv2.contourArea(contour)
+        perimeter = cv2.arcLength(contour, True)
+        
+        # Get the bounding box coordinates
+        x, y, w, h = cv2.boundingRect(contour)
+        
+        # Draw the bounding box
+        cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        
+        # Display contour properties on the image
+        cv2.putText(contour_image, f"Area: {int(area)}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(contour_image, f"Perimeter: {int(perimeter)}", (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    
+    return contour_image
+
+# Predefined color ranges for different categories
+color_ranges = {
+    'Shelf': (np.array([75, 0, 15]), np.array([130, 255, 230])),
+    'Obstacle': (np.array([34, 98, 28]), np.array([75, 255, 225])),
+    'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
+    'Marker': (np.array([0, 80, 20]), np.array([40, 150, 80]))
+}
+
+# Function to display images in sequence
 def display_image_sequence(image_sequence, titles):
     idx = 0
     while True:
@@ -82,46 +97,34 @@ def main():
     # Load the image
     image = cv2.imread('captured_image_9.png')
     
-    # Preprocess the image with resizing
-    scale = 0.5  # You can adjust this scale factor
-    resized_image = preprocess_image(image, scale)
+    # Preprocess the image with resizing and Gaussian blur
+    scale = 0.5  # Adjust this scale factor as needed
+    blurred_image = preprocess_image(image, scale)
     
-    # Create trackbars for adjusting HSV thresholds
-    create_trackbars()
-
-    while True:
-        # Get the current positions of the trackbars
-        lower_hsv, upper_hsv = get_trackbar_values()
-        
-        # Apply color thresholding using the current trackbar positions
-        thresholded_image = color_threshold(resized_image, lower_hsv, upper_hsv)
-        
-        # Display the thresholded image
-        cv2.imshow('Threshold Adjustment', thresholded_image)
-
-        # Wait for the user to press 'd' to proceed with the morphological filters
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('d'):
-            break
-
-    # Apply morphological filters (erosion followed by dilation)
-    eroded_image, dilated_image = apply_morphological_filters(thresholded_image)
+    # Apply color thresholding for each predefined mask
+    masks = {}
+    for category, (lower_hsv, upper_hsv) in color_ranges.items():
+        masks[category] = color_threshold(blurred_image, lower_hsv, upper_hsv)
+    
+    # Apply morphological filters (erosion followed by dilation) and analyze contours on each mask
+    processed_masks = {}
+    for category, mask in masks.items():
+        eroded_image, dilated_image = apply_morphological_filters(mask)
+        contour_image = analyze_contours(blurred_image, dilated_image)
+        processed_masks[category] = (mask, eroded_image, dilated_image, contour_image)
     
     # Create a sequence of images to display with descriptive titles
-    image_sequence = [
-        cv2.resize(image, (0, 0), fx=scale, fy=scale),  # Display the resized original image
-        thresholded_image,                               # Display the thresholded image
-        eroded_image,                                    # Display the eroded image
-        dilated_image                                    # Display the image after dilation (following erosion)
-    ]
+    image_sequence = [blurred_image]
+    titles = ['Blurred and Resized Image']
     
-    # Corresponding titles for each image stage
-    titles = [
-        'Resized Original Image', 
-        'Thresholded Image',
-        'Eroded Image', 
-        'Dilated Image After Erosion'
-    ]
+    for category, (mask, eroded_image, dilated_image, contour_image) in processed_masks.items():
+        image_sequence.extend([mask, eroded_image, dilated_image, contour_image])
+        titles.extend([
+            f'{category} Thresholded Image',
+            f'{category} Eroded Image',
+            f'{category} Dilated Image After Erosion',
+            f'{category} Contour Analysis'
+        ])
     
     # Display the images in a sequence with navigation controls
     display_image_sequence(image_sequence, titles)
