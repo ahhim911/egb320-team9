@@ -4,12 +4,8 @@
 # import the packing bot module - this will include math, time, numpy (as np) and CoppeliaSim python modules
 from warehousebot_lib import *
 import time
-import numpy as np
-import pandas as pd
-
 #import any other required python modules
-import navigation
-import csv
+
 
 # SET SCENE PARAMETERS
 sceneParameters = SceneParameters()
@@ -26,7 +22,7 @@ sceneParameters.bayContents[5,0,1] = warehouseObjects.cereal
 
 sceneParameters.obstacle0_StartingPosition = [-0.5,0]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
 # sceneParameters.obstacle0_StartingPosition = None  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
-sceneParameters.obstacle1_StartingPosition = [0.5,-0.5]   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+sceneParameters.obstacle1_StartingPosition = -1   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
 sceneParameters.obstacle2_StartingPosition = -1   # starting position of obstacle 2 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
 
 
@@ -73,9 +69,8 @@ if __name__ == '__main__':
 		goal_bay_position = 0.3
 		found_row = False
 		action = {}
-		goal_position = {}
 		robot_state = 'START'
-		
+
 		#We recommended changing this to a controlled rate loop (fixed frequency) to get more reliable control behaviour
 		while True:
 			
@@ -89,88 +84,8 @@ if __name__ == '__main__':
 					warehouseObjects.packingBay,
 				]
 			)
-			# ---------------------------------------------
-			# STATE MACHINE
-			# ---------------------------------------------
 
-			# ---------START----------
-			if robot_state == 'START':
-				# INIT
-				# Read the object order file
-				with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
-					# Load the CSV into a DataFrame, automatically using the first row as column names
-					df = pd.read_csv(csv_file)
-
-				# Group by 'Height' and find the minimum 'Shelf' for each height
-				min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
-
-				# Sort by 'Shelf' in descending order
-				sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
-				remaining_rows = df.drop(min_shelf_by_height.index)
-				sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
-				final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
-				
-				# Display the result
-				print("Optimised pickup order:")
-				print(final_df)
-
-
-				robot_state = 'SEARCH_FOR_ROW'
-
-				action['forward_vel'] = 0
-				action['rotational_vel'] = 0
-
-			# ---------SEARCH_FOR_ROW----------
-			elif robot_state == 'SEARCH_FOR_ROW':
-				for row_index in range(0,3):
-					if rowMarkerRangeBearing[row_index] != None:
-						found_row = True
-						break
-				# rotate on the spot
-				action['forward_vel'] = 0
-				action['rotational_vel'] = -0.1
-
-				if found_row:
-					robot_state = 'MOVE_TO_ROW'
-
-			# ---------Move_TO__ROW----------
-			elif robot_state == 'MOVE_TO_ROW':
-				found_row = False
-						
-				for row_index in range(0,3):
-					if rowMarkerRangeBearing[row_index] != None:
-						found_row = True
-						goal_position['range'] = rowMarkerRangeBearing[row_index][0]
-						goal_position['bearing'] = rowMarkerRangeBearing[row_index][1]
-						print(goal_position)
-				if found_row == True:
-					action = navigation.calculate_goal_velocities(goal_position, obstaclesRB, True)
-					print(action['forward_vel'], action['rotational_vel'])
-				else:
-					robot_state = 'SEARCH_FOR_ROW'
-					action['forward_vel'] = 0
-					action['rotational_vel'] = 0
-
-				if goal_position['range'] - goal_bay_position < 0.01:
-					robot_state = 'AT_BAY'
-					action['forward_vel'] = 0
-					action['rotational_vel'] = 0
-			
-			else:
-				pass
-
-			print(robot_state)
-
-			# ---------------------------------------------
-			# END STATE MACHINE
-			# ---------------------------------------------
-
-			# Set the robot's action
-			warehouseBotSim.SetTargetVelocities(action['forward_vel'],action['rotational_vel'])
-
-
-
-
+			#dist = warehouseBotSim.readProximity()
 
 			#Check to see if an item is within the camera's FOV
 			for itemClass in itemsRB:
@@ -195,11 +110,11 @@ if __name__ == '__main__':
 			wallPoints = warehouseBotSim.GetDetectedWallPoints()
 			if wallPoints == None:
 				print("To close to the wall")
-			# else:
-			# 	print("\nDetected Wall Points")
-			# 	# print the range and bearing to each wall point in the list
-			# 	for point in wallPoints:
-			# 		print("\tWall Point (range, bearing): %0.4f, %0.4f"%(point[0], point[1]))
+			else:
+				print("\nDetected Wall Points")
+				# print the range and bearing to each wall point in the list
+				for point in wallPoints:
+					print("\tWall Point (range, bearing): %0.4f, %0.4f"%(point[0], point[1]))
 
 
 			# Update object Positions
