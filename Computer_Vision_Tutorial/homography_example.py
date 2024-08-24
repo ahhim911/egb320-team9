@@ -24,7 +24,7 @@ def onClick(event, x, y, flags, params):
             print(pred_point)
 
 # Define ground plane points relative to the robot (in meters)
-ground_points = np.float32([[-6, 10], [-6, 22], [6, 22], [6, 10]])
+ground_points = np.float32([[-40, 100], [40, 100], [40, 70], [-40, 70]])
 
 # Initialize the camera
 cap = Picamera2()
@@ -39,10 +39,11 @@ cv2.setMouseCallback("Image", onClick)
 try:
     while True:
         # Capture an image
-        frame = cap.capture_array()
+        #frame = cap.capture_array()
+        frame = cv2.imread('captured_image_3.png')
 
         # Rotate the image by 180 degrees
-        frame = cv2.flip(frame, -1)  # Flip both horizontally and vertically
+        #frame = cv2.flip(frame, -1)  # Flip both horizontally and vertically
 
         # Display the image
         cv2.imshow("Image", frame)
