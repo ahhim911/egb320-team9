@@ -110,6 +110,8 @@ if __name__ == '__main__':
 				sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
 				final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 				
+				final_df['Row'] = final_df['Shelf'] // 2
+
 				# Display the result
 				print("Optimised pickup order:")
 				print(final_df)
@@ -119,6 +121,16 @@ if __name__ == '__main__':
 
 				action['forward_vel'] = 0
 				action['rotational_vel'] = 0
+			# ---------SEARCH_FOR_SHELF----------	
+			elif robot_state == 'SEARCH_FOR_SHELF':
+				# rotate on the spot
+				action['forward_vel'] = 0
+				action['rotational_vel'] = -0.1
+
+				if shelfRangeBearing != None:  # desired shlef
+					robot_state = 'MOVE_TO_SHELF'	
+
+
 
 			# ---------SEARCH_FOR_ROW----------
 			elif robot_state == 'SEARCH_FOR_ROW':
@@ -133,7 +145,7 @@ if __name__ == '__main__':
 				if found_row:
 					robot_state = 'MOVE_TO_ROW'
 
-			# ---------Move_TO__ROW----------
+			# ---------Move_TO_ROW----------
 			elif robot_state == 'MOVE_TO_ROW':
 				found_row = False
 						
