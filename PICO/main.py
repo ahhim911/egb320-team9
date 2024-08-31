@@ -33,3 +33,11 @@ while True:
         G_led.value(1)
     else:
         G_led.value(0)
+
+
+
+
+
+
+
+        
