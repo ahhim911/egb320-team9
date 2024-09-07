@@ -9,6 +9,13 @@ ROT_BIAS = 0.5
 CAMERA_FOV = 60
 WORKER_WIDTH_SCALE = 0.15 #m
 
+# def draw_field(field):
+
+
+# rotate to the specified angle
+# def rotate_to_angle(angle):
+
+
 def calculate_goal_velocities(goal_position, obstacles, draw=False):
     # Compute bearing to goal
     goal_rad = goal_position['bearing']
@@ -24,10 +31,6 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
 
     # Find heading angle by finding the index of the max value in the residual field
     heading_angle = np.argmax(nav_state['residual_field'])
-    # a line on the plot to show the heading angle
-    # for angle in range(0, int((CAMERA_FOV/2 +1))):
-    #     if angle == heading_angle:
-    #         nav_state['heading'] = MAX_ROBOT_VEL
 
     goal_error = np.deg2rad(heading_angle) - np.deg2rad(CAMERA_FOV/2)
     
@@ -57,7 +60,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
         # plt.plot(nav_state['heading'], label='Heading', marker='o', markersize=5)
         plt.legend()
         
-        plt.pause(0.001)  # Pause briefly to allow the plot to update
+        plt.pause(0.01)  # Pause briefly to allow the plot to update
         plt.show(block=False)  # Show the plot without blocking
 
     return nav_state
