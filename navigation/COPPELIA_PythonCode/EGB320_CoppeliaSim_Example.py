@@ -152,7 +152,8 @@ if __name__ == '__main__':
 				robot_state = 'SEARCH_FOR_SHELF'
 				target_shelf = final_df['Shelf'][current_item]
 				target_row = final_df['Row'][current_item]
-				target_bay = final_df['Bay'][current_item]
+				# target_bay = final_df['Bay'][current_item]
+				target_bay = 3
 				target_height = final_df['Height'][current_item]
 
 				action['forward_vel'] = 0
@@ -311,7 +312,7 @@ if __name__ == '__main__':
 				else: # even - left
 					print("Exit on the Left, turning left, count: ", count)
 					action['rotational_vel'] = 0.1
-				if count > 60:
+				if count > 90:
 					robot_state = 'MOVE_TO_EXIT'
 					count = 0
 				# print(wallPoints)
@@ -328,7 +329,8 @@ if __name__ == '__main__':
 				if wallPoints != None:
 					# Calculate bearing perpendicular to the wall
 					goal_position['range'] = np.arccos(0.5 / wallPoints[1][0])
-					goal_position['bearing'] = (wallPoints[0][0] - wallPoints[1][0]) * 1.3
+					# goal_position['bearing'] = 0
+					goal_position['bearing'] = (wallPoints[0][0] - wallPoints[1][0]) * 1.0
 					print(goal_position)
 					
 					# add the other shelf to the obstacles
@@ -370,7 +372,7 @@ if __name__ == '__main__':
 					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
 					print(action['forward_vel'], action['rotational_vel'])
 
-					if goal_position['range'] - 0.5 < 0.01:
+					if goal_position['range'] - 0.4 < 0.01:
 						robot_state = 'DROP_ITEM'
 
 		# ---------DROP_ITEM----------
@@ -379,18 +381,22 @@ if __name__ == '__main__':
 				# For Simulation
 				warehouseBotSim.Dropitem()
 				current_item += 1
+				count = 0
 				at_ps = True
 				robot_state = 'EXIT_PS'
 
 
 		# ---------EXIT_PS----------
 			elif robot_state == 'EXIT_PS':
-				print("Exiting Packing Station")
+				count += 1
+				print("Exiting Packing Station, count: ", count)
 				# rotate on the spot
-				action['forward_vel'] = -0.1
+				action['forward_vel'] = -0.05
 				action['rotational_vel'] = 0
-				if count > 30:
+				if count > 20:
 					robot_state = 'SEARCH_FOR_SHELF'
+					count = 0
+					at_ps = True
 
 
 
