@@ -163,10 +163,10 @@ def generate_navigation_signals(detected_objects):
 
 # Predefined color ranges for different categories
 color_ranges = {
-    'Shelf': (np.array([97, 0, 15]), np.array([125, 255, 230])),
-    'Obstacle': (np.array([34, 98, 28]), np.array([75, 255, 225])),
+    'Shelf': (np.array([92, 0, 15]), np.array([120, 255, 255])),
+    'Obstacle': (np.array([50, 0, 0]), np.array([69, 185, 155])),
     'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
-    'Marker': (np.array([0, 0, 0]), np.array([155, 155, 70]))
+    'Marker': (np.array([0, 40, 40]), np.array([29, 94, 90]))
 }
 
 # Function to display images in sequence
