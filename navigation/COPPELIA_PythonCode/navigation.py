@@ -17,7 +17,7 @@ WORKER_WIDTH_SCALE = 0.15 #m
 
 
 def calculate_goal_velocities(goal_position, obstacles, draw=False):
-    # Compute bearing to goal
+    # Compute bearing to goal 
     goal_rad = goal_position['bearing']
     goal_deg = int(clip_deg_fov(np.rad2deg(goal_rad) + CAMERA_FOV/2, CAMERA_FOV))
 
@@ -88,7 +88,7 @@ def compute_repulsive_field(obstacles):
             obs_range = obs[0]
             obs_bearing = obs[1]
         
-            if obs_range < 1:
+            if obs_range < 0.8:
                  obs_width = WORKER_WIDTH_SCALE
 
                  obs_deg = int(np.rad2deg(obs_bearing) + CAMERA_FOV/2)

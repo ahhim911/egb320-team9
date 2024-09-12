@@ -70,7 +70,7 @@ if __name__ == '__main__':
 		# warehouseBotSim.SetScene()
 		warehouseBotSim.StartSimulator()
 
-		goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
+		goal_bay_position = [0.875, 0.625, 0.375, 0.1] # bay positions in the row
 		found_shelf = False
 		found_row = False
 		at_ps = False
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 		goal_position = {}
 		
 		current_item = 0
-		draw = True
+		draw = False
 
 		# Read the object order file
 		with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
@@ -201,8 +201,6 @@ if __name__ == '__main__':
 					action['rotational_vel'] = 0
 					robot_state = 'MOVE_TO_ROW'
 
-				
-				
 				if shelfRangeBearing[subtarget_shelf] != None:
 					found_shelf = True
 					goal_position['range'] = shelfRangeBearing[subtarget_shelf][0]
@@ -226,8 +224,7 @@ if __name__ == '__main__':
 					action['forward_vel'] = 0
 					action['rotational_vel'] = 0
 
-
-		# ---------SEARCH_FOR_ROW----------target_row
+		# ---------SEARCH_FOR_ROW----------
 			elif robot_state == 'SEARCH_FOR_ROW':
 				if rowMarkerRangeBearing[target_row] != None:
 					found_row = True
@@ -284,7 +281,7 @@ if __name__ == '__main__':
 							itemRange = itemRB[0]
 							itemBearing = itemRB[1]
 							if np.abs(itemBearing) < 0.05 and itemRange < 0.20:
-								robot_state = 'COLLECT_ITEM'
+								# robot_state = 'COLLECT_ITEM' # for milestone 2 -----------------
 								action['forward_vel'] = 0
 								action['rotational_vel'] = 0
 								break
@@ -312,25 +309,18 @@ if __name__ == '__main__':
 				else: # even - left
 					print("Exit on the Left, turning left, count: ", count)
 					action['rotational_vel'] = 0.1
-				if count > 90:
+				if count > 90 or (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]):
 					robot_state = 'MOVE_TO_EXIT'
 					count = 0
-				# print(wallPoints)
-				# if wallPoints is None:
-				# 	print("Too close to the wall")
-				# else:
-				# 	print(wallPoints[0][0] - wallPoints[1][0])
-				# 	if wallPoints[0][0] - wallPoints[1][0] < 0.02:
-				# 		robot_state = 'MOVE_TO_EXIT'
 
 		# ---------MOVE_TO_EXIT----------
 			elif robot_state == 'MOVE_TO_EXIT':
 				print("Moving to exit")
-				if wallPoints != None:
+				if (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]) != None:
 					# Calculate bearing perpendicular to the wall
 					goal_position['range'] = np.arccos(0.5 / wallPoints[1][0])
 					# goal_position['bearing'] = 0
-					goal_position['bearing'] = (wallPoints[0][0] - wallPoints[1][0]) * 1.0
+					goal_position['bearing'] = (shelfRangeBearing[target_shelf][1] + shelfRangeBearing[subtarget_shelf][1]) / 2
 					print(goal_position)
 					
 					# add the other shelf to the obstacles
