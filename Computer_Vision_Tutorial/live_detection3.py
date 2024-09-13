@@ -92,15 +92,8 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
     return contour_image, detected_objects
 
 # Function to apply category-specific logic and classify detected objects
-def apply_object_logic(detected_objects, category, image_width, contour_image):
+def apply_object_logic(detected_objects, category, image_width, contour_image, output_data):
     classified_objects = []
-    output_data = {
-        "items": None,
-        "shelves": [None] * 6, # maybe just left and right shelves
-        "row_markers": [None, None, None],
-        "obstacles": None,
-        "packing_bay": None
-    }
 
     for obj in detected_objects:
         x, y, w, h = obj['position']
@@ -129,7 +122,7 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
             output_data['obstacles'].append([distance, estimate_bearing(x + w // 2, image_width)])
 
         # Shelf-specific logic
-        if category == "Shelf":
+        elif category == "Shelf":
             obj_type = "Shelf"
             distance = estimate_homography_distance(obj['position'])
             
@@ -157,8 +150,8 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
             bearing = estimate_bearing(x + w // 2, image_width)
             obj.update({
                 "type": obj_type,
-                "distance": distance, # Range in meters
-                "bearing": bearing, # Bearing in degrees
+                "distance": distance,  # Range in meters
+                "bearing": bearing,  # Bearing in degrees
                 "center": (x + w // 2, y + h // 2),
                 "width": w
             })
@@ -324,7 +317,7 @@ def main():
             masks[category] = color_threshold(blurred_image, lower_hsv, upper_hsv)
             processed_mask = apply_morphological_filters(masks[category])
             contour_image, objects = analyze_contours(blurred_image, processed_mask)
-            classified_objects = apply_object_logic(objects, category, image_width, contour_image)
+            classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)  # Pass output_data here
 
             processed_masks[category] = (masks[category], processed_mask, contour_image)
             detected_objects[category] = classified_objects
