@@ -6,7 +6,7 @@ from warehousebot_lib import *
 import time
 import numpy as np
 import pandas as pd
-from "../../"
+from "../../Computer_Vision_Tutorial/live_detection3.py" import capture_frames, preprocess_image, color_threshold, apply_morphological_filters, analyze_contours
 #import any other required python modules
 import path_planning as navigation
 import csv
