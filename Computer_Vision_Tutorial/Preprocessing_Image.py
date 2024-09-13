@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
 
-# Function to preprocess the image: resize and return the resized image
-def preprocess_image(image, scale=0.5):
-    # Resize the image
+# Function to preprocess the image: resize and apply Gaussian blur
+def preprocess_image(image, scale=0.5, blur_ksize=(5, 5), sigmaX=2):
     resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-    return resized_image
+    blurred_image = cv2.GaussianBlur(resized_image, blur_ksize, sigmaX)
+    return blurred_image
 
 # Function to apply color thresholding
 def color_threshold(image, lower_hsv, upper_hsv):
@@ -74,11 +74,11 @@ def display_image_sequence(image_sequence, titles):
 
 def main():
     # Load the image
-    image = cv2.imread('captured_image_2.png')
-    
+    image = cv2.imread('captured_image_6.png')
+
     # Preprocess the image with resizing
     scale = 0.5  # You can adjust this scale factor
-    resized_image = preprocess_image(image, scale)
+    preprocessed_image = preprocess_image(image, scale)
     
     # Create trackbars for adjusting HSV thresholds
     create_trackbars()
@@ -88,7 +88,7 @@ def main():
         lower_hsv, upper_hsv = get_trackbar_values()
         
         # Apply color thresholding using the current trackbar positions
-        thresholded_image = color_threshold(resized_image, lower_hsv, upper_hsv)
+        thresholded_image = color_threshold(preprocessed_image, lower_hsv, upper_hsv)
         
         # Display the thresholded image
         cv2.imshow('Threshold Adjustment', thresholded_image)
@@ -111,10 +111,10 @@ def main():
     
     # Corresponding titles for each image stage
     titles = [
-        'Resized Original Image', 
+        'Resized and Blurred Original Image', 
         'Thresholded Image',
-        'Eroded Image', 
-        'Dilated Image After Erosion'
+        'Opened Image', 
+        'Closed Image After Opening'
     ]
     
     # Display the images in a sequence with navigation controls
