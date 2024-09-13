@@ -53,14 +53,14 @@ def main():
     state_machine = StateMachine()
     
     # Load the color thresholds, focal length, and homography matrix
-    print('loading CV')
+    print('loading CSV')
     color_ranges = load_color_thresholds('Computer_Vision_Tutorial/calibrate.csv')
     load_homography_matrix('Computer_Vision_Tutorial/calibrate_homography.csv')
     load_focal_length('Computer_Vision_Tutorial/calibrate_focal_length.csv')
 
     print('init cam')
     picam2 = Picamera2()
-    picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))  # Set a larger resolution
+    picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))
     picam2.start()
 
     # Create and start the threads
