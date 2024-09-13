@@ -6,11 +6,14 @@ from warehousebot_lib import *
 import time
 import numpy as np
 import pandas as pd
-from "../../Computer_Vision_Tutorial/live_detection3.py" import capture_frames, preprocess_image, color_threshold, apply_morphological_filters, analyze_contours
 #import any other required python modules
 import path_planning as navigation
-import csv
+import json
+import sys
+import os
 
+sys.path.append(os.path.abspath('../../Computer_Vision_Tutorial'))
+from live_detection3 import process_frame, load_homography_matrix, load_color_thresholds, load_focal_length
 # SET SCENE PARAMETERS
 sceneParameters = SceneParameters()
 
@@ -64,6 +67,10 @@ if __name__ == '__main__':
 	# Wrap everything in a try except case that catches KeyboardInterrupts. 
 	# In the exception catch code attempt to Stop the CoppeliaSim so don't have to Stop it manually when pressing CTRL+C
 	try:
+
+
+
+		
 
 		# Create CoppeliaSim PackerBot object - this will attempt to open a connection to CoppeliaSim. Make sure CoppeliaSim is running.
 		warehouseBotSim = COPPELIA_WarehouseRobot('127.0.0.1', robotParameters, sceneParameters)
@@ -122,24 +129,37 @@ if __name__ == '__main__':
 		# 4            6      3    0       1       Mug    1
 		# 5            5      1    2       0  Weetbots    0
 		
-		
+		# color
+		color_thresholds = load_color_thresholds('../../Computer_Vision_Tutorial/calibrate.csv')
+		# homography matrix
+		homography_matrix = load_homography_matrix('../../Computer_Vision_Tutorial/calibrate_homography.csv')
+		# focal length
+		focal_length = load_focal_length('../../Computer_Vision_Tutorial/calibrate_focal_length.csv')
 		
 		robot_state = 'INIT'
 		
 
 		#We recommended changing this to a controlled rate loop (fixed frequency) to get more reliable control behaviour
 		while True:
-			
+			status, frame = warehouseBotSim.GetCameraImage()
+			process_frame(frame, color_thresholds)
+
+			# Path to the JSON file
+			json_file_path = '../../Computer_Vision_Tutorial/output_data.json'
+
+			# Open and load the JSON file
+			with open(json_file_path, 'r') as file:
+				data = json.load(file)
 			# Get Detected Objects
-			itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing = warehouseBotSim.GetDetectedObjects(
-				[
-					warehouseObjects.items,
-     				warehouseObjects.shelves,
-					warehouseObjects.row_markers,
-					warehouseObjects.obstacles,
-					warehouseObjects.packingBay,
-				]
-			)
+			# itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing = warehouseBotSim.GetDetectedObjects(
+			# 	[
+			# 		warehouseObjects.items,
+     		# 		warehouseObjects.shelves,
+			# 		warehouseObjects.row_markers,
+			# 		warehouseObjects.obstacles,
+			# 		warehouseObjects.packingBay,
+			# 	]
+			# )
 		# ---------------------------------------------
 		# STATE MACHINE
 		# ---------------------------------------------
