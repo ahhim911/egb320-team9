@@ -278,9 +278,12 @@ def process_frame(frame, color_ranges):
         local_detected_objects[category] = classified_objects
 
     export_range_bearing(output_data)
-    
 
-    return
+    # Optionally, save or display the contour images
+    for category, (_, _, contour_image) in local_processed_masks.items():
+        if contour_image is not None:
+            cv2.imshow(f'{category} Contour Analysis', contour_image)
+            cv2.imwrite(f'contour_image_output_{category}.png', contour_image)
 
 
 def process_image_pipeline(color_ranges):
