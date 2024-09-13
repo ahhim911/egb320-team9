@@ -2,7 +2,7 @@ from Computer_Vision_Tutorial.live_detection3 import load_color_thresholds, load
 from navigation.state_machine import StateMachine
 from picamera2 import Picamera2
 from threading import Thread
-import  json
+import json
 
 def main():
     # Create the state machine object

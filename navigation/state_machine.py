@@ -170,5 +170,5 @@ class StateMachine:
             self.collect_item()
         # Add other state transitions...
 
-        # Set the robot's action in the simulator
-        # self.bot_sim.SetTargetVelocities(self.action['forward_vel'], self.action['rotational_vel'])
+        # Set the robot's action
+        #mo
