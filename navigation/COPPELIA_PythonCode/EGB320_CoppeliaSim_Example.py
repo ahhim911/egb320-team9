@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 #import any other required python modules
-import navigation
+import path_planning as navigation
 import csv
 
 # SET SCENE PARAMETERS
