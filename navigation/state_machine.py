@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import navigation.path_planning as navigation
-
+import mobility.motor_master as mobility
 
 class StateMachine:
     def __init__(self):
@@ -169,6 +169,6 @@ class StateMachine:
         elif self.robot_state == 'COLLECT_ITEM':
             self.collect_item()
         # Add other state transitions...
-
+        mobility.move(self.action['forward_vel'], self.action['rotational_vel'])
         # Set the robot's action in the simulator
         # self.bot_sim.SetTargetVelocities(self.action['forward_vel'], self.action['rotational_vel'])
