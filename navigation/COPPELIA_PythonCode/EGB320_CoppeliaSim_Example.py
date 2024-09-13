@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 #import any other required python modules
-import navigation
+import path_planning as navigation
 import csv
 
 # SET SCENE PARAMETERS
@@ -70,12 +70,63 @@ if __name__ == '__main__':
 		# warehouseBotSim.SetScene()
 		warehouseBotSim.StartSimulator()
 
-		goal_bay_position = 0.3
+		goal_bay_position = [0.875, 0.625, 0.375, 0.1] # bay positions in the row
+		found_shelf = False
 		found_row = False
+		at_ps = False
 		action = {}
 		goal_position = {}
-		robot_state = 'START'
 		
+		current_item = 0
+		draw = False
+
+		# Read the object order file
+		with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+			# Load the CSV into a DataFrame, automatically using the first row as column names
+			df = pd.read_csv(csv_file)
+
+		# Group by 'Height' and find the minimum 'Shelf' for each height
+		min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
+
+		# Sort by 'Shelf' in descending order
+		sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
+		remaining_rows = df.drop(min_shelf_by_height.index)
+		sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
+		final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
+		
+		final_df['Row'] = final_df['Shelf'] // 2
+		# Redefine the index
+		final_df = final_df.reset_index(drop=True)
+
+		# Display the result
+		print("Optimised pickup order:")
+		print(final_df)
+
+		# final_df for Order_1.csv
+		# 	 Item Number  Shelf  Bay  Height Item Name  Row
+		# 0            2      2    0       1    Bottle    1
+		# 1            6      1    3       0  Weetbots    0
+		# 2            1      0    2       2      Ball    0
+		# 3            4      5    2       2      Bowl    2
+		# 4            5      4    0       1       Mug    2
+		# 5            3      3    3       0      Cube    1
+
+
+
+		# final_df for Order_2.csv
+		#    Item Number  Shelf  Bay  Height Item Name  Row
+		# 0            2      3    1       1    Bottle    1
+		# 1            4      2    1       2      Ball    1
+		# 2            3      0    0       0      Cube    0
+		# 3            1      5    3       2      Bowl    2
+		# 4            6      3    0       1       Mug    1
+		# 5            5      1    2       0  Weetbots    0
+		
+		
+		
+		robot_state = 'INIT'
+		
+
 		#We recommended changing this to a controlled rate loop (fixed frequency) to get more reliable control behaviour
 		while True:
 			
@@ -89,43 +140,94 @@ if __name__ == '__main__':
 					warehouseObjects.packingBay,
 				]
 			)
-			# ---------------------------------------------
-			# STATE MACHINE
-			# ---------------------------------------------
+		# ---------------------------------------------
+		# STATE MACHINE
+		# ---------------------------------------------
 
-			# ---------START----------
-			if robot_state == 'START':
+		# ---------INIT----------
+			if robot_state == 'INIT':
 				# INIT
-				# Read the object order file
-				with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
-					# Load the CSV into a DataFrame, automatically using the first row as column names
-					df = pd.read_csv(csv_file)
-
-				# Group by 'Height' and find the minimum 'Shelf' for each height
-				min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
-
-				# Sort by 'Shelf' in descending order
-				sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
-				remaining_rows = df.drop(min_shelf_by_height.index)
-				sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
-				final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 				
-				# Display the result
-				print("Optimised pickup order:")
-				print(final_df)
 
-
-				robot_state = 'SEARCH_FOR_ROW'
+				robot_state = 'SEARCH_FOR_SHELF'
+				target_shelf = final_df['Shelf'][current_item]
+				target_row = final_df['Row'][current_item]
+				# target_bay = final_df['Bay'][current_item]
+				target_bay = 3
+				target_height = final_df['Height'][current_item]
 
 				action['forward_vel'] = 0
 				action['rotational_vel'] = 0
+				
+		# ---------SEARCH_FOR_SHELF----------	
+			elif robot_state == 'SEARCH_FOR_SHELF':
+				if rowMarkerRangeBearing[target_row] != None:
+					found_row = True
 
-			# ---------SEARCH_FOR_ROW----------
+				if target_shelf % 2 == 1: # odd
+					subtarget_shelf = target_shelf - 1
+					if shelfRangeBearing[subtarget_shelf] != None:
+						found_shelf = True
+				else: # even
+					subtarget_shelf = target_shelf + 1
+					if shelfRangeBearing[target_shelf] != None:
+						found_shelf = True
+					
+				# rotate on the spot
+				action['forward_vel'] = 0
+				if not at_ps:
+					action['rotational_vel'] = -0.1
+				else:
+					action['rotational_vel'] = 0.1
+				print(robot_state, "looking for: ", subtarget_shelf, "Found: ", shelfRangeBearing[subtarget_shelf])
+				
+				if found_row:
+					action['forward_vel'] = 0
+					action['rotational_vel'] = 0
+					robot_state = 'MOVE_TO_ROW'
+				if found_shelf:
+					action['forward_vel'] = 0
+					action['rotational_vel'] = 0
+					robot_state = 'MOVE_TO_SHELF'	
+
+		# ---------MOVE_TO_SHELF----------
+			elif robot_state == 'MOVE_TO_SHELF':
+				found_shelf = False
+				
+				if rowMarkerRangeBearing[target_row] != None:
+					found_row = True
+				if found_row:
+					action['forward_vel'] = 0
+					action['rotational_vel'] = 0
+					robot_state = 'MOVE_TO_ROW'
+
+				if shelfRangeBearing[subtarget_shelf] != None:
+					found_shelf = True
+					goal_position['range'] = shelfRangeBearing[subtarget_shelf][0]
+					goal_position['bearing'] = shelfRangeBearing[subtarget_shelf][1]
+					print(robot_state, "Going to: ", subtarget_shelf, goal_position)
+				if found_shelf == True:
+					# add the other shelf to the obstacles
+					obs = obstaclesRB
+					np.append(obs, shelfRangeBearing[not subtarget_shelf])
+					# print(obs)
+
+					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
+					print(action['forward_vel'], action['rotational_vel'])
+				else:
+					robot_state = 'SEARCH_FOR_SHELF'
+					action['forward_vel'] = 0
+					action['rotational_vel'] = 0
+
+				if goal_position['range'] - 0.15 < 0.01:
+					robot_state = 'SEARCH_FOR_ROW'
+					action['forward_vel'] = 0
+					action['rotational_vel'] = 0
+
+		# ---------SEARCH_FOR_ROW----------
 			elif robot_state == 'SEARCH_FOR_ROW':
-				for row_index in range(0,3):
-					if rowMarkerRangeBearing[row_index] != None:
-						found_row = True
-						break
+				if rowMarkerRangeBearing[target_row] != None:
+					found_row = True
 				# rotate on the spot
 				action['forward_vel'] = 0
 				action['rotational_vel'] = -0.1
@@ -133,33 +235,168 @@ if __name__ == '__main__':
 				if found_row:
 					robot_state = 'MOVE_TO_ROW'
 
-			# ---------Move_TO__ROW----------
+		# ---------MOVE_TO_ROW----------
 			elif robot_state == 'MOVE_TO_ROW':
 				found_row = False
 						
-				for row_index in range(0,3):
-					if rowMarkerRangeBearing[row_index] != None:
-						found_row = True
-						goal_position['range'] = rowMarkerRangeBearing[row_index][0]
-						goal_position['bearing'] = rowMarkerRangeBearing[row_index][1]
-						print(goal_position)
+				if rowMarkerRangeBearing[target_row] != None:
+					found_row = True
+					goal_position['range'] = rowMarkerRangeBearing[target_row][0]
+					goal_position['bearing'] = rowMarkerRangeBearing[target_row][1]
+					print(goal_position)
 				if found_row == True:
-					action = navigation.calculate_goal_velocities(goal_position, obstaclesRB, True)
+					# add the the shelf to the obstacles
+					obs = obstaclesRB
+					np.append(obs, shelfRangeBearing[target_shelf])
+					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
 					print(action['forward_vel'], action['rotational_vel'])
 				else:
 					robot_state = 'SEARCH_FOR_ROW'
 					action['forward_vel'] = 0
 					action['rotational_vel'] = 0
 
-				if goal_position['range'] - goal_bay_position < 0.01:
-					robot_state = 'AT_BAY'
+				if goal_position['range'] - goal_bay_position[target_bay] < 0.01:
+					robot_state = 'SEARCH_FOR_ITEM'
 					action['forward_vel'] = 0
 					action['rotational_vel'] = 0
 			
+		# ---------SEARCH_FOR_ITEM----------
+			elif robot_state == 'SEARCH_FOR_ITEM':
+				print("Searching for item in bay ", target_bay, "at shelf ", target_shelf)
+				# rotate on the spot
+				action['forward_vel'] = 0
+				if target_shelf % 2 == 1: # odd - right
+					print("Shelf on the Right, turning right")
+					action['rotational_vel'] = -0.1
+				else: # even - left
+					print("Shelf on the Left, turning left")
+					action['rotational_vel'] = 0.1
+				print(itemsRB)
+				#Check to see if an item is within the camera's FOV
+				for itemClass in itemsRB:
+					if itemClass != None:
+						# action['rotational_vel'] = action['rotational_vel'] / 2
+						# loop through each item detected using Pythonian way
+						for itemRB in itemClass:
+							itemRange = itemRB[0]
+							itemBearing = itemRB[1]
+							if np.abs(itemBearing) < 0.05 and itemRange < 0.20:
+								# robot_state = 'COLLECT_ITEM' # for milestone 2 -----------------
+								action['forward_vel'] = 0
+								action['rotational_vel'] = 0
+								break
+				
+					
+		# ---------COLLECT_ITEM----------
+			elif robot_state == 'COLLECT_ITEM':
+				print("Collecting item")
+				# For Simulation
+				warehouseBotSim.CollectItem(target_height)
+
+				# For Real Robot
+				# ENTER THE CODE HERE
+				count = 0
+				robot_state = 'ROTATE_TO_EXIT'
+
+		# ---------ROTATE_TO_EXIT----------
+			elif robot_state == 'ROTATE_TO_EXIT':
+				# rotate on the spot
+				count += 1
+				action['forward_vel'] = 0
+				if target_shelf % 2 == 1: # odd - right
+					print("Exit on the Right, turning right, count: ", count)
+					action['rotational_vel'] = -0.1
+				else: # even - left
+					print("Exit on the Left, turning left, count: ", count)
+					action['rotational_vel'] = 0.1
+				if count > 90 or (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]):
+					robot_state = 'MOVE_TO_EXIT'
+					count = 0
+
+		# ---------MOVE_TO_EXIT----------
+			elif robot_state == 'MOVE_TO_EXIT':
+				print("Moving to exit")
+				if (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]) != None:
+					# Calculate bearing perpendicular to the wall
+					goal_position['range'] = np.arccos(0.5 / wallPoints[1][0])
+					# goal_position['bearing'] = 0
+					goal_position['bearing'] = (shelfRangeBearing[target_shelf][1] + shelfRangeBearing[subtarget_shelf][1]) / 2
+					print(goal_position)
+					
+					# add the other shelf to the obstacles
+					obs = obstaclesRB
+					np.append(obs, shelfRangeBearing[target_shelf])
+					np.append(obs, shelfRangeBearing[subtarget_shelf])
+
+					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
+					print(action['forward_vel'], action['rotational_vel'])
+
+					if goal_position['range'] - 0.8 < 0.01:
+						robot_state = 'SEARCH_FOR_PS'
+
+
+		# ---------SEARCH_FOR_PS----------
+			elif robot_state == 'SEARCH_FOR_PS':
+				print("Searching for Packing Station")
+				# rotate on the spot
+				action['forward_vel'] = 0
+				action['rotational_vel'] = -0.1 # rotate right
+				if packingBayRB != None:
+					robot_state = 'MOVE_TO_PS'
+
+		# ---------MOVE_TO_PS----------
+			elif robot_state == 'MOVE_TO_PS':
+				print("Moving to Packing Station")
+				if packingBayRB == None:
+					robot_state = 'SEARCH_FOR_PS'
+				else:
+					# Calculate bearing to the packing station
+					goal_position['range'] = packingBayRB[0]
+					goal_position['bearing'] = packingBayRB[1]
+					print(goal_position)
+
+					obs = obstaclesRB
+					np.append(obs, shelfRangeBearing)
+					# np.append(obs, shelfRangeBearing[subtarget_shelf])
+
+					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
+					print(action['forward_vel'], action['rotational_vel'])
+
+					if goal_position['range'] - 0.4 < 0.01:
+						robot_state = 'DROP_ITEM'
+
+		# ---------DROP_ITEM----------
+			elif robot_state == 'DROP_ITEM':
+				print("Dropping item")
+				# For Simulation
+				warehouseBotSim.Dropitem()
+				current_item += 1
+				count = 0
+				at_ps = True
+				robot_state = 'EXIT_PS'
+
+
+		# ---------EXIT_PS----------
+			elif robot_state == 'EXIT_PS':
+				count += 1
+				print("Exiting Packing Station, count: ", count)
+				# rotate on the spot
+				action['forward_vel'] = -0.05
+				action['rotational_vel'] = 0
+				if count > 20:
+					robot_state = 'SEARCH_FOR_SHELF'
+					count = 0
+					at_ps = True
+
+
+
+
+
+
+
 			else:
 				pass
 
-			print(robot_state)
 
 			# ---------------------------------------------
 			# END STATE MACHINE
@@ -172,15 +409,6 @@ if __name__ == '__main__':
 
 
 
-			#Check to see if an item is within the camera's FOV
-			for itemClass in itemsRB:
-				if itemClass != None:
-					# loop through each item detected using Pythonian way
-					for itemRB in itemClass:
-						itemRange = itemRB[0]
-						itemBearing = itemRB[1]
-
-						warehouseBotSim.CollectItem(1)
 
 			# warehouseBotSim.Dropitem()
 
