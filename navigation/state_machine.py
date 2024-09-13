@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import path_planning as navigation
+import navigation.path_planning as navigation
 
 
 class StateMachine:

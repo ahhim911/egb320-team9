@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import csv
+import json
 from picamera2 import Picamera2
 from threading import Thread, Lock
 import time
@@ -93,7 +94,7 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
 
     return contour_image, detected_objects
 
-def apply_object_logic(detected_objects, category, image_width, contour_image):
+def apply_object_logic(detected_objects, category, image_width, contour_image, output_data):
     classified_objects = []
 
     for obj in detected_objects:
@@ -104,25 +105,38 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
         if category == "Marker":
             obj_type = classify_marker(obj, detected_objects)
             distance = estimate_distance(w, 0.07)
-
+            if obj_type.startswith("Row Marker"):
+                marker_index = int(obj_type.split()[-1]) - 1
+                if marker_index < 3:
+                    output_data['row_markers'][marker_index] = [distance, estimate_bearing(x + w // 2, image_width)]
+            elif obj_type == "Packing Station Marker":
+                output_data['packing_bay'] = [distance, estimate_bearing(x + w // 2, image_width)]
+        
         elif category == "Obstacle":
             obj_type = "Obstacle"
             distance = estimate_distance(w, 0.05)
+            if output_data['obstacles'] is None:
+                output_data['obstacles'] = []
+            output_data['obstacles'].append([distance, estimate_bearing(x + w // 2, image_width)])
 
         elif category == "Shelf":
             obj_type = "Shelf"
             distance = estimate_homography_distance(obj['position'])
-
             for i, corner in enumerate(obj['bottom_corners']):
                 corner_distance = estimate_homography_distance((corner[0][0], corner[0][1], 0, 0))
                 bearing = estimate_bearing(corner[0][0], image_width)
-                corner_label = f"Entry Point {i+1}"
-                text_offset = 20 * (i + 1)
+                #corner_label = f"Entry Point {i+1}"
+                #text_offset = 20 * (i + 1)
                 #draw_category_text(contour_image, corner_label, (corner[0][0], corner[0][1] - text_offset), corner_distance, bearing)
+                if i < 6:
+                    output_data['shelves'][i] = [corner_distance, bearing]
 
         elif category == "Item":
             obj_type = "Item"
             distance = estimate_distance(w, 0.03)
+            item_index = len([i for i in output_data['items'] if i is not None])
+            if item_index < 6:
+                output_data['items'][item_index] = [distance, estimate_bearing(x + w // 2, image_width)]
 
         if obj_type and distance is not None:
             bearing = estimate_bearing(x + w // 2, image_width)
@@ -135,7 +149,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
             })
             classified_objects.append(obj)
             
-            # Draw category text with range and bearing
             draw_category_text(contour_image, obj_type, obj['center'], distance, bearing)
 
     return classified_objects
@@ -162,12 +175,10 @@ def draw_category_text(image, label, center, distance, bearing):
     range_text = f'Range: {distance:.2f}m'
     bearing_text = f'Bearing: {bearing:.2f}deg'
 
-    # Determine positions for each line of text
     label_position = (center[0], center[1] - 30)
     range_position = (center[0], center[1] - 15)
     bearing_position = (center[0], center[1])
 
-    # Draw the text on the image
     cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
     cv2.putText(image, range_text, range_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
     cv2.putText(image, bearing_text, bearing_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
@@ -237,6 +248,10 @@ def load_homography_matrix(csv_file):
             homography_matrix.append([float(val) for val in row])
     homography_matrix = np.array(homography_matrix)
 
+def export_range_bearing(data, output_json='output_data.json'):
+    with open(output_json, 'w') as file:
+        json.dump(data, file, indent=4)
+
 def process_image_pipeline(color_ranges):
     global frame, processed_masks, detected_objects
     while True:
@@ -251,11 +266,19 @@ def process_image_pipeline(color_ranges):
         local_processed_masks = {}
         local_detected_objects = {}
 
+        output_data = {
+            "items": [None] * 6,
+            "shelves": [None] * 6,
+            "row_markers": [None, None, None],
+            "obstacles": None,
+            "packing_bay": None
+        }
+
         for category, (lower_hsv, upper_hsv) in color_ranges.items():
             mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
             processed_mask = apply_morphological_filters(mask)
             contour_image, objects = analyze_contours(blurred_image, processed_mask)
-            classified_objects = apply_object_logic(objects, category, image_width, contour_image)
+            classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
 
             local_processed_masks[category] = (mask, processed_mask, contour_image)
             local_detected_objects[category] = classified_objects
@@ -263,6 +286,8 @@ def process_image_pipeline(color_ranges):
         with frame_lock:
             processed_masks = local_processed_masks.copy()
             detected_objects = local_detected_objects.copy()
+
+        export_range_bearing(output_data)
 
 def main():
     global processed_masks
