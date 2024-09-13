@@ -3,12 +3,16 @@ import cv2
 import time
 from picamera2 import Picamera2
 
+def resize_image(image, scale=0.5):
+    resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
+    return resized_image
+
 # Create a Picamera2 object
 cap = Picamera2()
 
 # Configure the camera
-frameWidth, frameHeight = 320 * 2, 240 * 2
-config = cap.create_video_configuration(main={"format": 'XRGB8888', "size": (frameWidth, frameHeight)})
+frameWidth, frameHeight = 820, 616
+config = cap.create_video_configuration(main={"format": 'RGB888', "size": (frameWidth, frameHeight)})
 cap.configure(config)
 
 # Start the camera
@@ -68,6 +72,7 @@ if __name__ == "__main__":
         t1 = time.time()  # for measuring fps
 
         frame = cap.capture_array()  # Capture a single image frame
+        frame = resize_image(frame)  # Resize image
         frame = cv2.flip(frame, 0)  # Flip horizontally and vertically
 
         # Display the obtained frame in a window called "CameraImage"

@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 
 # Known parameters
-real_world_width = 0.07  # 7 cm object width in meters
-distance_to_object = 1.1  # 110 cm distance to the object in meters
+real_world_width = 0.03  # 7 cm object width in meters
+distance_to_object = 0.33  # 110 cm distance to the object in meters
 
 # Function to preprocess the image: resize, rotate, flip, and blur
 def preprocess_image(image, scale=0.5, blur_ksize=(5, 5), sigmaX=2):
@@ -30,14 +30,15 @@ def calculate_focal_length(object_width_in_pixels, real_world_width, distance_to
     return focal_length
 
 # Load the image
-frame = cv2.imread('captured_image_3.png')
+frame = cv2.imread('captured_image_0.png')
 
 # Pre-process the image
 preprocessed_image = preprocess_image(frame)
 
 # Define the HSV range for the 'Marker' color
-marker_lower = np.array([0, 20, 20])
-marker_upper = np.array([60, 150, 80])
+marker_lower = np.array([0, 172, 168])
+marker_upper = np.array([14, 255, 255])
+0,172,168,14,255,255
 
 # Apply color segmentation
 marker_mask = color_threshold(preprocessed_image, marker_lower, marker_upper)
