@@ -2,7 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-MAX_ROBOT_VEL = 0.05
+MAX_ROBOT_VEL = 0.1
 MAX_ROBOT_ROT = 0.2
 GOAL_P = 0.5
 ROT_BIAS = 0.5
