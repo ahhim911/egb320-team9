@@ -2,7 +2,7 @@ from Computer_Vision_Tutorial.live_detection3 import load_color_thresholds, load
 from navigation.state_machine import StateMachine
 from picamera2 import Picamera2
 from threading import Thread
-import  json
+import json
 
 def main():
     # Create the state machine object
@@ -11,11 +11,11 @@ def main():
     # Load the color thresholds, focal length, and homography matrix
 
     # Load color thresholds from CSV
-    color_ranges = load_color_thresholds('calibrate.csv')
+    color_ranges = load_color_thresholds('Computer_Vision_Tutorial/calibrate.csv')
 
     # Load homography matrix & focal length
-    load_homography_matrix('calibrate_homography.csv')
-    load_focal_length('calibrate_focal_length.csv')
+    load_homography_matrix('Computer_Vision_Tutorial/calibrate_homography.csv')
+    load_focal_length('Computer_Vision_Tutorial/calibrate_focal_length.csv')
 
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))  # Set a larger resolution
