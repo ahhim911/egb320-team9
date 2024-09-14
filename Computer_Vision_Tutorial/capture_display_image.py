@@ -2,7 +2,7 @@ import cv2
 import picamera2
 
 # Initialize the camera with high resolution and wide FOV
-def initialize_camera(frame_height=1080, frame_width=1920, format='XRGB8888'):
+def initialize_camera(frame_height=616, frame_width=820, format='XRGB8888'):
     picam2 = picamera2.Picamera2()
     config = picam2.create_video_configuration(main={"format": format, "size": (frame_width, frame_height)})
     picam2.configure(config)
@@ -20,9 +20,10 @@ try:
     while True:
         # Capture a frame from the camera
         frame = cap.capture_array()
+        frame = cv2.flip(frame, 0)
 
         # Apply any rotation or resize if needed
-        frame = cv2.rotate(frame, cv2.ROTATE_180)
+        #frame = cv2.rotate(frame, cv2.ROTATE_180)
 
         # Display the captured frame
         cv2.imshow("High-Resolution Camera Image", frame)

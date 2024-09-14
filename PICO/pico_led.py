@@ -24,7 +24,11 @@ while True:
     time.sleep(1)
 
 # Blinking LED with SW
+<<<<<<< HEAD
+print('Blinking LED Example')
+=======
 # print('Blinking LED Example') 
+>>>>>>> 6e1fd5ee1a0add2e55a9e07751f8ac88b3299e88
 # while True:
 #     if SW_1.value() == 1:
 #         build_in_led.value(1)
