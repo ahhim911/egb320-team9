@@ -7,6 +7,13 @@
         null,
         null
     ],
+    "packing_bay": null,
+    "obstacles": null,
+    "row_markers": [
+        null,
+        null,
+        null
+    ],
     "shelves": [
         null,
         null,
@@ -14,12 +21,5 @@
         null,
         null,
         null
-    ],
-    "row_markers": [
-        null,
-        null,
-        null
-    ],
-    "obstacles": null,
-    "packing_bay": null
+    ]
 }

@@ -3,6 +3,7 @@ import pandas as pd
 import navigation.path_planning as navigation
 import mobility.motor_master as mobility
 import item_collection.item_collection as item_collection
+from threading import Thread, Event
 
 class StateMachine:
     def __init__(self):
@@ -49,23 +50,24 @@ class StateMachine:
         self.target_height = self.final_df['Height'][self.current_item]
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
+        if self.target_shelf % 2 == 1:  # Odd
+            self.subtarget_shelf = self.target_shelf - 1
+        else:  # Even
+            self.subtarget_shelf = self.target_shelf + 1
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
-        
         if self.target_shelf % 2 == 1:  # Odd
-            subtarget_shelf = self.target_shelf - 1
-            if shelfRangeBearing[subtarget_shelf] is not None:
+            if shelfRangeBearing[self.subtarget_shelf] is not None:
                 self.found_shelf = True
-        else:  # Even
-            subtarget_shelf = self.target_shelf + 1
+        else:
             if shelfRangeBearing[self.target_shelf] is not None:
                 self.found_shelf = True
 
         # Rotate on the spot
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = -0.1 if not self.at_ps else 0.1
-        print(self.robot_state, "looking for: ", subtarget_shelf, "Found: ", shelfRangeBearing[subtarget_shelf])
+        print(self.robot_state, "looking for: ", self.subtarget_shelf, "Found: ", shelfRangeBearing[self.subtarget_shelf])
 
         if self.found_row:
             self.action['forward_vel'] = 0
@@ -116,9 +118,10 @@ class StateMachine:
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
 
         if self.found_row:
-            self.goal_position['range'] = rowMarkerRangeBearing[self.target_row][0]
-            self.goal_position['bearing'] = rowMarkerRangeBearing[self.target_row][1]
-            print(self.goal_position)
+            if rowMarkerRangeBearing[self.target_row] != None:
+                self.goal_position['range'] = rowMarkerRangeBearing[self.target_row][0]
+                self.goal_position['bearing'] = rowMarkerRangeBearing[self.target_row][1]
+                print(self.goal_position)
 
             # Add shelves to obstacles
             obs = obstaclesRB
@@ -150,11 +153,13 @@ class StateMachine:
 
     def collect_item(self):
         print("Collecting item")
+        item_collection.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
     # Add more methods for other states...
 
     def run_state_machine(self, itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing):
+        print(self.robot_state)
         if self.robot_state == 'INIT':
             self.init_state()
         elif self.robot_state == 'SEARCH_FOR_SHELF':

@@ -39,7 +39,7 @@ def main():
             # Extract the range and bearing data
             itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing = data
             # Run the state machine using treading
-            print(data)
+            print(shelfRangeBearing)
             state_machine.run_state_machine(itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing)
 
 

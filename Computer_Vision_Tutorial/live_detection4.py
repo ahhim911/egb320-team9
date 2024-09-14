@@ -105,12 +105,13 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
         if category == "Marker":
             obj_type = classify_marker(obj, detected_objects)
             distance = estimate_distance(w, 0.07)
+            bearing = estimate_bearing(x + w // 2, image_width)
             if obj_type.startswith("Row Marker"):
                 marker_index = int(obj_type.split()[-1]) - 1
                 if marker_index < 3:
-                    output_data['row_markers'][marker_index] = [distance, estimate_bearing(x + w // 2, image_width)]
+                    output_data['row_markers'][marker_index] = [distance, bearing]
             elif obj_type == "Packing Station Marker":
-                output_data['packing_bay'] = [distance, estimate_bearing(x + w // 2, image_width)]
+                output_data['packing_bay'] = [distance, bearing]
         
         elif category == "Obstacle":
             obj_type = "Obstacle"
@@ -269,7 +270,7 @@ def process_image_pipeline(color_ranges):
         output_data = {
             "items": [None] * 6,
             "shelves": [None] * 6,
-            "row_markers": [None, None, None],
+            "row_markers": [[None, None], [None, None], [None, None]],
             "obstacles": None,
             "packing_bay": None
         }
@@ -295,7 +296,8 @@ def main():
     color_ranges = load_color_thresholds('calibrate.csv')
     load_homography_matrix('calibrate_homography.csv')
     load_focal_length('calibrate_focal_length.csv')
-
+    
+    print('init cam')
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))
     picam2.start()
@@ -315,12 +317,12 @@ def main():
             if processed_masks:
                 for category in color_ranges.keys():
                     _, _, contour_image = processed_masks.get(category, (None, None, None))
-                    if contour_image is not None:
-                        cv2.imshow(f'{category} Contour Analysis', contour_image)
+        #             if contour_image is not None:
+        #                 cv2.imshow(f'{category} Contour Analysis', contour_image)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
+        # key = cv2.waitKey(1) & 0xFF
+        # if key == ord('q'):
+        #     break
 
         end_time = time.time()
         fps = 1 / (end_time - start_time)

@@ -288,10 +288,10 @@ def process_frame(frame, color_ranges):
 
     output_data = {
         "items": [None] * 6,
-        "shelves": [None] * 6,
-        "row_markers": [None, None, None],
+        "packing_bay": None,
         "obstacles": None,
-        "packing_bay": None
+        "row_markers": [None, None, None],
+        "shelves": [None] * 6,
     }
 
     for category, (lower_hsv, upper_hsv) in color_ranges.items():
@@ -312,8 +312,8 @@ def process_frame(frame, color_ranges):
     export_range_bearing(output_data)
     
     # Display the result images for each category
-    for category, (_, _, contour_image) in processed_masks.items():
-        cv2.imshow(f'{category} Contour Analysis', contour_image)
+    # for category, (_, _, contour_image) in processed_masks.items():
+    #     cv2.imshow(f'{category} Contour Analysis', contour_image)
 
     return frame
 
