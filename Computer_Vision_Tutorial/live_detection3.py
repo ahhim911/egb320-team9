@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import csv
+import json
 from picamera2 import Picamera2
 
 # Global variables to store calibration data
@@ -92,6 +93,13 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
 # Function to apply category-specific logic and classify detected objects
 def apply_object_logic(detected_objects, category, image_width, contour_image):
     classified_objects = []
+    output_data = {
+        "items": None,
+        "shelves": [None] * 6, # maybe just left and right shelves
+        "row_markers": [None, None, None],
+        "obstacles": None,
+        "packing_bay": None
+    }
 
     for obj in detected_objects:
         x, y, w, h = obj['position']
@@ -102,17 +110,28 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
         if category == "Marker":
             obj_type = classify_marker(obj, detected_objects)
             distance = estimate_distance(w, 0.07)  # Estimate distance for Markers
-
+            # Store row markers' range and bearing
+            if obj_type.startswith("Row Marker"):
+                marker_index = int(obj_type.split()[-1]) - 1
+                if marker_index < 3:
+                    output_data['row_markers'][marker_index] = [distance, estimate_bearing(x + w // 2, image_width)]
+            # Store packing station marker's range and bearing
+            elif obj_type == "Packing Station Marker":
+                output_data['packing_bay'] = [distance, estimate_bearing(x + w // 2, image_width)]
+        
         # Obstacle-specific logic
         elif category == "Obstacle":
             obj_type = "Obstacle"
             distance = estimate_distance(w, 0.05)  # Estimate distance for Obstacles
+            if output_data['obstacles'] is None:
+                output_data['obstacles'] = []
+            output_data['obstacles'].append([distance, estimate_bearing(x + w // 2, image_width)])
 
         # Shelf-specific logic
         if category == "Shelf":
             obj_type = "Shelf"
             distance = estimate_homography_distance(obj['position'])
-
+            
             # Process bottom two corners for Shelves
             for i, corner in enumerate(obj['bottom_corners']):
                 corner_distance = estimate_homography_distance((corner[0][0], corner[0][1], 0, 0))
@@ -121,19 +140,24 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
                 # Adjust the text position for each entry point
                 text_offset = 20 * (i + 1)
                 draw_category_text(contour_image, corner_label, (corner[0][0], corner[0][1] - text_offset), corner_distance, bearing)
+                if i < 6:
+                    output_data['shelves'][i] = [corner_distance, bearing]
 
         # Item-specific logic
         elif category == "Item":
             obj_type = "Item"
             distance = estimate_distance(w, 0.03)  # Estimate distance for Items
+            item_index = len([i for i in output_data['items'] if i is not None])
+            if item_index < 6:
+                output_data['items'][item_index] = [distance, estimate_bearing(x + w // 2, image_width)]
 
         # If object type is valid and distance is calculated, update object
         if obj_type and distance is not None:
             bearing = estimate_bearing(x + w // 2, image_width)
             obj.update({
                 "type": obj_type,
-                "distance": distance,
-                "bearing": bearing,
+                "distance": distance, # Range in meters
+                "bearing": bearing, # Bearing in degrees
                 "center": (x + w // 2, y + h // 2),
                 "width": w
             })
@@ -252,6 +276,13 @@ def load_homography_matrix(csv_file):
             homography_matrix.append([float(val) for val in row])
     homography_matrix = np.array(homography_matrix)
 
+# Function to export the range and bearing data to CSV and JSON
+def export_range_bearing(data, output_json='output_data.json'):
+    # Export to JSON
+    with open(output_json, 'w') as file:
+        json.dump(data, file, indent=4) # Save the data to a JSON file
+
+
 def main():
     global captured_image
 
@@ -278,6 +309,14 @@ def main():
         processed_masks = {}
         detected_objects = {}
 
+        output_data = {
+            "items": [None] * 6,
+            "shelves": [None] * 6,
+            "row_markers": [None, None, None],
+            "obstacles": None,
+            "packing_bay": None
+        }
+
         for category, (lower_hsv, upper_hsv) in color_ranges.items():
             masks[category] = color_threshold(blurred_image, lower_hsv, upper_hsv)
             processed_mask = apply_morphological_filters(masks[category])
@@ -291,7 +330,10 @@ def main():
                 distance = obj['distance']
                 width = obj['width']  # Retrieve the width of the object
                 draw_category_text(contour_image, obj['type'], obj['center'], distance, obj['bearing'])
-                
+        
+        # Export the range and bearing data
+        export_range_bearing(output_data)
+        
         # Display the result images for each category
         for category, (_, _, contour_image) in processed_masks.items():
             cv2.imshow(f'{category} Contour Analysis', contour_image)
