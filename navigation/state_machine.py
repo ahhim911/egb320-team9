@@ -81,7 +81,7 @@ class StateMachine:
     def move_to_shelf(self, shelfRangeBearing, obstaclesRB):
         self.found_shelf = False
         
-        if shelfRangeBearing.get(self.target_shelf):
+        if shelfRangeBearing[self.target_shelf] is not None:
             self.found_shelf = True
             self.goal_position['range'] = shelfRangeBearing[self.target_shelf][0]
             self.goal_position['bearing'] = shelfRangeBearing[self.target_shelf][1]
@@ -89,20 +89,21 @@ class StateMachine:
 
             # Add other shelves to obstacles
             obs = obstaclesRB
-            np.append(obs, shelfRangeBearing.get(not self.target_shelf))
+            np.append(obs, shelfRangeBearing[not self.target_shelf])
 
             # Calculate goal velocities
             self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
+            
+            if self.goal_position['range'] - 0.15 < 0.01:
+                self.robot_state = 'SEARCH_FOR_ROW'
+                self.action['forward_vel'] = 0
+                self.action['rotational_vel'] = 0
 
-        if not self.found_shelf:
+        else:
             self.robot_state = 'SEARCH_FOR_SHELF'
             self.action['forward_vel'] = 0
             self.action['rotational_vel'] = 0
-
-        if self.goal_position['range'] - 0.15 < 0.01:
-            self.robot_state = 'SEARCH_FOR_ROW'
-            self.action['forward_vel'] = 0
-            self.action['rotational_vel'] = 0
+        
 
     def search_for_row(self, rowMarkerRangeBearing):
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
@@ -130,8 +131,12 @@ class StateMachine:
             # Calculate goal velocities
             self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
 
-        if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
-            self.robot_state = 'SEARCH_FOR_ITEM'
+            if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
+                self.robot_state = 'SEARCH_FOR_ITEM'
+                self.action['forward_vel'] = 0
+                self.action['rotational_vel'] = 0
+        else:
+            self.robot_state = 'SEARCH_FOR_ROW'
             self.action['forward_vel'] = 0
             self.action['rotational_vel'] = 0
 
@@ -175,6 +180,9 @@ class StateMachine:
         elif self.robot_state == 'COLLECT_ITEM':
             self.collect_item()
         # Add other state transitions...
+
+
+
+
         mobility.move(self.action['forward_vel'], self.action['rotational_vel'])
-        # Set the robot's action in the simulator
-        # self.bot_sim.SetTargetVelocities(self.action['forward_vel'], self.action['rotational_vel'])
+        

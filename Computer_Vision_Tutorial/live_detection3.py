@@ -302,20 +302,25 @@ def process_frame(frame, color_ranges):
 
         processed_masks[category] = (masks[category], processed_mask, contour_image)
         detected_objects[category] = classified_objects
-
-        # for obj in classified_objects:
-        #     distance = obj['distance']
-        #     width = obj['width']  # Retrieve the width of the object
-        #     draw_category_text(contour_image, obj['type'], obj['center'], distance, obj['bearing'])
+        
+        """
+        Do I need the for loop below?
+        it's adding texts on the frame 
+        """
+    #     for obj in classified_objects:
+    #         distance = obj['distance']
+    #         width = obj['width']  # Retrieve the width of the object
+    #         draw_category_text(contour_image, obj['type'], obj['center'], distance, obj['bearing'])
     
+    # # Display the result images for each category
+    # for category, (_, _, contour_image) in processed_masks.items():
+    #     cv2.imshow(f'{category} Contour Analysis', contour_image)
+        
     # Export the range and bearing data
     export_range_bearing(output_data)
     
-    # Display the result images for each category
-    # for category, (_, _, contour_image) in processed_masks.items():
-    #     cv2.imshow(f'{category} Contour Analysis', contour_image)
 
-    return frame
+    return
 
 
 """
