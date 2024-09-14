@@ -1,0 +1,28 @@
+{
+    "items": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    ],
+    "shelves": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    ],
+    "row_markers": [
+        null,
+        null,
+        null
+    ],
+    "obstacles": null,
+    "packing_bay": [
+        0.5523913043478261,
+        6.439024390243903
+    ]
+}

@@ -20,7 +20,6 @@ def capture_frames(picam2):
     global frame
     while True:
         with frame_lock:
-            #frame = cv2.cvtColor(picam2.capture_array(), cv2.COLOR_RGB2BGR)
             frame = picam2.capture_array()
             frame = cv2.flip(frame, -1)  # Flip horizontally and vertically
         time.sleep(0.01)  # Small delay to reduce CPU usage
@@ -119,7 +118,7 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
                 bearing = estimate_bearing(corner[0][0], image_width)
                 corner_label = f"Entry Point {i+1}"
                 text_offset = 20 * (i + 1)
-                draw_category_text(contour_image, corner_label, (corner[0][0], corner[0][1] - text_offset), corner_distance, bearing)
+                #draw_category_text(contour_image, corner_label, (corner[0][0], corner[0][1] - text_offset), corner_distance, bearing)
 
         elif category == "Item":
             obj_type = "Item"
@@ -135,6 +134,9 @@ def apply_object_logic(detected_objects, category, image_width, contour_image):
                 "width": w
             })
             classified_objects.append(obj)
+            
+            # Draw category text with range and bearing
+            draw_category_text(contour_image, obj_type, obj['center'], distance, bearing)
 
     return classified_objects
 
@@ -156,9 +158,19 @@ def classify_marker(obj, detected_objects):
     return "Unknown Marker"
 
 def draw_category_text(image, label, center, distance, bearing):
-    text = f'{label}: {distance:.2f}m, {bearing:.2f}deg'
-    text_position = (center[0], center[1] - 10)
-    cv2.putText(image, text, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+    label_text = f'{label}:'
+    range_text = f'Range: {distance:.2f}m'
+    bearing_text = f'Bearing: {bearing:.2f}deg'
+
+    # Determine positions for each line of text
+    label_position = (center[0], center[1] - 30)
+    range_position = (center[0], center[1] - 15)
+    bearing_position = (center[0], center[1])
+
+    # Draw the text on the image
+    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, range_text, range_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, bearing_text, bearing_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
 def estimate_distance(object_width, real_object_width):
     global focal_length
