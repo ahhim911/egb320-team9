@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import csv
 import json
-from picamera2 import Picamera2
+# from picamera2 import Picamera2
 import time  # Import the time module
 
 # Global variables to store calibration data
@@ -276,7 +276,47 @@ def export_range_bearing(data, output_json='output_data.json'):
     with open(output_json, 'w') as file:
         json.dump(data, file, indent=4) # Save the data to a JSON file
 
+def process_frame(frame, color_ranges):
+    start_time = time.time()  # Start time
+    scale = 0.5
+    blurred_image = preprocess_image(frame, scale)
+    image_width = frame.shape[1]  # Get the image width for bearing calculation
 
+    masks = {}
+    processed_masks = {}
+    detected_objects = {}
+
+    output_data = {
+        "items": [None] * 6,
+        "shelves": [None] * 6,
+        "row_markers": [None, None, None],
+        "obstacles": None,
+        "packing_bay": None
+    }
+
+    for category, (lower_hsv, upper_hsv) in color_ranges.items():
+        masks[category] = color_threshold(frame, lower_hsv, upper_hsv)
+        processed_mask = apply_morphological_filters(masks[category])
+        contour_image, objects = analyze_contours(frame, processed_mask)
+        classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)  # Pass output_data here
+
+        processed_masks[category] = (masks[category], processed_mask, contour_image)
+        detected_objects[category] = classified_objects
+
+        # for obj in classified_objects:
+        #     distance = obj['distance']
+        #     width = obj['width']  # Retrieve the width of the object
+        #     draw_category_text(contour_image, obj['type'], obj['center'], distance, obj['bearing'])
+    
+    # Export the range and bearing data
+    export_range_bearing(output_data)
+    
+    # Display the result images for each category
+    for category, (_, _, contour_image) in processed_masks.items():
+        cv2.imshow(f'{category} Contour Analysis', contour_image)
+
+    return frame
+"""
 def main():
     global captured_image
 
@@ -347,3 +387,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""

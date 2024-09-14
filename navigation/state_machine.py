@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import path_planning as navigation
 
 
 class StateMachine:
@@ -24,7 +24,6 @@ class StateMachine:
         min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
 
         # Sort by 'Shelf' in descending order
-        global final_df
         sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
         remaining_rows = df.drop(min_shelf_by_height.index)
         sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
@@ -90,7 +89,7 @@ class StateMachine:
             np.append(obs, shelfRangeBearing.get(not self.target_shelf))
 
             # Calculate goal velocities
-            self.action = self.navigation.calculate_goal_velocities(self.goal_position, obs)
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
 
         if not self.found_shelf:
             self.robot_state = 'SEARCH_FOR_SHELF'
@@ -112,7 +111,7 @@ class StateMachine:
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
 
-    def move_to_row(self, rowMarkerRangeBearing, obstaclesRB):
+    def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
 
         if self.found_row:
@@ -125,9 +124,9 @@ class StateMachine:
             np.append(obs, shelfRangeBearing[self.target_shelf])
 
             # Calculate goal velocities
-            self.action = self.navigation.calculate_goal_velocities(self.goal_position, obs)
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
 
-        if self.goal_position['range'] - goal_bay_position[self.target_bay] < 0.01:
+        if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
             self.robot_state = 'SEARCH_FOR_ITEM'
             self.action['forward_vel'] = 0
             self.action['rotational_vel'] = 0
@@ -150,7 +149,6 @@ class StateMachine:
 
     def collect_item(self):
         print("Collecting item")
-        self.bot_sim.CollectItem(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
     # Add more methods for other states...
@@ -165,7 +163,7 @@ class StateMachine:
         elif self.robot_state == 'SEARCH_FOR_ROW':
             self.search_for_row(rowMarkerRangeBearing)
         elif self.robot_state == 'MOVE_TO_ROW':
-            self.move_to_row(rowMarkerRangeBearing, obstaclesRB)
+            self.move_to_row(rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing)
         elif self.robot_state == 'SEARCH_FOR_ITEM':
             self.search_for_item(itemsRB)
         elif self.robot_state == 'COLLECT_ITEM':
@@ -173,4 +171,4 @@ class StateMachine:
         # Add other state transitions...
 
         # Set the robot's action in the simulator
-        self.bot_sim.SetTargetVelocities(self.action['forward_vel'], self.action['rotational_vel'])
+        # self.bot_sim.SetTargetVelocities(self.action['forward_vel'], self.action['rotational_vel'])
