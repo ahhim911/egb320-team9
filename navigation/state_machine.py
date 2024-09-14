@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import navigation.path_planning as navigation
 import mobility.motor_master as mobility
+import item_collection.item_collection as item_collection
 
 class StateMachine:
     def __init__(self):
@@ -16,7 +17,7 @@ class StateMachine:
         self.draw = False
 
         # Read the object order file
-        with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/COPPELIA_PythonCode/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
@@ -27,15 +28,15 @@ class StateMachine:
         sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
         remaining_rows = df.drop(min_shelf_by_height.index)
         sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
-        final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
+        self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 
-        final_df['Row'] = final_df['Shelf'] // 2
+        self.final_df['Row'] = self.final_df['Shelf'] // 2
         # Redefine the index
-        final_df = final_df.reset_index(drop=True)
+        self.final_df = self.final_df.reset_index(drop=True)
 
         # Display the result
         print("Optimised pickup order:")
-        print(final_df)
+        print(self.final_df)
 
         self.robot_state = 'INIT'
 

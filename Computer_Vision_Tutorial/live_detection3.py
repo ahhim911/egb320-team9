@@ -277,10 +277,10 @@ def export_range_bearing(data, output_json='output_data.json'):
         json.dump(data, file, indent=4) # Save the data to a JSON file
 
 def process_frame(frame, color_ranges):
-    start_time = time.time()  # Start time
+    # start_time = time.time()  # Start time
     scale = 0.5
     blurred_image = preprocess_image(frame, scale)
-    image_width = frame.shape[1]  # Get the image width for bearing calculation
+    image_width = blurred_image.shape[1]  # Get the image width for bearing calculation
 
     masks = {}
     processed_masks = {}
@@ -295,9 +295,9 @@ def process_frame(frame, color_ranges):
     }
 
     for category, (lower_hsv, upper_hsv) in color_ranges.items():
-        masks[category] = color_threshold(frame, lower_hsv, upper_hsv)
+        masks[category] = color_threshold(blurred_image, lower_hsv, upper_hsv)
         processed_mask = apply_morphological_filters(masks[category])
-        contour_image, objects = analyze_contours(frame, processed_mask)
+        contour_image, objects = analyze_contours(blurred_image, processed_mask)
         classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)  # Pass output_data here
 
         processed_masks[category] = (masks[category], processed_mask, contour_image)
@@ -316,6 +316,8 @@ def process_frame(frame, color_ranges):
         cv2.imshow(f'{category} Contour Analysis', contour_image)
 
     return frame
+
+
 """
 def main():
     global captured_image
