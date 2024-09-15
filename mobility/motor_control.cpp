@@ -1,5 +1,5 @@
 #include <Wire.h>
-
+#include <Servo.h>
 #define I2C_ADDRESS 0x08  // I2C address of the device
 #define I2C_SDA 0         // Use GPIO 26 as SDA
 #define I2C_SCL 1         // Use GPIO 27 as SCL
@@ -7,7 +7,11 @@
 #define PHS1 19
 #define EN2 17
 #define PHS2 16
-
+volatile int last_pos = 45;
+int gripservoPin = 9;  // Pin where the servo is connected
+int liftservoPin = 10;
+Servo gripServo;  
+Servo liftServo;
 
 
 void receiveEvent(int howMany);
@@ -17,7 +21,10 @@ uint8_t waitingflag = 1;
 
 void setup() {
   // Attach servos
-
+  gripServo.attach(gripservoPin);  // Attach the servo to the pin
+  liftServo.attach(liftservoPin);
+  liftServo.write(10);
+  gripServo.write(170);
 
   // Set up I2C on specific pins for the Raspberry Pi Pico
   Wire.setSDA(I2C_SDA);
@@ -57,7 +64,7 @@ void ControlSystem(uint8_t* command, int length) {
 
   char Speed1[4] = { text[2], text[3], text[4], '\0' };  // Extract speed value
   int speed1 = atoi(Speed1);
-  char Speed2[4] = { text[7], text[8], text[9], '\0' };  // Extract speed value
+  char Speed2[4] = { text[6], text[7], text[8], '\0' };  // Extract speed value
   int speed2 = atoi(Speed2);
 
   if (text[1] != 'S') {
@@ -74,7 +81,7 @@ void ControlSystem(uint8_t* command, int length) {
         Serial.println("Invalid Given Index");
         break;
     }
-    switch (text[5]) {
+    switch (text[4]) {
       case 'P':
         digitalWrite(PHS2, HIGH);
         analogWrite(EN2, speed2);
@@ -90,6 +97,27 @@ void ControlSystem(uint8_t* command, int length) {
   } else if (text[1] == 'S') {
     analogWrite(EN1, 0);
     analogWrite(EN1, 0);
+  }
+  
+  if (text[9] == 'O') {
+    gripper_open();
+    switch (text[10]) {
+      case '1':
+        lift_level1();
+        break;
+      case '2':
+        lift_level2();
+        break;
+      case '3':
+        lift_level3();
+        break;
+      default:
+        Serial.println("Invalid Given Index");
+        break;
+    }
+  } else if (text[9] == 'C') {
+    gripper_close();
+    lift_level1();
   }
 }
 
