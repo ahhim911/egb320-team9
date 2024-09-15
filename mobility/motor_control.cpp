@@ -7,6 +7,7 @@
 #define PHS1 19
 #define EN2 17
 #define PHS2 16
+#define width 0.14
 volatile int last_pos = 45;
 int gripservoPin = 9;  // Pin where the servo is connected
 int liftservoPin = 10;
@@ -62,64 +63,81 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  char Speed1[4] = { text[2], text[3], text[4], '\0' };  // Extract speed value
-  int speed1 = atoi(Speed1);
-  char Speed2[4] = { text[6], text[7], text[8], '\0' };  // Extract speed value
-  int speed2 = atoi(Speed2);
-
-  if (text[1] != 'S') {
-    switch (text[1]) {
-      case 'N':
-        digitalWrite(PHS1, LOW);   //sets motor 1 to a reverse direction
-        analogWrite(EN1, speed1);  //sets the motor to the specified speed
-        break;
-      case 'P':
-        digitalWrite(PHS1, HIGH);  //sets motor 1 to a forwards direction
-        analogWrite(EN1, speed1);
-        break;
-      default:
-        Serial.println("Invalid Given Index");
-        break;
-    }
-    switch (text[4]) {
-      case 'P':
-        digitalWrite(PHS2, HIGH);
-        analogWrite(EN2, speed2);
-        break;
-      case 'N':
-        digitalWrite(PHS2, LOW);
-        analogWrite(EN2, speed2);
-        break;
-      default:
-        Serial.println("Invalid Given Index");
-        break;
-    }
-  } else if (text[1] == 'S') {
-    analogWrite(EN1, 0);
-    analogWrite(EN1, 0);
-  }
+  char SpeedFor[4] = { text[1], text[2], text[3], '\0' };  // Extract speed value
+  int speedfor = atoi(SpeedFor);
+  char SpeedRot[4] = { text[5], text[6], text[7], '\0' };  // Extract speed value
+  int speedrot = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
   
-  if (text[9] == 'O') {
-    gripper_open();
-    switch (text[10]) {
-      case '1':
-        lift_level1();
-        break;
-      case '2':
-        lift_level2();
-        break;
-      case '3':
-        lift_level3();
-        break;
-      default:
-        Serial.println("Invalid Given Index");
-        break;
-    }
-  } else if (text[9] == 'C') {
-    gripper_close();
-    lift_level1();
+
+  int speed1 = speedfor*255 + (((speedrot*255) * width)/2);
+  int speed2 = speedfor*255 - (((speedrot*255) * width)/2);
+  if(speed1 < 0){
+    digitalWrite(PHS1, LOW);
+    analogWrite(EN1, abs(speed1));
+  }else{
+    digitalWrite(PHS1, HIGH);
+    analogWrite(EN1, abs(speed1));
   }
-}
+    if(speed2 < 0){
+    digitalWrite(PHS2, LOW);
+    analogWrite(EN2, abs(speed2));
+  }else{
+    digitalWrite(PHS2, HIGH);
+    analogWrite(EN2, abs(speed2));;
+  }
+//   if (text[1] != 'S') {
+//     switch (text[1]) {
+//       case 'N':
+//         digitalWrite(PHS1, LOW);   //sets motor 1 to a reverse direction
+//         analogWrite(EN1, speed1);  //sets the motor to the specified speed
+//         break;
+//       case 'P':
+//         digitalWrite(PHS1, HIGH);  //sets motor 1 to a forwards direction
+//         analogWrite(EN1, speed1);
+//         break;
+//       default:
+//         Serial.println("Invalid Given Index");
+//         break;
+//     }
+//     switch (text[4]) {
+//       case 'P':
+//         digitalWrite(PHS2, HIGH);
+//         analogWrite(EN2, speed2);
+//         break;
+//       case 'N':
+//         digitalWrite(PHS2, LOW);
+//         analogWrite(EN2, speed2);
+//         break;
+//       default:
+//         Serial.println("Invalid Given Index");
+//         break;
+//     }
+//   } else if (text[1] == 'S') {
+//     analogWrite(EN1, 0);
+//     analogWrite(EN1, 0);
+//   }
+  
+//   if (text[9] == 'O') {
+//     gripper_open();
+//     switch (text[10]) {
+//       case '1':
+//         lift_level1();
+//         break;
+//       case '2':
+//         lift_level2();
+//         break;
+//       case '3':
+//         lift_level3();
+//         break;
+//       default:
+//         Serial.println("Invalid Given Index");
+//         break;
+//     }
+//   } else if (text[9] == 'C') {
+//     gripper_close();
+//     lift_level1();
+//   }
+// }
 
 
 void receiveEvent(int howMany) {
