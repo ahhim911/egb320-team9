@@ -9,7 +9,6 @@ import pandas as pd
 
 #import any other required python modules
 import path_planning as navigation
-import csv
 
 # SET SCENE PARAMETERS
 sceneParameters = SceneParameters()
@@ -99,8 +98,8 @@ if __name__ == '__main__':
 		final_df = final_df.reset_index(drop=True)
 
 		# Display the result
-		print("Optimised pickup order:")
-		print(final_df)
+		# print("Optimised pickup order:")
+		# print(final_df)
 
 		# final_df for Order_1.csv
 		# 	 Item Number  Shelf  Bay  Height Item Name  Row
@@ -176,10 +175,10 @@ if __name__ == '__main__':
 				# rotate on the spot
 				action['forward_vel'] = 0
 				if not at_ps:
-					action['rotational_vel'] = -0.1
+					action['rotational_vel'] = -0.025
 				else:
-					action['rotational_vel'] = 0.1
-				print(robot_state, "looking for: ", subtarget_shelf, "Found: ", shelfRangeBearing[subtarget_shelf])
+					action['rotational_vel'] = 0.025
+				# print(robot_state, "looking for: ", subtarget_shelf, "Found: ", shelfRangeBearing[subtarget_shelf])
 				
 				if found_row:
 					action['forward_vel'] = 0
@@ -205,15 +204,15 @@ if __name__ == '__main__':
 					found_shelf = True
 					goal_position['range'] = shelfRangeBearing[subtarget_shelf][0]
 					goal_position['bearing'] = shelfRangeBearing[subtarget_shelf][1]
-					print(robot_state, "Going to: ", subtarget_shelf, goal_position)
+					# print(robot_state, "Going to: ", subtarget_shelf, goal_position)
 				if found_shelf == True:
 					# add the other shelf to the obstacles
 					obs = obstaclesRB
 					np.append(obs, shelfRangeBearing[not subtarget_shelf])
-					# print(obs)
+					# # print(obs)
 
 					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
-					print(action['forward_vel'], action['rotational_vel'])
+					# print(action['forward_vel'], action['rotational_vel'])
 				else:
 					robot_state = 'SEARCH_FOR_SHELF'
 					action['forward_vel'] = 0
@@ -230,7 +229,7 @@ if __name__ == '__main__':
 					found_row = True
 				# rotate on the spot
 				action['forward_vel'] = 0
-				action['rotational_vel'] = -0.1
+				action['rotational_vel'] = -0.025
 
 				if found_row:
 					robot_state = 'MOVE_TO_ROW'
@@ -243,13 +242,13 @@ if __name__ == '__main__':
 					found_row = True
 					goal_position['range'] = rowMarkerRangeBearing[target_row][0]
 					goal_position['bearing'] = rowMarkerRangeBearing[target_row][1]
-					print(goal_position)
+					# print(goal_position)
 				if found_row == True:
 					# add the the shelf to the obstacles
 					obs = obstaclesRB
 					np.append(obs, shelfRangeBearing[target_shelf])
 					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
-					print(action['forward_vel'], action['rotational_vel'])
+					# print(action['forward_vel'], action['rotational_vel'])
 				else:
 					robot_state = 'SEARCH_FOR_ROW'
 					action['forward_vel'] = 0
@@ -262,16 +261,16 @@ if __name__ == '__main__':
 			
 		# ---------SEARCH_FOR_ITEM----------
 			elif robot_state == 'SEARCH_FOR_ITEM':
-				print("Searching for item in bay ", target_bay, "at shelf ", target_shelf)
+				# print("Searching for item in bay ", target_bay, "at shelf ", target_shelf)
 				# rotate on the spot
 				action['forward_vel'] = 0
 				if target_shelf % 2 == 1: # odd - right
-					print("Shelf on the Right, turning right")
-					action['rotational_vel'] = -0.1
+					# print("Shelf on the Right, turning right")
+					action['rotational_vel'] = -0.025
 				else: # even - left
-					print("Shelf on the Left, turning left")
-					action['rotational_vel'] = 0.1
-				print(itemsRB)
+					# print("Shelf on the Left, turning left")
+					action['rotational_vel'] = 0.025
+				# print(itemsRB)
 				#Check to see if an item is within the camera's FOV
 				for itemClass in itemsRB:
 					if itemClass != None:
@@ -289,7 +288,7 @@ if __name__ == '__main__':
 					
 		# ---------COLLECT_ITEM----------
 			elif robot_state == 'COLLECT_ITEM':
-				print("Collecting item")
+				# print("Collecting item")
 				# For Simulation
 				warehouseBotSim.CollectItem(target_height)
 
@@ -304,24 +303,24 @@ if __name__ == '__main__':
 				count += 1
 				action['forward_vel'] = 0
 				if target_shelf % 2 == 1: # odd - right
-					print("Exit on the Right, turning right, count: ", count)
-					action['rotational_vel'] = -0.1
+					# print("Exit on the Right, turning right, count: ", count)
+					action['rotational_vel'] = -0.025
 				else: # even - left
-					print("Exit on the Left, turning left, count: ", count)
-					action['rotational_vel'] = 0.1
+					# print("Exit on the Left, turning left, count: ", count)
+					action['rotational_vel'] = 0.025
 				if count > 90 or (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]):
 					robot_state = 'MOVE_TO_EXIT'
 					count = 0
 
 		# ---------MOVE_TO_EXIT----------
 			elif robot_state == 'MOVE_TO_EXIT':
-				print("Moving to exit")
+				# print("Moving to exit")
 				if (shelfRangeBearing[target_shelf] and shelfRangeBearing[subtarget_shelf]) != None:
 					# Calculate bearing perpendicular to the wall
 					goal_position['range'] = np.arccos(0.5 / wallPoints[1][0])
 					# goal_position['bearing'] = 0
 					goal_position['bearing'] = (shelfRangeBearing[target_shelf][1] + shelfRangeBearing[subtarget_shelf][1]) / 2
-					print(goal_position)
+					# print(goal_position)
 					
 					# add the other shelf to the obstacles
 					obs = obstaclesRB
@@ -329,7 +328,7 @@ if __name__ == '__main__':
 					np.append(obs, shelfRangeBearing[subtarget_shelf])
 
 					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
-					print(action['forward_vel'], action['rotational_vel'])
+					# print(action['forward_vel'], action['rotational_vel'])
 
 					if goal_position['range'] - 0.8 < 0.01:
 						robot_state = 'SEARCH_FOR_PS'
@@ -337,37 +336,37 @@ if __name__ == '__main__':
 
 		# ---------SEARCH_FOR_PS----------
 			elif robot_state == 'SEARCH_FOR_PS':
-				print("Searching for Packing Station")
+				# print("Searching for Packing Station")
 				# rotate on the spot
 				action['forward_vel'] = 0
-				action['rotational_vel'] = -0.1 # rotate right
+				action['rotational_vel'] = -0.025 # rotate right
 				if packingBayRB != None:
 					robot_state = 'MOVE_TO_PS'
 
 		# ---------MOVE_TO_PS----------
 			elif robot_state == 'MOVE_TO_PS':
-				print("Moving to Packing Station")
+				# print("Moving to Packing Station")
 				if packingBayRB == None:
 					robot_state = 'SEARCH_FOR_PS'
 				else:
 					# Calculate bearing to the packing station
 					goal_position['range'] = packingBayRB[0]
 					goal_position['bearing'] = packingBayRB[1]
-					print(goal_position)
+					# print(goal_position)
 
 					obs = obstaclesRB
 					np.append(obs, shelfRangeBearing)
 					# np.append(obs, shelfRangeBearing[subtarget_shelf])
 
 					action = navigation.calculate_goal_velocities(goal_position, obs, draw)
-					print(action['forward_vel'], action['rotational_vel'])
+					# print(action['forward_vel'], action['rotational_vel'])
 
 					if goal_position['range'] - 0.4 < 0.01:
 						robot_state = 'DROP_ITEM'
 
 		# ---------DROP_ITEM----------
 			elif robot_state == 'DROP_ITEM':
-				print("Dropping item")
+				# print("Dropping item")
 				# For Simulation
 				warehouseBotSim.Dropitem()
 				current_item += 1
@@ -379,7 +378,7 @@ if __name__ == '__main__':
 		# ---------EXIT_PS----------
 			elif robot_state == 'EXIT_PS':
 				count += 1
-				print("Exiting Packing Station, count: ", count)
+				# print("Exiting Packing Station, count: ", count)
 				# rotate on the spot
 				action['forward_vel'] = -0.05
 				action['rotational_vel'] = 0
@@ -403,6 +402,7 @@ if __name__ == '__main__':
 			# ---------------------------------------------
 
 			# Set the robot's action
+			# print(action['forward_vel'],action['rotational_vel'])
 			warehouseBotSim.SetTargetVelocities(action['forward_vel'],action['rotational_vel'])
 
 
@@ -421,13 +421,13 @@ if __name__ == '__main__':
 
 			# Get Detected Wall Points
 			wallPoints = warehouseBotSim.GetDetectedWallPoints()
-			if wallPoints == None:
-				print("To close to the wall")
+			# if wallPoints == None:
+				# print("To close to the wall")
 			# else:
-			# 	print("\nDetected Wall Points")
-			# 	# print the range and bearing to each wall point in the list
+			# 	# print("\nDetected Wall Points")
+			# 	# # print the range and bearing to each wall point in the list
 			# 	for point in wallPoints:
-			# 		print("\tWall Point (range, bearing): %0.4f, %0.4f"%(point[0], point[1]))
+			# 		# print("\tWall Point (range, bearing): %0.4f, %0.4f"%(point[0], point[1]))
 
 
 			# Update object Positions

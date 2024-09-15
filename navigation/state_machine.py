@@ -50,7 +50,7 @@ class StateMachine:
         self.target_height = self.final_df['Height'][self.current_item]
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
-        item_collection.grip(open)
+        item_collection.grip('open')
         if self.target_shelf % 2 == 1:  # Odd
             self.subtarget_shelf = self.target_shelf - 1
         else:  # Even
@@ -146,20 +146,19 @@ class StateMachine:
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = -0.1 if self.target_shelf % 2 == 1 else 0.1
 
-        for itemClass in itemsRB:
-            if itemClass is not None:
-                for itemRB in itemClass:
-                    itemRange = itemRB[0]
-                    itemBearing = itemRB[1]
-                    if abs(itemBearing) < 0.05 and itemRange < 0.20:
-                        self.robot_state = 'COLLECT_ITEM'
-                        self.action['forward_vel'] = 0
-                        self.action['rotational_vel'] = 0
-                        break
+        print(f"itemsRB: {itemsRB}")
+        for i in itemsRB:
+            if itemsRB[i] is not None:
+                itemRange = itemsRB[i][0]
+                itemBearing = itemsRB[i][1]
+                if abs(itemBearing) < 0.05 and itemRange < 0.20:
+                    self.robot_state = 'COLLECT_ITEM'
+                    self.action['forward_vel'] = 0
+                    self.action['rotational_vel'] = 0
 
     def collect_item(self):
         print("Collecting item")
-        item_collection.grip(open)
+        item_collection.grip('open')
         item_collection.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 

@@ -69,8 +69,9 @@ void ControlSystem(uint8_t* command, int length) {
   int speedrot = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
   
 
-  int speed1 = speedfor*255 + (((speedrot*255) * width)/2);
-  int speed2 = speedfor*255 - (((speedrot*255) * width)/2);
+  int speed1 = round(speedfor*2.55 + (((speedrot*2.55) * width)/2));
+  int speed2 = round(speedfor*2.55 - (((speedrot*2.55) * width)/2));
+  speed1 = constrain(speed1, -2552)
   if(speed1 < 0){
     digitalWrite(PHS1, LOW);
     analogWrite(EN1, abs(speed1));
@@ -85,6 +86,7 @@ void ControlSystem(uint8_t* command, int length) {
     digitalWrite(PHS2, HIGH);
     analogWrite(EN2, abs(speed2));;
   }
+}
 //   if (text[1] != 'S') {
 //     switch (text[1]) {
 //       case 'N':
