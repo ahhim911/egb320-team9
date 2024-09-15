@@ -3,7 +3,7 @@ import numpy as np
 
 # Known parameters
 real_world_width = 0.03  # 7 cm object width in meters
-distance_to_object = 0.33  # 110 cm distance to the object in meters
+distance_to_object = 0.28  # 110 cm distance to the object in meters
 
 # Function to preprocess the image: resize, rotate, flip, and blur
 def preprocess_image(image, scale=0.5, blur_ksize=(5, 5), sigmaX=2):
