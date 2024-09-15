@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include <Servo.h>
+// #include <Servo.h>
 #define I2C_ADDRESS 0x08  // I2C address of the device
 #define I2C_SDA 0         // Use GPIO 26 as SDA
 #define I2C_SCL 1         // Use GPIO 27 as SCL
@@ -22,10 +22,10 @@ uint8_t waitingflag = 1;
 
 void setup() {
   // Attach servos
-  gripServo.attach(gripservoPin);  // Attach the servo to the pin
-  liftServo.attach(liftservoPin);
-  liftServo.write(10);
-  gripServo.write(170);
+  // gripServo.attach(gripservoPin);  // Attach the servo to the pin
+  // liftServo.attach(liftservoPin);
+  // liftServo.write(10);
+  // gripServo.write(170);
 
   // Set up I2C on specific pins for the Raspberry Pi Pico
   Wire.setSDA(I2C_SDA);
@@ -63,14 +63,26 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  char SpeedFor[4] = { text[1], text[2], text[3], '\0' };  // Extract speed value
-  int speedfor = atoi(SpeedFor);
-  char SpeedRot[4] = { text[5], text[6], text[7], '\0' };  // Extract speed value
-  int speedrot = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
-  
+  char SpeedFor[4] = { text[2], text[3], text[4], '\0' };  // Extract speed value
+  int speedfor1 = atoi(SpeedFor);
+  char SpeedRot[4] = { text[6], text[7], text[8], '\0' };  // Extract speed value
+  int speedrot1 = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
 
-  int speed1 = speedfor*255 + (((speedrot*255) * width)/2);
-  int speed2 = speedfor*255 - (((speedrot*255) * width)/2);
+
+if(text[1]== 'N'){  
+  speedfor = speedfor1 * -1;
+}
+else if(text[5] == 'N'){
+  speedrot = speedrot1 * -1;
+}
+
+
+  int init_speed1 = round(speedfor*2.55 + (((speedrot*2.55) * width)/2));
+  int init_speed2 = round(speedfor*2.55 - (((speedrot*2.55) * width)/2));
+  speed1 = constrain(init_speed1, -255, 255);
+  speed2 = constrain(init_speed2, -255, 255);
+
+
   if(speed1 < 0){
     digitalWrite(PHS1, LOW);
     analogWrite(EN1, abs(speed1));
@@ -85,6 +97,7 @@ void ControlSystem(uint8_t* command, int length) {
     digitalWrite(PHS2, HIGH);
     analogWrite(EN2, abs(speed2));;
   }
+}
 //   if (text[1] != 'S') {
 //     switch (text[1]) {
 //       case 'N':
