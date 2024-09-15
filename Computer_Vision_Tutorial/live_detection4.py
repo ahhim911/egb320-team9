@@ -253,6 +253,39 @@ def export_range_bearing(data, output_json='output_data.json'):
     with open(output_json, 'w') as file:
         json.dump(data, file, indent=4)
 
+def process_frame(frame, color_ranges):
+    blurred_image = preprocess_image(frame)
+    image_width = blurred_image.shape[1]
+
+    local_processed_masks = {}
+    local_detected_objects = {}
+
+    output_data = {
+        "items": [None] * 6,
+        "shelves": [None] * 6,
+        "row_markers": [None, None, None],
+        "obstacles": None,
+        "packing_bay": None
+    }
+
+    for category, (lower_hsv, upper_hsv) in color_ranges.items():
+        mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
+        processed_mask = apply_morphological_filters(mask)
+        contour_image, objects = analyze_contours(blurred_image, processed_mask)
+        classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
+
+        local_processed_masks[category] = (mask, processed_mask, contour_image)
+        local_detected_objects[category] = classified_objects
+
+    export_range_bearing(output_data)
+
+    # Optionally, save or display the contour images
+    for category, (_, _, contour_image) in local_processed_masks.items():
+        if contour_image is not None:
+            cv2.imshow(f'{category} Contour Analysis', contour_image)
+            cv2.imwrite(f'contour_image_output_{category}.png', contour_image)
+
+
 def process_image_pipeline(color_ranges):
     global frame, processed_masks, detected_objects
     while True:
@@ -270,7 +303,7 @@ def process_image_pipeline(color_ranges):
         output_data = {
             "items": [None] * 6,
             "shelves": [None] * 6,
-            "row_markers": [[None, None], [None, None], [None, None]],
+            "row_markers": [None, None, None],
             "obstacles": None,
             "packing_bay": None
         }
@@ -317,12 +350,12 @@ def main():
             if processed_masks:
                 for category in color_ranges.keys():
                     _, _, contour_image = processed_masks.get(category, (None, None, None))
-        #             if contour_image is not None:
-        #                 cv2.imshow(f'{category} Contour Analysis', contour_image)
+                    if contour_image is not None:
+                        cv2.imshow(f'{category} Contour Analysis', contour_image)
 
-        # key = cv2.waitKey(1) & 0xFF
-        # if key == ord('q'):
-        #     break
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
 
         end_time = time.time()
         fps = 1 / (end_time - start_time)
