@@ -43,13 +43,14 @@ class StateMachine:
 
     def init_state(self):        
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_SHELF'
+        self.robot_state = 'SEARCH_FOR_ITEM'
         self.target_shelf = self.final_df['Shelf'][self.current_item]
         self.target_row = self.final_df['Row'][self.current_item]
         self.target_bay = 3  # Example fixed value; change as needed
         self.target_height = self.final_df['Height'][self.current_item]
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
+        item_collection.grip(open)
         if self.target_shelf % 2 == 1:  # Odd
             self.subtarget_shelf = self.target_shelf - 1
         else:  # Even
@@ -158,6 +159,7 @@ class StateMachine:
 
     def collect_item(self):
         print("Collecting item")
+        item_collection.grip(open)
         item_collection.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
@@ -181,6 +183,5 @@ class StateMachine:
             self.collect_item()
         # Add other state transitions...
 
-# Set the robot's action
-mobility.move(self.action['forward_vel'], self.action['rotational_vel'])
-
+        mobility.move(self.action['forward_vel'], self.action['rotational_vel'])
+        
