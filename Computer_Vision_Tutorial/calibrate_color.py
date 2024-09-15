@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
         frame = cap.capture_array()  # Capture a single image frame
         frame = resize_image(frame)  # Resize image
-        frame = cv2.flip(frame, 0)  # Flip horizontally and vertically
+        frame = cv2.flip(frame, -1)  # Flip horizontally and vertically
 
         # Display the obtained frame in a window called "CameraImage"
         cv2.imshow("Image", frame)
