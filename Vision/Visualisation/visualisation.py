@@ -1,4 +1,11 @@
 import cv2
+import csv
+import numpy as np
+
+"""
+Visualization module for drawing bounding boxes and text on images.
+"""
+
 
 class Visualization:
     @staticmethod

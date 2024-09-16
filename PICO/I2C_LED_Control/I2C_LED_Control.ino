@@ -10,6 +10,7 @@
 
 // Speed for each direction (0-255 for motor speed control)
 int speed = 60;
+int turning_speed = 30;
 
 volatile int waitingflag = 1;
 
@@ -32,6 +33,8 @@ void setup() {
   pinMode(EN2, OUTPUT);
   pinMode(PHS1, OUTPUT);
   pinMode(PHS2, OUTPUT);
+
+  analogWriteFreq(200000); // Set PWM frequency to 200 kHz
 }
 
 void loop() {
@@ -71,16 +74,16 @@ void ControlSystem(uint8_t* command, int length) {
       Serial.println("Turning left");
       digitalWrite(PHS1, LOW);    // Set motor 1 backward direction
       digitalWrite(PHS2, HIGH);   // Set motor 2 forward direction
-      analogWrite(EN1, speed + 20);    // Set motor 1 speed
-      analogWrite(EN2, speed + 20);    // Set motor 2 speed
+      analogWrite(EN1, speed + turning_speed);    // Set motor 1 speed
+      analogWrite(EN2, speed + turning_speed);    // Set motor 2 speed
       break;
 
     case 'a':  // Turn left
       Serial.println("Turning right");
       digitalWrite(PHS1, HIGH);   // Set motor 1 forward direction
       digitalWrite(PHS2, LOW);    // Set motor 2 backward direction
-      analogWrite(EN1, speed + 20);    // Set motor 1 speed
-      analogWrite(EN2, speed + 20);    // Set motor 2 speed
+      analogWrite(EN1, speed + turning_speed);    // Set motor 1 speed
+      analogWrite(EN2, speed + turning_speed);    // Set motor 2 speed
       break;
 
     case 'x':  // Stop

@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
 
+"""
+A preprocessing module for image processing tasks.
+"""
+
 class Preprocessing:
     
     @staticmethod
