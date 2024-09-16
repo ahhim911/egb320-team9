@@ -1,6 +1,6 @@
 import cv2
 import os
-from preprocessing import Preprocessing
+from preprocessing import Preprocessing  # Ensure the path is correct for your Preprocessing class
 
 def is_video(file_path):
     """Check if the given file is a video based on its extension."""
@@ -8,18 +8,24 @@ def is_video(file_path):
     file_ext = os.path.splitext(file_path)[1].lower()
     return file_ext in video_extensions
 
-def preprocess_image(image_path):
-    """Preprocess and display an image."""
-    image = cv2.imread(image_path)
-    
-    if image is None:
+def load_image(image_path):
+    """Load the image from the path and return the frame."""
+    frame = cv2.imread(image_path)
+    if frame is None:
         print(f"Error: Unable to load image {image_path}")
+        return None
+    return frame
+
+def preprocess_image(image):
+    """Preprocess and display an image."""
+    if image is None:
+        print("Error: No image to process.")
         return
 
     # Apply full preprocessing pipeline
     preprocessed_image = Preprocessing.preprocess(image, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
 
-    # Display the preprocessed image
+    # Display the original and preprocessed images
     cv2.imshow('Original Image', image)
     cv2.imshow('Preprocessed Image', preprocessed_image)
     cv2.waitKey(0)
@@ -41,7 +47,7 @@ def preprocess_video(video_path):
         # Apply full preprocessing pipeline to each frame
         preprocessed_frame = Preprocessing.preprocess(frame, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
 
-        # Display the preprocessed frame live
+        # Display the original and preprocessed frames
         cv2.imshow('Original Frame', frame)
         cv2.imshow('Preprocessed Frame', preprocessed_frame)
 
@@ -54,14 +60,21 @@ def preprocess_video(video_path):
 
 def run_preprocessing(file_path):
     """Run preprocessing on either an image or video based on the file type."""
-    if is_video(file_path):
-        print(f"Processing video: {file_path}")
-        preprocess_video(file_path)
+    if os.path.isfile(file_path):
+        if is_video(file_path):
+            print(f"Processing video: {file_path}")
+            preprocess_video(file_path)
+        else:
+            print(f"Processing image: {file_path}")
+            image = load_image(file_path)
+            preprocess_image(image)
     else:
-        print(f"Processing image: {file_path}")
-        preprocess_image(file_path)
+        print(f"Error: File {file_path} does not exist.")
+
+def main():
+    # Replace with your file path (video or image)
+    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4'
+    run_preprocessing(file_path)
 
 if __name__ == '__main__':
-    # Replace 'your_file_here' with the path to your video or image file
-    file_path = 'test_video.mp4'  # Example file path
-    run_preprocessing(file_path)
+    main()
