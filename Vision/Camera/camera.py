@@ -20,21 +20,31 @@ class Camera:
     
     def capture_frame(self):
         """Capture a single frame."""
-        frame = self.picam2.capture_array()
-        # frame = cv2.flip(frame, -1)  # Flip horizontally and vertically if needed
-        return frame
+        try:
+            frame = self.picam2.capture_array()
+            return frame
+        except Exception as e:
+            print(f"Error capturing frame: {e}")
+            return None
 
     def capture_image(self, filename=None):
         """Capture an image and save it to the Images folder."""
-        if filename is None:
-            filename = time.strftime("image_%Y%m%d_%H%M%S.png")
-        filepath = os.path.join("Images", filename)
-        if not os.path.exists("Images"):
-            os.makedirs("Images")
-        frame = self.capture_frame()
-        cv2.imwrite(filepath, frame)
-        print(f"Image saved to {filepath}")
-        return filepath
+        try:
+            if filename is None:
+                filename = time.strftime("image_%Y%m%d_%H%M%S.png")
+            filepath = os.path.join("Images", filename)
+            if not os.path.exists("Images"):
+                os.makedirs("Images")
+            frame = self.capture_frame()
+            if frame is not None:
+                cv2.imwrite(filepath, frame)
+                print(f"Image saved to {filepath}")
+            else:
+                print("Error: Frame not captured.")
+            return filepath
+        except Exception as e:
+            print(f"Error saving image: {e}")
+            return None
 
     def capture_video(self, filename=None, duration=5, preview=True):
         if filename is None:
