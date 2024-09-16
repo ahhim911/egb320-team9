@@ -22,21 +22,21 @@ class Shelf(DetectionBase):
         self.analyze_contours(scaled_image, mask)
         
         # Get corners directly from contours
-        contour_image, corners = self.get_contour_corners(scaled_image)
+        #contour_image, corners = self.get_contour_corners(scaled_image)
         
         # Focus on a specific corner (e.g., bottom-right corner)
-        specific_corner = self.get_specific_corner(corners, criterion="bottom-right")
+        #specific_corner = self.get_specific_corner(corners, criterion="bottom-right")
         
         # Draw the specific corner
-        if specific_corner is not None:
-            x, y = specific_corner
-            cv2.circle(contour_image, (x, y), 10, (255, 0, 0), -1)  # Blue circle for the specific corner
+        #if specific_corner is not None:
+            #x, y = specific_corner
+            #cv2.circle(contour_image, (x, y), 10, (255, 0, 0), -1)  # Blue circle for the specific corner
         
-        for obj in self.detected_objects:
-            x, y, w, h = obj["position"]
-            range_, bearing = self.calculate_range_and_bearing(x, y, w, h)
-            obj["range"] = range_
-            obj["bearing"] = bearing
+        #for obj in self.detected_objects:
+            #x, y, w, h = obj["position"]
+            #range_, bearing = self.calculate_range_and_bearing(x, y, w, h)
+            #obj["range"] = range_
+            #obj["bearing"] = bearing
 
         return self.detected_objects, self.draw_contours(contour_image), mask
         
@@ -88,37 +88,56 @@ class Shelf(DetectionBase):
         """
         Get corners directly from the contour using cv2.approxPolyDP (contour approximation).
         """
-        contour_image = image.copy()
+        contour_image = image
 
         all_corners = []
 
         for obj in self.detected_objects:
-            # Get the approximated contour with fewer points (representing corners)
+            x, _, w, _ = obj["position"]
+            
+            if x + w > contour_image.shape[1] - 10:
+                continue
+
             contour = obj["contour"]
             
             # Draw circles at each corner point and store them
             for point in contour:
                 x, y = point.ravel()
-                all_corners.append((x, y))  # Store the corner points
-                cv2.circle(contour_image, (x, y), 5, (0, 0, 255), -1)
+                if contour_image.shape[1]-10 < x < contour_image.shape[1]-10:
+                    all_corners.append((x, y))  # Store the corner points
+                    cv2.circle(contour_image, (x, y), 5, (0, 0, 255), -1)
 
         return contour_image, all_corners
 
     def get_specific_corner(self, corners, criterion="bottom-right"):
         """
-        Get a specific corner based on the given criterion (e.g., bottom-right, top-left).
+        Get the bottom-right corner by sorting corners based on x first (rightmost),
+        and then from the top 4 rightmost, select the bottommost one based on y.
         """
         if len(corners) == 0:
             return None
 
-        # Initialize the specific corner with the first corner
-        specific_corner = corners[0]
-
         if criterion == "bottom-right":
-            # Look for the corner with the largest x and y values
-            specific_corner = max(corners, key=lambda c: (c[0], c[1]))
-        elif criterion == "top-left":
-            # Look for the corner with the smallest x and y values
-            specific_corner = min(corners, key=lambda c: (c[0], c[1]))
+            # Sort by x first (rightmost first)
+            sorted_by_x = sorted(corners, key=lambda c: c[0], reverse=True)
 
-        return specific_corner
+            # Select the top 4 rightmost corners
+            top_rightmost_corners = sorted_by_x[:2]
+
+            # From the top 4 rightmost, sort by y (bottommost first)
+            bottom_right = max(top_rightmost_corners, key=lambda c: c[1])
+            return bottom_right
+
+        elif criterion == "top-left":
+            # Sort by x (leftmost first)
+            sorted_by_x = sorted(corners, key=lambda c: c[0])
+
+            # Select the top 4 leftmost corners
+            top_leftmost_corners = sorted_by_x[:4]
+
+            # From the top 4 leftmost, sort by y (topmost first)
+            top_left = min(top_leftmost_corners, key=lambda c: c[1])
+            return top_left
+
+        return None
+
