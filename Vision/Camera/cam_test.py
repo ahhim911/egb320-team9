@@ -1,9 +1,9 @@
 import cv2
-import os
-import sys
 import time
 from threading import Thread
 
+import os
+import sys
 # define the system path "../../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
