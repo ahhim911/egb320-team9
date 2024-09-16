@@ -38,7 +38,7 @@ class Shelf(DetectionBase):
             #obj["range"] = range_
             #obj["bearing"] = bearing
 
-        return self.detected_objects, self.draw_contours(contour_image), mask
+        return self.detected_objects, self.draw_contours(scaled_image), mask
         
     def analyze_contours(self, image, mask, min_area=800):
         """
