@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-#from Vision.main_vision import process_image_pipeline
 
 def run_test_video(file_name='test_video.mp4',file_path='Videos/'):
 

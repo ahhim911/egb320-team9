@@ -35,7 +35,7 @@ class Preprocessing:
         return mask
 
     @staticmethod
-    def apply_morphological_filters(mask, kernel_size=(5, 5)):
+    def apply_morphological_filters(mask, kernel_size=(10, 10)):
         """Apply morphological operations to remove noise."""
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
         opened_image = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
@@ -43,7 +43,7 @@ class Preprocessing:
         return closed_image
     
     @staticmethod
-    def preprocess(image, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2, lower_hsv=(0, 0, 0), upper_hsv=(255, 255, 255), kernel_size=(5, 5)):
+    def preprocess(image, resize_to=(640, 480), scale=0.5, blur_ksize=(5, 5), sigmaX=2, lower_hsv=(80, 60, 0), upper_hsv=(140, 255, 255), kernel_size=(5, 5)):
         """
         Apply a full preprocessing pipeline:
         1. Resize the image
@@ -53,8 +53,8 @@ class Preprocessing:
         5. Apply morphological filtering
         """
         #resized = Preprocessing.resize(image, resize_to)
-        scaled = Preprocessing.scale(image)
+        scaled = Preprocessing.scale(image,fx=scale,fy=scale)
         blurred = Preprocessing.blur(scaled, blur_ksize, sigmaX)
-        thresholded = Preprocessing.color_threshold(blurred, (80, 60, 0), (140, 255, 255))
+        thresholded = Preprocessing.color_threshold(blurred, lower_hsv, upper_hsv)
         processed = Preprocessing.apply_morphological_filters(thresholded, kernel_size)
-        return processed
+        return processed, scaled

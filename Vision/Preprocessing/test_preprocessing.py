@@ -28,10 +28,10 @@ def preprocess_image(image):
         return
 
     # Apply full preprocessing pipeline
-    preprocessed_image = Preprocessing.preprocess(image, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
+    preprocessed_image, scaled_frame = Preprocessing.preprocess(image, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
 
     # Display the original and preprocessed images
-    cv2.imshow('Original Image', image)
+    cv2.imshow('Original Image', scaled_frame)
     cv2.imshow('Preprocessed Image', preprocessed_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -50,10 +50,10 @@ def preprocess_video(video_path):
             break  # End of video
 
         # Apply full preprocessing pipeline to each frame
-        preprocessed_frame = Preprocessing.preprocess(frame, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
+        preprocessed_frame, scaled_frame = Preprocessing.preprocess(frame, resize_to=(640, 480), blur_ksize=(5, 5), sigmaX=2)
 
         # Display the original and preprocessed frames
-        cv2.imshow('Original Frame', frame)
+        cv2.imshow('Original Frame', scaled_frame)
         cv2.imshow('Preprocessed Frame', preprocessed_frame)
 
         # Exit on 'q' key press
