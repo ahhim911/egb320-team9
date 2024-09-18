@@ -41,7 +41,7 @@ def apply_morphological_filters(mask, kernel_size=(5, 5)):
     closed_image = cv2.morphologyEx(opened_image, cv2.MORPH_CLOSE, kernel)
     return closed_image
 
-def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect_ratio=3.0):
+def analyze_contours(image, mask, category, min_area=150, min_aspect_ratio=0.3, max_aspect_ratio=3.0):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contour_image = image.copy()
 
@@ -74,11 +74,18 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
         if solidity < 0.5 or fill_ratio < 0.1:
             continue
 
-        cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 2)
-        cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        # Check if the category is "Marker" and if circularity is less than 0.8, skip drawing
+        if category == "Marker" and circularity < 0.8:
+            continue
+        
+        # Draw contours and rectangles if not a marker or if it's a circular marker
+        if category != "Marker" or circularity >= 0.8:
+            cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 2)
+            if category != "Marker":
+                cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-        for corner in bottom_corners:
-            cv2.circle(contour_image, tuple(corner[0]), 5, (0, 0, 255), -1)
+            for corner in bottom_corners:
+                cv2.circle(contour_image, tuple(corner[0]), 5, (0, 0, 255), -1)
 
         detected_objects.append({
             "position": (x, y, w, h),
@@ -92,7 +99,16 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
             "bottom_corners": bottom_corners
         })
 
+    # Only calculate the bounding box for circular markers
+    if category == "Marker" and detected_objects:
+        x_min = min(obj['position'][0] for obj in detected_objects)
+        y_min = min(obj['position'][1] for obj in detected_objects)
+        x_max = max(obj['position'][0] + obj['position'][2] for obj in detected_objects)
+        y_max = max(obj['position'][1] + obj['position'][3] for obj in detected_objects)
+        cv2.rectangle(contour_image, (x_min, y_min), (x_max, y_max), (0, 255, 255), 2)
+
     return contour_image, detected_objects
+
 
 def apply_object_logic(detected_objects, category, image_width, contour_image, output_data):
     classified_objects = []
@@ -115,7 +131,8 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
         
         elif category == "Obstacle":
             obj_type = "Obstacle"
-            distance = estimate_distance(w, 0.05)
+            #distance = estimate_distance(w, 0.05)
+            distance = estimate_homography_distance(obj['position'])
             if output_data['obstacles'] is None:
                 output_data['obstacles'] = []
             output_data['obstacles'].append([distance, estimate_bearing(x + w // 2, image_width)])
@@ -150,6 +167,7 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
             })
             classified_objects.append(obj)
             
+            #if category != "Marker":
             draw_category_text(contour_image, obj_type, obj['center'], distance, bearing)
 
     return classified_objects
@@ -210,7 +228,7 @@ def apply_homography_to_point(x, y, M):
 
 def estimate_bearing(object_center_x, image_width):
     horizontal_offset = object_center_x - (image_width / 2)
-    max_bearing_angle = 30
+    max_bearing_angle = 40
     bearing = (max_bearing_angle * horizontal_offset) / (image_width / 2)
     return bearing
 
@@ -271,7 +289,7 @@ def process_frame(frame, color_ranges):
     for category, (lower_hsv, upper_hsv) in color_ranges.items():
         mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
         processed_mask = apply_morphological_filters(mask)
-        contour_image, objects = analyze_contours(blurred_image, processed_mask)
+        contour_image, objects = analyze_contours(blurred_image, processed_mask, category)
         classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
 
         local_processed_masks[category] = (mask, processed_mask, contour_image)
@@ -311,7 +329,7 @@ def process_image_pipeline(color_ranges):
         for category, (lower_hsv, upper_hsv) in color_ranges.items():
             mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
             processed_mask = apply_morphological_filters(mask)
-            contour_image, objects = analyze_contours(blurred_image, processed_mask)
+            contour_image, objects = analyze_contours(blurred_image, processed_mask, category)
             classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
 
             local_processed_masks[category] = (mask, processed_mask, contour_image)

@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include <Servo.h>
+// #include <Servo.h>
 #define I2C_ADDRESS 0x08  // I2C address of the device
 #define I2C_SDA 0         // Use GPIO 26 as SDA
 #define I2C_SCL 1         // Use GPIO 27 as SCL
@@ -22,10 +22,10 @@ uint8_t waitingflag = 1;
 
 void setup() {
   // Attach servos
-  gripServo.attach(gripservoPin);  // Attach the servo to the pin
-  liftServo.attach(liftservoPin);
-  liftServo.write(10);
-  gripServo.write(170);
+  // gripServo.attach(gripservoPin);  // Attach the servo to the pin
+  // liftServo.attach(liftservoPin);
+  // liftServo.write(10);
+  // gripServo.write(170);
 
   // Set up I2C on specific pins for the Raspberry Pi Pico
   Wire.setSDA(I2C_SDA);
@@ -85,6 +85,8 @@ void ControlSystem(uint8_t* command, int length) {
   }else{
     digitalWrite(PHS2, HIGH);
     analogWrite(EN2, abs(speed2));;
+  }
+}
   }
 }
 //   if (text[1] != 'S') {

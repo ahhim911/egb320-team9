@@ -23,8 +23,8 @@ angle_rad = np.radians(angle_deg)
 #    [-0.35 * np.sin(angle_rad), 0.35 * np.cos(angle_rad)]
 #])
 ground_points = np.float32([
-    [-0.06, 0.15],
-    [0.09, 0.15],
+    [-0.06, 0.20],
+    [0.09, 0.20],
     [0.19, 0.50],
     [-0.16, 0.50]
 ])

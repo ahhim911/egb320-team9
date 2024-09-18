@@ -16,12 +16,12 @@
         null
     ],
     "row_markers": [
-        [
-            1.071476,
-            -7.7560975609756095
-        ],
         null,
-        null
+        null,
+        [
+            0.956675,
+            -4.2926829268292686
+        ]
     ],
     "obstacles": null,
     "packing_bay": null
