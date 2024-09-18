@@ -80,7 +80,7 @@ if __name__ == '__main__':
 		draw = False
 
 		# Read the object order file
-		with open("Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+		with open("navigation\COPPELIA_PythonCode\Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
 			# Load the CSV into a DataFrame, automatically using the first row as column names
 			df = pd.read_csv(csv_file)
 
@@ -149,8 +149,8 @@ if __name__ == '__main__':
 				
 
 				robot_state = 'SEARCH_FOR_SHELF'
-				target_shelf = 4
-				target_row = 2
+				target_shelf = final_df['Shelf'][current_item]
+				target_row = final_df['Row'][current_item]
 				# target_bay = final_df['Bay'][current_item]
 				target_bay = 3
 				target_height = final_df['Height'][current_item]
