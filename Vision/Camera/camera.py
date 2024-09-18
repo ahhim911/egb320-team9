@@ -41,7 +41,7 @@ class Camera:
         frame_width = int(self.picam2.stream_configuration("main")["size"][0])
         frame_height = int(self.picam2.stream_configuration("main")["size"][1])
 
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'XVID') # type: ignore
         out = cv2.VideoWriter(filepath, fourcc, 20.0, (frame_width, frame_height))
 
         start_time = time.time()
