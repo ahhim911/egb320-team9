@@ -47,6 +47,7 @@ class Camera:
         start_time = time.time()
         while (time.time() - start_time) < duration:
             frame = self.capture_frame()
+            self.picam2.start_recording()
             out.write(frame)
             time.sleep(0.05)  # Adjust sleep for desired FPS
 
