@@ -65,7 +65,7 @@ def main():
     capture_thread.daemon = True
     capture_thread.start()
 
-    live_detection_thread = Thread(target=process_image_pipeline, args=(picam2,))
+    live_detection_thread = Thread(target=process_image_pipeline, args=(color_ranges,))
     live_detection_thread.daemon = True
     live_detection_thread.start()
 

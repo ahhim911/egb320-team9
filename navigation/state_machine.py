@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import navigation.path_planning as navigation
-import mobility.motor_master as mobility
+import mobility.intergration_master as mobility
 import item_collection.item_collection as item_collection
 from threading import Thread, Event
 
@@ -43,7 +43,7 @@ class StateMachine:
 
     def init_state(self):        
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_ITEM'
+        self.robot_state = 'SEARCH_FOR_ROW'
         self.target_shelf = self.final_df['Shelf'][self.current_item]
         self.target_row = self.final_df['Row'][self.current_item]
         self.target_bay = 3  # Example fixed value; change as needed
@@ -182,5 +182,5 @@ class StateMachine:
             self.collect_item()
         # Add other state transitions...
 
-        mobility.move(self.action['forward_vel'], self.action['rotational_vel'])
+        mobility.drive(self.action['forward_vel'], self.action['rotational_vel'])
         

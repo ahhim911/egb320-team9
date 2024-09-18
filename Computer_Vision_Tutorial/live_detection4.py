@@ -16,6 +16,8 @@ frame_lock = Lock()
 focal_length = None
 homography_matrix = None
 
+
+
 def capture_frames(picam2):
     """Capture frames from the camera and store them in a global variable."""
     global frame
@@ -79,11 +81,10 @@ def analyze_contours(image, mask, category, min_area=150, min_aspect_ratio=0.3, 
             continue
         
         # Draw contours and rectangles if not a marker or if it's a circular marker
-        if category != "Marker" or circularity >= 0.8:
+        if category != "Marker":
             cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 2)
-            if category != "Marker":
-                cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
+        if category == "Shelf":
             for corner in bottom_corners:
                 cv2.circle(contour_image, tuple(corner[0]), 5, (0, 0, 255), -1)
 
@@ -131,7 +132,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
         
         elif category == "Obstacle":
             obj_type = "Obstacle"
-            #distance = estimate_distance(w, 0.05)
             distance = estimate_homography_distance(obj['position'])
             if output_data['obstacles'] is None:
                 output_data['obstacles'] = []
@@ -143,9 +143,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
             for i, corner in enumerate(obj['bottom_corners']):
                 corner_distance = estimate_homography_distance((corner[0][0], corner[0][1], 0, 0))
                 bearing = estimate_bearing(corner[0][0], image_width)
-                #corner_label = f"Entry Point {i+1}"
-                #text_offset = 20 * (i + 1)
-                #draw_category_text(contour_image, corner_label, (corner[0][0], corner[0][1] - text_offset), corner_distance, bearing)
                 if i < 6:
                     output_data['shelves'][i] = [corner_distance, bearing]
 
@@ -167,7 +164,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
             })
             classified_objects.append(obj)
             
-            #if category != "Marker":
             draw_category_text(contour_image, obj_type, obj['center'], distance, bearing)
 
     return classified_objects

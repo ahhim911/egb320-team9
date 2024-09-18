@@ -65,7 +65,7 @@ if __name__ == '__main__':
 	try:
 
 		# Create CoppeliaSim PackerBot object - this will attempt to open a connection to CoppeliaSim. Make sure CoppeliaSim is running.
-		warehouseBotSim = COPPELIA_WarehouseRobot('192.168.1.13', robotParameters, sceneParameters)
+		warehouseBotSim = COPPELIA_WarehouseRobot('10.88.41.54', robotParameters, sceneParameters)
 		# warehouseBotSim.SetScene()
 		warehouseBotSim.StartSimulator()
 
