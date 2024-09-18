@@ -34,7 +34,6 @@ class Camera:
         frame = self.capture_frame()
         cv2.imwrite(filepath, frame)
         print(f"Image saved to {filepath}")
-
         return filepath
 
     def capture_video(self, filename=None, duration=5, preview=True):
