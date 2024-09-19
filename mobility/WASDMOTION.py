@@ -48,3 +48,7 @@ class WASDMotion:
         # Start listening to keyboard inputs
         with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
+
+    def stop(self):
+        # Stop the robot
+        self.send_i2c_command('x')

@@ -67,20 +67,20 @@ void ControlSystem(uint8_t* command, int length) {
       analogWrite(EN2, speed);    // Set motor 2 speed
       break;
 
-    case 'a':  // Turn left
+    case 'd':  // Turn right
       Serial.println("Turning left");
       digitalWrite(PHS1, LOW);    // Set motor 1 backward direction
       digitalWrite(PHS2, HIGH);   // Set motor 2 forward direction
-      analogWrite(EN1, speed);    // Set motor 1 speed
-      analogWrite(EN2, speed);    // Set motor 2 speed
+      analogWrite(EN1, speed + 20);    // Set motor 1 speed
+      analogWrite(EN2, speed + 20);    // Set motor 2 speed
       break;
 
-    case 'd':  // Turn right
+    case 'a':  // Turn left
       Serial.println("Turning right");
       digitalWrite(PHS1, HIGH);   // Set motor 1 forward direction
       digitalWrite(PHS2, LOW);    // Set motor 2 backward direction
-      analogWrite(EN1, speed);    // Set motor 1 speed
-      analogWrite(EN2, speed);    // Set motor 2 speed
+      analogWrite(EN1, speed + 20);    // Set motor 1 speed
+      analogWrite(EN2, speed + 20);    // Set motor 2 speed
       break;
 
     case 'x':  // Stop
