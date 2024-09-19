@@ -1,5 +1,6 @@
 from smbus import SMBus
 import time
+from pynput import keyboard
 
 
 addr = 0x08 # I2C address of the Arduino slave
