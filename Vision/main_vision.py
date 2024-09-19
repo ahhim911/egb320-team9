@@ -1,10 +1,10 @@
-from camera.camera import Camera
-from preprocessing.preprocessing import Preprocessing
-from detection.detection import Detection
-from detection.distanceestimation import DistanceEstimation
+from Camera.camera import Camera
+from Preprocessing.preprocessing import Preprocessing
+from Detection.detection import Detection
+from Detection.distanceestimation import DistanceEstimation
 from threading.threadingmanager import ThreadingManager
-from visualization.visualization import Visualization
-from calibration.calibration import Calibration
+from Visualization.visualization import Visualization
+from Calibration.calibration import Calibration
 
 def process_category(category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):
     mask = Preprocessing.color_threshold(blurred_image, lower_hsv, upper_hsv)

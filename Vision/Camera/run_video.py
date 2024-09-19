@@ -1,11 +1,16 @@
 import cv2
 import numpy as np
+from Vision.main_vision import process_image_pipeline
 
-def main():
+def run_test_video(file_name):
     # Replace 'your_video.mp4' with the path to your video file
     file_path = 'Vision/Camera/Videos/'
     file_name = 'test_video.mp4'
     cap = cv2.VideoCapture(file_path + file_name)
+
+    # Color ranges for the vision system
+    
+
 
     if not cap.isOpened():
         print("Error: Could not open video file.")
@@ -17,10 +22,11 @@ def main():
             break  # End of video
 
         # Process the frame (insert your vision system's processing here)
-        processed_frame = process_frame(frame)
+        processed_frame = process_image_pipeline(frame, color_ranges)
 
         # Display the processed frame
         cv2.imshow('Processed Frame', processed_frame)
+        cv2.waitKey(30)  # Delay to match the video frame rate
 
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):

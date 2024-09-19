@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import navigation.path_planning as navigation
 import mobility.intergration_master as mobility
-import item_collection.item_collection as item_collection
+# import item_collection.item_collection as item_collection
 from threading import Thread, Event
 
 class StateMachine:
@@ -18,7 +18,7 @@ class StateMachine:
         self.draw = False
 
         # Read the object order file
-        with open("navigation/COPPELIA_PythonCode/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
@@ -50,7 +50,7 @@ class StateMachine:
         self.target_height = self.final_df['Height'][self.current_item]
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
-        item_collection.grip('open')
+        # item_collection.grip('open')
         if self.target_shelf % 2 == 1:  # Odd
             self.subtarget_shelf = self.target_shelf - 1
         else:  # Even
@@ -88,12 +88,11 @@ class StateMachine:
             self.goal_position['bearing'] = shelfRangeBearing[self.target_shelf][1]
             print(self.robot_state, "Going to: ", self.target_shelf, self.goal_position)
 
-            # Add other shelves to obstacles
-            obs = obstaclesRB
-            np.append(obs, shelfRangeBearing[not self.target_shelf])
+            # Add shelves to obstacles
+            np.append(obstaclesRB, shelfRangeBearing[self.target_shelf])
 
             # Calculate goal velocities
-            self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             
             if self.goal_position['range'] - 0.15 < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
@@ -126,11 +125,10 @@ class StateMachine:
                 print(self.goal_position)
 
             # Add shelves to obstacles
-            obs = obstaclesRB
-            np.append(obs, shelfRangeBearing[self.target_shelf])
+            np.append(obstaclesRB, shelfRangeBearing[self.target_shelf])
 
             # Calculate goal velocities
-            self.action = navigation.calculate_goal_velocities(self.goal_position, obs)
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ITEM'
@@ -158,8 +156,8 @@ class StateMachine:
 
     def collect_item(self):
         print("Collecting item")
-        item_collection.grip('open')
-        item_collection.lift(self.target_height)
+        # item_collection.grip('open')
+        # item_collection.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
     # Add more methods for other states...
