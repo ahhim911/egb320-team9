@@ -20,7 +20,13 @@ def main():
     mobility_thread = Thread(target=mobility.start(), args=())
     mobility_thread.daemon = True
     mobility_thread.start()
-    
+
+    # Camera Threads Capture video
+    camera_thread = Thread(target=camera.capture_video(duration=15), args=())
+    camera_thread.daemon = True
+    camera_thread.start()
+
+
     time.sleep(1)
     try:
         # Capture and display a frame
