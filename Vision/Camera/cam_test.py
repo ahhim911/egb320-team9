@@ -24,9 +24,9 @@ def main():
         mobility_thread.start()
 
         # Create and start the camera thread
-        camera_thread = Thread(target=camera.capture_video, kwargs={'duration': 15})
-        camera_thread.daemon = True
-        camera_thread.start()
+        # camera_thread = Thread(target=camera.capture_video, kwargs={'duration': 15})
+        # camera_thread.daemon = True
+        # camera_thread.start()
         # Capture and display a frame
         # frame = camera.capture_frame()
         # cv2.imshow('Captured Frame', frame)
@@ -39,7 +39,7 @@ def main():
 
         # Record a video for 5 seconds
         # camera.capture_video(duration=5)
-        # camera.capture_video(duration=15)
+        camera.capture_video(duration=15)
 
     finally:
         camera.close()
