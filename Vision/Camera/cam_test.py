@@ -7,7 +7,7 @@ from threading import Thread
 # define the system path "../../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from Vision.Camera.camera import Camera 
+from Vision.Camera.camera import Camera
 from mobility.WASDMOTION import WASDMotion
 
 
