@@ -1,13 +1,13 @@
 import cv2
-from Vision.Camera.camera import Camera 
 import os
 import sys
-from mobility.WASDMOTION import WASDMotion
 import time
 
 # define the system path "../../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
+from Vision.Camera.camera import Camera 
+from mobility.WASDMOTION import WASDMotion
 
 def main():
     camera = Camera()
