@@ -16,18 +16,17 @@ def main():
     mobility = WASDMotion()
 
     
-    
+
     try:
-        # Create and start the threads
-        mobility_thread = Thread(target=mobility.start(), args=())
+        # Create and start the mobility thread
+        mobility_thread = Thread(target=mobility.start)
         mobility_thread.daemon = True
         mobility_thread.start()
 
-        # Camera Threads Capture video
-        camera_thread = Thread(target=camera.capture_video(duration=15), args=())
+        # Create and start the camera thread
+        camera_thread = Thread(target=camera.capture_video, kwargs={'duration': 15})
         camera_thread.daemon = True
         camera_thread.start()
-
         # Capture and display a frame
         # frame = camera.capture_frame()
         # cv2.imshow('Captured Frame', frame)
@@ -44,6 +43,8 @@ def main():
 
     finally:
         camera.close()
+
+
 
 if __name__ == "__main__":
     main()
