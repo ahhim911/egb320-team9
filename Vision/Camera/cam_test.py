@@ -1,8 +1,20 @@
 import cv2
-from camera import Camera 
+from Vision.Camera.camera import Camera 
+import os
+import sys
+from mobility.WASDMOTION import WASDMotion
+import time
+
+# define the system path "../../"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
 
 def main():
     camera = Camera()
+    mobility = WASDMotion()
+
+    mobility.start()
+    time.sleep(1)
     try:
         # Capture and display a frame
         # frame = camera.capture_frame()

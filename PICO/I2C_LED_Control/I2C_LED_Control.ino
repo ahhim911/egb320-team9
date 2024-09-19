@@ -9,7 +9,7 @@
 #define PHS2 16
 
 // Speed for each direction (0-255 for motor speed control)
-int speed = 150;
+int speed = 80;
 
 volatile int waitingflag = 1;
 
@@ -50,7 +50,7 @@ void ControlSystem(uint8_t* command, int length) {
   Serial.println(text);
 
   // WASD Control System
-  switch (text[0]) {
+  switch (text[1]) {
     case 'w':  // Move forward
       Serial.println("Moving forward");
       digitalWrite(PHS1, HIGH);   // Set motor 1 forward direction
