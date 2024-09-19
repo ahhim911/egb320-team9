@@ -2,6 +2,7 @@ import cv2
 import os
 import sys
 import time
+from threading import Thread
 
 # define the system path "../../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -9,11 +10,17 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from Vision.Camera.camera import Camera 
 from mobility.WASDMOTION import WASDMotion
 
+
 def main():
     camera = Camera()
     mobility = WASDMotion()
 
-    mobility.start()
+    
+    # Create and start the threads
+    mobility_thread = Thread(target=mobility.start(), args=())
+    mobility_thread.daemon = True
+    mobility_thread.start()
+    
     time.sleep(1)
     try:
         # Capture and display a frame
