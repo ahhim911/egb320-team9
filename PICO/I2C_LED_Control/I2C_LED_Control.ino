@@ -9,7 +9,7 @@
 #define PHS2 16
 
 // Speed for each direction (0-255 for motor speed control)
-int speed = 80;
+int speed = 70;
 
 volatile int waitingflag = 1;
 

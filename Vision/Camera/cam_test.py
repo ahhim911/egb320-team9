@@ -15,8 +15,6 @@ def main():
     camera = Camera()
     mobility = WASDMotion()
 
-    
-
     try:
         # Create and start the mobility thread
         mobility_thread = Thread(target=mobility.start)
@@ -42,10 +40,13 @@ def main():
         camera.capture_video(duration=90)
 
     finally:
-        # Stop the robot
-        mobility.stop()
         camera.close()
 
+    # Stop the robot in 10 seconds
+    print("Stopping the robot in 10 seconds...")
+    time.sleep(10)
+    
+    mobility.stop()
 
 
 if __name__ == "__main__":
