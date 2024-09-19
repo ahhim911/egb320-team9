@@ -28,12 +28,12 @@ while True:
             print(f"Error communicating with I2C device: {e}")
 
     # Optionally add a short delay
-    #time.sleep(1)
+    time.sleep(1)
 
-#def move(forward_vel, rotational_vel):
+# def move(forward_vel, rotational_vel):
 #    """
 #    The function is used in state_machine.py
 #    Please send Commands to the PICO through i2c here
 #    """
-#
+
 #    print(forward_vel, rotational_vel)

@@ -63,26 +63,15 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  char SpeedFor[4] = { text[2], text[3], text[4], '\0' };  // Extract speed value
-  int speedfor1 = atoi(SpeedFor);
-  char SpeedRot[4] = { text[6], text[7], text[8], '\0' };  // Extract speed value
-  int speedrot1 = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
+  char SpeedFor[4] = { text[1], text[2], text[3], '\0' };  // Extract speed value
+  int speedfor = atoi(SpeedFor);
+  char SpeedRot[4] = { text[5], text[6], text[7], '\0' };  // Extract speed value
+  int speedrot = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
+  
 
-
-if(text[1]== 'N'){  
-  speedfor = speedfor1 * -1;
-}
-else if(text[5] == 'N'){
-  speedrot = speedrot1 * -1;
-}
-
-
-  int init_speed1 = round(speedfor*2.55 + (((speedrot*2.55) * width)/2));
-  int init_speed2 = round(speedfor*2.55 - (((speedrot*2.55) * width)/2));
-  speed1 = constrain(init_speed1, -255, 255);
-  speed2 = constrain(init_speed2, -255, 255);
-
-
+  int speed1 = round(speedfor*2.55 + (((speedrot*2.55) * width)/2));
+  int speed2 = round(speedfor*2.55 - (((speedrot*2.55) * width)/2));
+  speed1 = constrain(speed1, -2552)
   if(speed1 < 0){
     digitalWrite(PHS1, LOW);
     analogWrite(EN1, abs(speed1));
@@ -96,6 +85,8 @@ else if(text[5] == 'N'){
   }else{
     digitalWrite(PHS2, HIGH);
     analogWrite(EN2, abs(speed2));;
+  }
+}
   }
 }
 //   if (text[1] != 'S') {

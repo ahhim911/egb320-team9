@@ -33,7 +33,7 @@ color_ranges = {
 current_color_key = None
 
 # Buffer to be applied to the HSV range
-bufferHSV = np.array([10, 50, 50])
+bufferHSV = np.array([255, 120, 120])
 
 def add_point_in(point):
     global valueHSV

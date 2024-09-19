@@ -1,9 +1,10 @@
-from Computer_Vision_Tutorial.live_detection4 import load_color_thresholds, load_focal_length, load_homography_matrix, process_frame, capture_frames
+from Computer_Vision_Tutorial.live_detection4 import load_color_thresholds, load_focal_length, load_homography_matrix, process_image_pipeline, capture_frames
 from navigation.state_machine import StateMachine
 from picamera2 import Picamera2
 from threading import Thread, Lock
 import json
 import time
+import os
 
 # Global variables for frame handling and locking
 frame = None
@@ -12,39 +13,35 @@ color_ranges = {}
 
 # Function to run the state machine in a separate thread
 def run_state_machine_thread(state_machine):
+    json_file_path = 'output_data.json'
+
     while True:
-        # Path to the JSON file
-        json_file_path = 'output_data.json'
+        try:
+            with frame_lock:
+                if os.path.getsize(json_file_path) > 0:
+                    with open(json_file_path, 'r') as file:
+                        data = json.load(file)
+
+            # Extract the range and bearing data
+            itemsRB = data['items']
+            packingBayRB = data['packing_bay']
+            obstaclesRB = data['obstacles']
+            rowMarkerRangeBearing = data['row_markers']
+            shelfRangeBearing = data['shelves']
+            
+            # Run the state machine
+            state_machine.run_state_machine(itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing)
         
-        # Open and load the JSON file
-        with open(json_file_path, 'r') as file:
-            data = json.load(file)
+        except json.JSONDecodeError as e:
+            print(f"JSONDecodeError: {e}. The file may be corrupted or not written correctly.")
         
-        # Extract the range and bearing data
-        itemsRB = data['items']
-        packingBayRB = data['packing_bay']
-        obstaclesRB = data['obstacles']
-        rowMarkerRangeBearing = data['row_markers']
-        shelfRangeBearing = data['shelves']
-        
-        # Run the state machine
-        state_machine.run_state_machine(itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing)
+        except Exception as e:
+            print(f"Unexpected error: {e}")
         
         # Small delay to reduce CPU usage
         time.sleep(0.1)
 
-# Function to run the live detection in a separate thread
-def run_live_detection(picam2):
-    global frame, color_ranges
-    while True:
-        with frame_lock:
-            frame = picam2.capture_array()
-        
-        if frame is not None:
-            process_frame(frame, color_ranges)
-        
-        # Small delay to reduce CPU usage
-        time.sleep(0.01)
+
 
 def main():
     global frame, color_ranges
@@ -64,7 +61,11 @@ def main():
     picam2.start()
 
     # Create and start the threads
-    live_detection_thread = Thread(target=run_live_detection, args=(picam2,))
+    capture_thread = Thread(target=capture_frames, args=(picam2,))
+    capture_thread.daemon = True
+    capture_thread.start()
+
+    live_detection_thread = Thread(target=process_image_pipeline, args=(color_ranges,))
     live_detection_thread.daemon = True
     live_detection_thread.start()
 

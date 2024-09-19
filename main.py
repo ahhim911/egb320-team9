@@ -47,7 +47,7 @@ def main():
             state_machine.run_state_machine(itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing)
 
 
-    
+    # Stop the camera
 if __name__ == "__main__":
     main()
 
@@ -62,3 +62,4 @@ if __name__ == "__main__":
 
 
 
+ 
