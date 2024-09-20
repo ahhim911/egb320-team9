@@ -21,15 +21,15 @@ class Calibration:
 
     
     def calibrate(self, focal_length=True, homography=True, color=True):
-        if focal_length:
-            cal_focal_length = CalibrateFocalLength()
-            cal_focal_length.calibrate()
-        if homography:
-            cal_holomography = CalibrateHomography()
-            cal_holomography.calibrate()
         if color:
             cal_color = CalibrateColor()
             cal_color.calibrate()
+        if homography:
+            cal_holomography = CalibrateHomography()
+            cal_holomography.calibrate()
+        if focal_length:
+            cal_focal_length = CalibrateFocalLength()
+            cal_focal_length.calibrate()
         return 
     
 def main():
