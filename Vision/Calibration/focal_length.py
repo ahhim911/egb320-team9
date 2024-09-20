@@ -30,7 +30,7 @@ class CalibrateFocalLength:
         """
         # Known parameters for focal length calibration
         self.real_world_width = 0.07  # 7 cm object width in meters
-        self.distance_to_object = 0.28  # 28 cm distance to the object in meters
+        self.distance_to_object = 1.04  # 28 cm distance to the object in meters
 
         # Variables for calibration
         self.focal_length = None
