@@ -1,7 +1,7 @@
 import csv
 import cv2
 import numpy as np
-import picamera2 as Picamera2
+from picamera2 import Picamera2
 """
 Focal length module for loading focal length data.
 """

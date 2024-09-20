@@ -194,6 +194,7 @@ class CalibrateColor:
                         upper_str = ','.join(map(str, upper))
                         file.write(f"{color},{lower_str},{upper_str}\n")
                 print("Color thresholds saved to calibrate.csv")
+                
             elif key == ord('r'):  # Reset the HSV range if 'r' is pressed
                 self.reset()
                 self.update_thresh()

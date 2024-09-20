@@ -61,8 +61,22 @@ if __name__ == "__main__":
 - '3' to select blue
 - '4' to select black
 
+# Homography calibration
+1. Capture an image of the ground plane with the calibration mat
+- find a good lighting condition
+- place the calibration mat on the ground
+- 'c' to capture an image.
 
+2. Run the calibration script.
+- 'q' to quit
+- 's' to save
+- click on the corners of the calibration mat in the image with the following order:
+    - bottom left
+    - bottom right
+    - top right
+    - top left
 
+# Focal length calibration
 
 
 
