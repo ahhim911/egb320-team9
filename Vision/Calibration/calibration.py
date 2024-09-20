@@ -31,3 +31,11 @@ class Calibration:
             cal_color = CalibrateColor()
             cal_color.calibrate()
         return 
+    
+def main():
+    cal = Calibration()
+    cal.calibrate()
+    return
+
+if __name__ == "__main__":
+    main()
