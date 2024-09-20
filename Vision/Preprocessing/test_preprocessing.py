@@ -2,6 +2,11 @@ import cv2
 import os
 from preprocessing import Preprocessing  # Ensure the path is correct for your Preprocessing class
 
+"""
+test preprocessing.py library with image and video
+"""
+
+
 def is_video(file_path):
     """Check if the given file is a video based on its extension."""
     video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv']

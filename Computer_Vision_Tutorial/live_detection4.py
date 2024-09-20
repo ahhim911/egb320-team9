@@ -46,7 +46,7 @@ def apply_morphological_filters(mask, kernel_size=(5, 5)):
 def analyze_contours(image, mask, category, min_area=150, min_aspect_ratio=0.3, max_aspect_ratio=3.0):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contour_image = image.copy()
-
+    contour_image.blobs()
     detected_objects = []
 
     for contour in contours:
