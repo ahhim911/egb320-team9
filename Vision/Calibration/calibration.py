@@ -40,3 +40,30 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+# Color calibration
+1. Capture an image of the object to be detected.
+- find a good lighting condition
+- place the object in front of the camera
+    - orange
+    - green
+    - blue
+    - black
+- 'c' to capture an image.
+
+2. Run the calibration script.
+- 'q' to quit
+- 's' to save
+- 'r' to reset
+- '1' to select orange
+- '2' to select green
+- '3' to select blue
+- '4' to select black
+
+
+
+
+
+
+"""

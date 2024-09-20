@@ -76,7 +76,7 @@ class CalibrateColor:
         self.current_color_key = None
 
         # Buffer to be applied to the HSV range
-        self.bufferHSV = np.array([255, 120, 120])
+        self.bufferHSV = np.array([10, 50, 20])
 
         # Initialize the camera
         self.cap = Picamera2()
