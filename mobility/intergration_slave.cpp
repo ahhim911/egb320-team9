@@ -11,7 +11,7 @@
 #define WHEEL_BASE 0.15  // Distance between wheels in meters
 #define WHEEL_RADIUS 0.04  // Radius of the wheels in meters
 #define MAX_WHEEL_SPEED 10 
-#define SCALING_FACTOR 20
+#define SCALING_FACTOR 127.5
 
 
 
@@ -65,12 +65,12 @@ void driveint(int left_motor_speed, int right_motor_speed){
   analogWrite(EN2, abs(motor_right));  // Set the speed with PWM
 }
 
-void Drive(int x_dot, int theta_dot) {
+void Drive(float x_dot, float theta_dot) {
   // Calculate left and right wheel speeds (rad/s) based on forward and rotational velocity
   float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
   float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
-  leftWheelSpeed1 = leftWheelSpeed*SCALING_FACTOR;
-  rightWheelSpeed1 = rightWheelSpeed*SCALING_FACTOR
+  leftWheelSpeed1 = constrain(round(leftWheelSpeed*SCALING_FACTOR)-255,255);
+  rightWheelSpeed1 = constrain(round(rightWheelSpeed*SCALING_FACTOR)-255,255);
 
     driveint(leftWheelSpeed1, rightWheelSpeed1);
 
@@ -78,9 +78,11 @@ void Drive(int x_dot, int theta_dot) {
 
 void ControlSystem(uint8_t* command, int length) {
 // Function to set target velocities in m/s and rad/s (similar to simulation code)
- x_dot = command[1];
- theta_dot = command[2];
+ int x_dot = command[1];
+ int theta_dot = command[2];
   // Drive the motors using the calculated wheel speeds
+  x_dot1 = x_dot/100;
+  theta_dot1 = theta_dot/100;
   Drive(x_dot, theta_dot);
 }
 
