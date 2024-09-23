@@ -1,7 +1,7 @@
 from smbus import SMBus
 import time
 from pynput import keyboard
-RADIUS = 0.15
+
 
 addr = 0x08 # I2C address of the Arduino slave
 bus = SMBus(0) # I2C bus (usually 1 for Raspberry Pi)
