@@ -17,20 +17,19 @@ class Wall(DetectionBase):
         """
         Find the wall by creating a mask for the white color using color ranges.
         """
-        # Extract the white color range for the wall from the color_ranges dictionary
         lower_hsv, upper_hsv = color_ranges['Wall']
 
-        # Preprocess the image to create a mask for the white wall
-        mask, scaled_image = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+        # Step 1: Preprocess the image
+        mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
 
-        # Analyze the contours of the detected wall
+        # Step 4: Analyze contours for the wall using the cleaned-up edges
         self.analyze_contours(scaled_image, mask)
 
         return self.detected_objects, self.draw_contours(scaled_image), mask
-    
-    def analyze_contours(self, image, mask, min_area=1000):
+
+    def analyze_contours(self, image, mask, min_area=1000, solidity_threshold=0.7):
         """
-        Analyzes contours for the detected wall. Smooths the contour using convex hull.
+        Analyzes contours for the detected wall. Filters contours based on area and solidity.
         """
         # Get contours of the wall using RETR_EXTERNAL to focus on outermost contours
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -41,16 +40,28 @@ class Wall(DetectionBase):
             if area < min_area:
                 continue  # Skip small contours
 
-            x, y, w, h = cv2.boundingRect(contour)
-
-            # Smooth the contour using convex hull
+            # Calculate the convex hull and its area
             hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+
+            # Compute solidity (area / hull_area)
+            if hull_area > 0:
+                solidity = float(area) / hull_area
+            else:
+                solidity = 0
+
+            # Filter out contours with low solidity
+            if solidity < solidity_threshold:
+                continue  # Skip contours with low solidity
+
+            x, y, w, h = cv2.boundingRect(contour)
 
             # Add the detected wall to the list of detected objects
             self.detected_objects.append({
                 "position": (x, y, w, h),
                 "area": area,
-                "contour": hull,  # Store the convex hull of the contour
+                "solidity": solidity,
+                "contour": contour,  # Store the convex hull of the contour
             })
 
     def draw_contours(self, image):

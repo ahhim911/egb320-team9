@@ -1,125 +1,125 @@
 # Import the necessary modules
 import cv2
 import numpy as np
-from detection import DetectionBase  # Import DetectionBase from detection.py
+from detection import DetectionBase
 import os
 import sys
+
 # Define the system path "../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from Preprocessing.preprocessing import Preprocessing
-from wall import Wall  # Import the Wall detection class
-
+from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Marker(DetectionBase):
     def __init__(self):
         super().__init__("Marker")
-        self.wall_detector = Wall()  # Initialize the Wall detector
-    
-    def find_marker(self, image, color_ranges):
+
+    def find_marker(self, image, detected_walls, color_ranges):
         """
-        Find the marker by creating a mask based on the color range and analyzing contours.
-        Only detect markers if they are against a white wall.
+        Find markers only within the wall's bounding box, classify them, and draw a bounding box with a label.
         """
-        # First, detect the wall and get the wall mask
-        wall_frame, wall_mask = self.wall_detector.find_wall(image, color_ranges)
-        
-        # Now, preprocess the image to detect markers
         lower_hsv, upper_hsv = color_ranges['Marker']
-        marker_mask, scaled_image = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
-
-        # Combine the marker mask with the wall mask to ensure markers are only detected on the white wall
-        valid_marker_mask = cv2.bitwise_and(marker_mask, wall_mask)
-
-        # Analyze contours only on the valid markers (i.e., markers that are on the white wall)
-        self.analyze_contours(scaled_image, valid_marker_mask)
+        marker_mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
+    
+        # Get marker contours
+        marker_contours, _ = cv2.findContours(marker_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        detected_markers = []
         
-        # Process each detected marker to classify as circle or square
-        for obj in self.detected_objects:
-            shape = self.classify_shape(obj["contour"])
-            obj["shape"] = shape  # Store the shape in the object
-            
-            # Check if the marker is in front of the white wall (already filtered by wall mask)
-            obj["is_valid"] = True  # Since we've already filtered by the wall, they are valid
+        # Detect markers only within the bounding box of the wall
+        for wall_obj in detected_walls:
+            wall_x, wall_y, wall_w, wall_h = wall_obj["position"]
+            for marker_contour in marker_contours:
+                x, y, w, h = cv2.boundingRect(marker_contour)
+                # Ensure marker is within the wall's bounding box
+                if wall_x <= x + (w // 2) <= wall_x + wall_w and wall_y <= y + (h // 2) <= wall_y + wall_h:
+                    detected_markers.append({
+                        "position": (x, y, w, h),
+                        "contour": marker_contour
+                    })
+        
+        # Classify markers as circle/square and determine their type
+        marker_type = self.classify_marker(detected_markers)
+        
+        # Draw the bounding box with label
+        final_image = self.draw_bounding_box(scaled_image, detected_markers, marker_type)
 
-        return self.detected_objects, self.draw_contours(scaled_image), valid_marker_mask
+        return detected_markers, final_image, marker_mask
 
-    def analyze_contours(self, image, mask, min_area=150):
+    def classify_marker(self, detected_markers):
         """
-        Analyzes contours for markers detected on the wall.
-        Additionally, smooths the contour using convex hull.
+        Classifies markers as circles or squares, determines how many rows of circles there are,
+        and identifies the packing station marker if it's a square.
         """
-        # Get contours of the markers using RETR_EXTERNAL to focus on outermost contours
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        self.detected_objects = []
+        circle_count = 0
+        square_count = 0
 
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area < min_area:
-                continue  # Skip small contours
+        for obj in detected_markers:
+            contour = obj['contour']
+            shape = self.classify_shape(contour)
 
-            x, y, w, h = cv2.boundingRect(contour)
+            # Debugging information for troubleshooting
+            print(f"Detected shape: {shape}")
 
-            # Smooth the contour using convex hull
-            hull = cv2.convexHull(contour)
+            if shape == "Circle":
+                circle_count += 1
+            elif shape == "Square":
+                square_count += 1
 
-            # Add the detected marker to the list of detected objects
-            self.detected_objects.append({
-                "position": (x, y, w, h),
-                "area": area,
-                "contour": hull,  # Store the convex hull of the contour
-                "perimeter": cv2.arcLength(contour, True)  # Store the perimeter
-            })
+        # Classify the marker type
+        if square_count > 0:
+            return "Packing Station Marker"  # If there's a square, it's the packing station
+        elif circle_count == 1:
+            return "Row Marker 1"
+        elif circle_count == 2:
+            return "Row Marker 2"
+        elif circle_count == 3:
+            return "Row Marker 3"
+        else:
+            return "Unknown Marker"
 
     def classify_shape(self, contour):
         """
-        Classify the shape of the contour as either 'Circle' or 'Square'.
-        Uses aspect ratio, circularity, and number of vertices.
+        Classifies the shape as either a circle or a square using contour properties.
         """
-        # Calculate perimeter and area
         perimeter = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)  # Approximating the shape (more relaxed)
         area = cv2.contourArea(contour)
 
-        # Calculate circularity
-        circularity = (4 * np.pi * area) / (perimeter ** 2) if perimeter > 0 else 0
+        # Use circularity to classify as a circle
+        circularity = 4 * np.pi * (area / (perimeter ** 2)) if perimeter > 0 else 0
+        print(f"Circularity: {circularity}, Vertices: {len(approx)}")  # Debugging info
 
-        # Use approxPolyDP to count the number of vertices
-        epsilon = 0.04 * perimeter
-        approx = cv2.approxPolyDP(contour, epsilon, True)
-
-        # Aspect ratio check (for square)
-        x, y, w, h = cv2.boundingRect(contour)
-        aspect_ratio = float(w) / h
-
-        # Check if it's a circle based on circularity
-        if circularity > 0.8:
+        # Threshold for circular shapes
+        if circularity >= 0.9:  # Adjusting the threshold for circularity
             return "Circle"
-
-        # Check if it's a square based on number of vertices and aspect ratio
-        if len(approx) == 4 and 0.9 <= aspect_ratio <= 1.1:
+        elif 4 <= len(approx) <= 7:  # Allow some leniency for squares
             return "Square"
+        else:
+            return "Unknown"
 
-        return "Unknown"
-
-    def draw_contours(self, image):
+    def draw_bounding_box(self, image, detected_markers, marker_type):
         """
-        Draw approximated shapes based on detected objects.
+        Draws a bounding box around all detected markers and adds the appropriate label text.
         """
-        contour_image = image
+        if not detected_markers:
+            return image
 
-        for obj in self.detected_objects:
-            # Only draw valid objects that are on the white wall
-            if not obj.get("is_valid", True):
-                continue
+        x_min = min([obj['position'][0] for obj in detected_markers])
+        y_min = min([obj['position'][1] for obj in detected_markers])
+        x_max = max([obj['position'][0] + obj['position'][2] for obj in detected_markers])
+        y_max = max([obj['position'][1] + obj['position'][3] for obj in detected_markers])
 
-            # Draw the smoothed contour
+        # Draw the bounding box around all markers
+        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+
+        # Add the text in the center of the bounding box
+        text_x = x_min + (x_max - x_min) // 2
+        text_y = y_min - 10 if y_min - 10 > 10 else y_min + 30  # Ensure the text is visible
+
+        cv2.putText(image, marker_type, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+        for obj in detected_markers:
+            # Draw the marker contours
             contour = obj["contour"]
-            shape = obj["shape"]
-            
-            # Draw the contour
-            cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 2)
+            cv2.drawContours(image, [contour], -1, (255, 0, 0), 2)
 
-            # Label the shape
-            x, y, w, h = obj["position"]
-            cv2.putText(contour_image, shape, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-
-        return contour_image
+        return image

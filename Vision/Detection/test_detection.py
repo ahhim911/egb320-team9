@@ -12,8 +12,8 @@ color_ranges = {
     'Shelf': (np.array([80, 60, 15]), np.array([140, 255, 255])),
     'Obstacle': (np.array([50, 0, 0]), np.array([69, 185, 155])),
     'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
-    'Marker': (np.array([0, 0, 0]), np.array([179, 255, 80])),
-    'Wall': (np.array([0, 0, 140]), np.array([100, 100, 255]))
+    'Marker': (np.array([0, 0, 0]), np.array([179, 120, 100])),
+    'Wall': (np.array([0, 0, 200]), np.array([179, 150, 255]))
 }
 
 def is_video(file_path):
@@ -80,16 +80,17 @@ def detect_in_video(video_path):
         # Detect objects in the current frame
         #detected_shelves, shelf_frame, mask = shelf_detector.find_shelf(frame, color_ranges)
         #detected_items, item_frame = item_detector.find_item(frame, color_ranges)
-        #detected_markers, marker_frame, mask = marker_detector.find_marker(frame, color_ranges)
-        detected_walls, wall_frame, mask = wall_detector.find_wall(frame, color_ranges)
+        detected_walls, wall_frame, wall_mask = wall_detector.find_wall(frame, color_ranges)
+        detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, detected_walls, color_ranges)
         #detected_obstacles, obstacle_frame = obstacle_detector.find_obstacle(frame, color_ranges)
 
         # Display the detection results
         #cv2.imshow('Shelf Detection', shelf_frame)
-        cv2.imshow('Mask Detection', mask)
         #cv2.imshow('Item Detection', item_frame)
-        #cv2.imshow('Marker Detection', marker_frame)
+        cv2.imshow('Marker Detection', marker_frame)
+        cv2.imshow('Marker Mask', marker_mask)
         cv2.imshow('Wall Detection', wall_frame)
+        cv2.imshow('Wall Mask', wall_mask)
         #cv2.imshow('Obstacle Detection', obstacle_frame)
 
         # Exit on 'q' key press
@@ -114,7 +115,8 @@ def run_detection(file_path):
 
 def main():
     # Replace with your file path (video or image)
-    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_going_row3_2.mp4'
+    #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_going_row3_2.mp4'
+    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4'
     run_detection(file_path)
 
 if __name__ == '__main__':
