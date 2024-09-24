@@ -2,6 +2,14 @@ import csv
 import cv2
 import numpy as np
 from picamera2 import Picamera2
+import os
+import sys
+
+# sys path
+sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+
+from Detection.detection import DetectionBase
+
 """
 Focal length module for loading focal length data.
 """
@@ -28,6 +36,8 @@ class CalibrateFocalLength:
         """
         Initializes the CalibrateFocalLength class by setting up the camera and default values.
         """
+        # import detection base
+        self.detection_base = DetectionBase("marker")
         # Known parameters for focal length calibration
         self.real_world_width = 0.07  # 7 cm object width in meters
         self.distance_to_object = 1.04  # 28 cm distance to the object in meters
