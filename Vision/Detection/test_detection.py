@@ -5,6 +5,7 @@ from shelf import Shelf
 #from item import Item
 from marker import Marker
 from wall import Wall
+from packing_station import PackingStationRamp
 #from obstacle import Obstacle
 
 # Predefined color ranges for different categories
@@ -13,7 +14,8 @@ color_ranges = {
     'Obstacle': (np.array([50, 0, 0]), np.array([69, 185, 155])),
     'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
     'Marker': (np.array([0, 0, 0]), np.array([179, 120, 100])),
-    'Wall': (np.array([0, 0, 200]), np.array([179, 150, 255]))
+    'Wall': (np.array([0, 0, 150]), np.array([255, 180, 255])),
+    'Ramp': (np.array([19, 0, 80]), np.array([40, 255, 200]))
 }
 
 def is_video(file_path):
@@ -66,10 +68,11 @@ def detect_in_video(video_path):
         return
 
     # Initialize detectors
-    #shelf_detector = Shelf()
+    shelf_detector = Shelf()
     #item_detector = Item()
     marker_detector = Marker()
     wall_detector = Wall()
+    #ramp_detector = PackingStationRamp()
     #obstacle_detector = Obstacle()
 
     while cap.isOpened():
@@ -80,16 +83,18 @@ def detect_in_video(video_path):
         # Detect objects in the current frame
         #detected_shelves, shelf_frame, mask = shelf_detector.find_shelf(frame, color_ranges)
         #detected_items, item_frame = item_detector.find_item(frame, color_ranges)
-        detected_walls, wall_frame, wall_mask = wall_detector.find_wall(frame, color_ranges)
-        detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, detected_walls, color_ranges)
+        detected_walls, filled_wall_mask, wall_mask = wall_detector.find_wall(frame, color_ranges)
+        detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, filled_wall_mask, color_ranges)
         #detected_obstacles, obstacle_frame = obstacle_detector.find_obstacle(frame, color_ranges)
+        #detected_ramps, wall_frame, wall_mask = wall_detector.find_wall(frame, color_ranges)
 
         # Display the detection results
         #cv2.imshow('Shelf Detection', shelf_frame)
         #cv2.imshow('Item Detection', item_frame)
+        
         cv2.imshow('Marker Detection', marker_frame)
         cv2.imshow('Marker Mask', marker_mask)
-        cv2.imshow('Wall Detection', wall_frame)
+        cv2.imshow('Wall Detection', filled_wall_mask)
         cv2.imshow('Wall Mask', wall_mask)
         #cv2.imshow('Obstacle Detection', obstacle_frame)
 
