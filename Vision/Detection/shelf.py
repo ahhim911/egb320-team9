@@ -20,25 +20,8 @@ class Shelf(DetectionBase):
         lower_hsv, upper_hsv = color_ranges['Shelf']
         mask, scaled_image = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
         self.analyze_contours(scaled_image, mask)
-        
-        # Get corners directly from contours
-        #contour_image, corners = self.get_contour_corners(scaled_image)
-        
-        # Focus on a specific corner (e.g., bottom-right corner)
-        #specific_corner = self.get_specific_corner(corners, criterion="bottom-right")
-        
-        # Draw the specific corner
-        #if specific_corner is not None:
-            #x, y = specific_corner
-            #cv2.circle(contour_image, (x, y), 10, (255, 0, 0), -1)  # Blue circle for the specific corner
-        
-        #for obj in self.detected_objects:
-            #x, y, w, h = obj["position"]
-            #range_, bearing = self.calculate_range_and_bearing(x, y, w, h)
-            #obj["range"] = range_
-            #obj["bearing"] = bearing
 
-        return self.detected_objects, self.draw_contours(contour_image), mask
+        return self.detected_objects, self.draw_contours(scaled_image), mask
         
     def analyze_contours(self, image, mask, min_area=800):
         """
