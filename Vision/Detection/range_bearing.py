@@ -15,7 +15,7 @@ class DistanceEstimation:
         return (real_object_width * focal_length) / object_width
 
     @staticmethod
-    def estimate_bearing(object_center_x, image_width, max_bearing_angle=30):
+    def estimate_bearing(object_center_x, image_width, max_bearing_angle=35):
         offset = object_center_x - (image_width / 2)
         return (max_bearing_angle * offset) / (image_width / 2)
     
