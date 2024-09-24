@@ -188,12 +188,12 @@ class CalibrateColor:
                 break
             elif key == ord('s'):  # Save the HSV range if 's' is pressed
                 print("Saving color thresholds...")
-                with open("calibrate.csv", "w") as file:
+                with open("color_thresholds.csv", "w") as file:
                     for color, (lower, upper) in self.color_ranges.items():
                         lower_str = ','.join(map(str, lower))
                         upper_str = ','.join(map(str, upper))
                         file.write(f"{color},{lower_str},{upper_str}\n")
-                print("Color thresholds saved to calibrate.csv")
+                print("Color thresholds saved to color_thresholds.csv")
                 
             elif key == ord('r'):  # Reset the HSV range if 'r' is pressed
                 self.reset()

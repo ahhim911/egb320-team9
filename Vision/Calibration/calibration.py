@@ -17,9 +17,10 @@ class Calibration:
         self.focal_length = FocalLength()
 
     def load_csv(self):
-        self.color.load_color_thresholds("calibration/color_thresholds.csv")
-        self.homography.load_homography_matrix("calibration/homography_matrix.csv")
-        self.focal_length.load_focal_length("calibration/focal_length.csv")
+        color_range = self.color.load_color_thresholds("calibration/color_thresholds.csv")
+        homography_matrix = self.homography.load_homography_matrix("calibration/homography_matrix.csv")
+        focal_length = self.focal_length.load_focal_length("calibration/focal_length.csv")
+        return color_range, homography_matrix, focal_length
     
     def calibrate(self, focal_length=True, homography=True, color=True):
         if color:
