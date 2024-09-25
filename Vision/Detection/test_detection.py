@@ -129,10 +129,10 @@ def run_detection(file_path):
 
 def main():
     # Replace with your file path (video or image)
-    file_path = '/../../egb320-team9/Vision/Camera/Videos/1_going_row3_2.mp4'
-    #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4'
-    #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/NG_search_packing station.mp4'
-    #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/2_going_row1_ps.mp4'
+    file_path = '../Camera/Videos/1_going_row3_2.mp4'
+    #file_path = '../Camera/Videos/1_searching_left_1.mp4'
+    #file_path = '../Camera/Videos/NG_search_packing station.mp4'
+    #file_path = '../Camera/Videos/2_going_row1_ps.mp4'
     run_detection(file_path)
 
 if __name__ == '__main__':
