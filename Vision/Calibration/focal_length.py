@@ -47,7 +47,7 @@ class CalibrateFocalLength:
         self.captured_image = None
 
         # Load color thresholds from CSV
-        self.color_ranges = self.load_color_thresholds('calibrate.csv')
+        self.color_ranges = self.load_color_thresholds('color_thresholds.csv')
 
         # Initialize the camera
         self.picam2 = Picamera2()
@@ -190,10 +190,10 @@ class CalibrateFocalLength:
         Saves the calculated focal length to a CSV file.
         """
         if self.focal_length is not None:
-            with open("calibrate_focal_length.csv", "w", newline='') as file:
+            with open("focal_length.csv", "w", newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Focal Length", self.focal_length])
-            print("Focal length data saved to calibrate_focal_length.csv")
+            print("Focal length data saved to focal_length.csv")
         else:
             print("Focal length is not calculated yet.")
 

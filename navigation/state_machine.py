@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 import navigation.path_planning as navigation
 import mobility.intergration_master as mobility
-# import item_collection.item_collection as item_collection
+# import item_collection.item_collection as itemCollection
 from threading import Thread, Event
 
 class StateMachine:
     def __init__(self):
+        # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
         self.found_shelf = False
         self.found_row = False
@@ -41,7 +42,7 @@ class StateMachine:
 
         self.robot_state = 'INIT'
 
-    def init_state(self):        
+    def init_state(self):
         # Set initial parameters and switch to the next state
         self.robot_state = 'SEARCH_FOR_ROW'
         self.target_shelf = self.final_df['Shelf'][self.current_item]

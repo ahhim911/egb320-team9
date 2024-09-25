@@ -2,18 +2,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-MAX_ROBOT_VEL = 0.1
-MAX_ROBOT_ROT = 0.2
+MAX_ROBOT_VEL = 0.1 # m/s
+MAX_ROBOT_ROT = 0.2 # rad/s
 GOAL_P = 0.5
 ROT_BIAS = 0.5
 CAMERA_FOV = 60
 WORKER_WIDTH_SCALE = 0.15 #m
-
-# def draw_field(field):
-
-
-# rotate to the specified angle
-# def rotate_to_angle(angle):
 
 
 def calculate_goal_velocities(goal_position, obstacles, draw=False):
@@ -71,17 +65,7 @@ def clip_deg_fov(deg, fov):
     # Clip the degree to the range of the camera fov
     return np.clip(deg, 0, fov - 1)
 
-
-
-
 def compute_attractive_field(goal_deg):
-    # attractive_field = np.zeros(CAMERA_FOV + 1)
-    # attractive_field[goal_deg] = 1
-    # gradient = 1 / 30
-    # for angle in range(0, int((CAMERA_FOV/2 +1))):
-    #     attractive_field[clip_deg_fov(goal_deg - angle, CAMERA_FOV)] = 1 - gradient * angle
-    #     attractive_field[clip_deg_fov(goal_deg + angle, CAMERA_FOV)] = 1 - gradient * angle
-    # return attractive_field
     angles = np.arange(-CAMERA_FOV//2, CAMERA_FOV//2 + 1) # angles from -30 to 30
     field_indices = clip_deg_fov(goal_deg + angles, CAMERA_FOV) # indices from 0 to 60
     gradient = 1 / 30 # gradient of the field

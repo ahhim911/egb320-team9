@@ -13,7 +13,6 @@ color_ranges = {}
 
 # Function to run the state machine in a separate thread
 def run_state_machine_thread(state_machine):
-    json_file_path = 'output_data.json'
 
     while True:
         try:

@@ -1,6 +1,7 @@
 import smbus
 import time
 from pynput import keyboard
+from intergration_master import drive
 
 # Constants
 I2C_ADDRESS = 0x08  # I2C address of the slave device
@@ -33,7 +34,16 @@ class WASDMotion:
     def on_press(self, key):
         try:
             if key.char in ['w', 'a', 's', 'd', 'x']:  # Send specific keys
-                self.send_i2c_command(key.char)
+                if key.char == 'w':
+                    drive(0.1, 0)
+                elif key.char == 'a':
+                    drive(0, 0.1)
+                elif key.char == 's':
+                    drive(-0.1, 0)
+                elif key.char == 'd':
+                    drive(0, -0.1)
+                elif key.char == 'x':
+                    drive(0, 0)
         except AttributeError:
             pass
 
