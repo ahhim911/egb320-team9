@@ -6,17 +6,17 @@ from shelf import Shelf
 from marker import Marker
 from wall import Wall
 from packing_station import PackingStationRamp
-#from obstacle import Obstacle
+import sys
 
-# Predefined color ranges for different categories
-color_ranges = {
-    'Shelf': (np.array([80, 60, 15]), np.array([140, 255, 255])),
-    'Obstacle': (np.array([50, 0, 0]), np.array([69, 185, 155])),
-    'Item': (np.array([0, 150, 27]), np.array([14, 255, 255])),
-    'Marker': (np.array([0, 0, 0]), np.array([179, 160, 120])),
-    'Wall': (np.array([0, 0, 150]), np.array([255, 255, 255])),
-    'Ramp': (np.array([19, 0, 80]), np.array([40, 255, 200]))
-}
+
+# Define the system path "../"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
+from Calibration.calibration import Calibration
+
+# Load the color ranges from the calibration file
+calibration = Calibration()
+color_ranges = calibration.load_csv()[0]
 
 def is_video(file_path):
     """Check if the given file is a video based on its extension."""
@@ -129,7 +129,7 @@ def run_detection(file_path):
 
 def main():
     # Replace with your file path (video or image)
-    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_going_row3_2.mp4'
+    file_path = '/../../egb320-team9/Vision/Camera/Videos/1_going_row3_2.mp4'
     #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4'
     #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/NG_search_packing station.mp4'
     #file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/2_going_row1_ps.mp4'
