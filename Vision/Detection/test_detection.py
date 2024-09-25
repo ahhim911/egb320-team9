@@ -6,13 +6,8 @@ from shelf import Shelf
 from marker import Marker
 from wall import Wall
 from packing_station import PackingStationRamp
-import sys
 
-
-# Define the system path "../"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-
-from Calibration.calibration import Calibration
+from ..Calibration.calibration import Calibration
 
 # Load the color ranges from the calibration file
 calibration = Calibration()
