@@ -63,4 +63,4 @@ class WASDMotion:
 
     def stop(self):
         # Stop the robot
-        self.send_i2c_command('x')
+        drive(0, 0)
