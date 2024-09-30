@@ -1,9 +1,17 @@
 import numpy as np
 import pandas as pd
-import navigation.path_planning as navigation
-import mobility.intergration_master as mobility
 # import item_collection.item_collection as itemCollection
 from threading import Thread, Event
+import os
+import sys
+
+# Define the root directory
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../')) 
+
+import navigation.path_planning as navigation
+import mobility.intergration_master as mobility
+
+
 
 class StateMachine:
     def __init__(self):

@@ -18,6 +18,12 @@ color_ranges = {
     'PackingStationRamp': (np.array([0, 100, 200]), np.array([50, 255, 255]))
 }
 
+# from ..Calibration.calibration import Calibration
+
+# # Load the color ranges from the calibration file
+# calibration = Calibration()
+# color_ranges = calibration.load_csv()[0]
+
 def is_video(file_path):
     """Check if the given file is a video based on its extension."""
     video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv']
@@ -127,6 +133,10 @@ def run_detection(file_path):
 def main():
     # Replace with your file path (video or image)
     file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/NG_search_packing station.mp4'
+    # file_path = '../Camera/Videos/1_going_row3_2.mp4'
+    # file_path = '../Camera/Videos/1_searching_left_1.mp4'
+    # file_path = '../Camera/Videos/NG_search_packing station.mp4'
+    # file_path = '../Camera/Videos/2_going_row1_ps.mp4'
     run_detection(file_path)
 
 if __name__ == '__main__':
