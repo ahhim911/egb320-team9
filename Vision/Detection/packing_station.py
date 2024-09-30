@@ -5,8 +5,11 @@ from detection import DetectionBase  # Inherit from DetectionBase
 import os
 import sys
 
-# Define the system path "../"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+# Define the root directory
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')) #
+
+# Vision module
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Vision')))  # Add the Preprocessing directory to the system path
 from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 
