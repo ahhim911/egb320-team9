@@ -18,7 +18,7 @@ class PackingStationRamp(DetectionBase):
         """
         Detects the packing station ramp by using color and contour analysis.
         """
-        # Define the HSV color range for the ramp (this could be modified based on real ramp colors)
+        # Define the HSV color range for the ramp
         lower_hsv, upper_hsv = color_ranges['PackingStationRamp']
 
         # Preprocess the image to create a mask for the ramp
@@ -35,9 +35,9 @@ class PackingStationRamp(DetectionBase):
 
         return detected_ramp, final_image, mask
 
-    def analyze_contours(self, mask, min_area=1500):
+    def analyze_contours(self, mask, min_area=1000):
         """
-        Analyzes contours for the detected ramp. This focuses on large, rectangular shapes.
+        Analyzes contours for the detected ramp.
         """
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         detected_objects = []
@@ -47,30 +47,13 @@ class PackingStationRamp(DetectionBase):
             if area < min_area:
                 continue  # Skip small contours
 
-            shape = self.classify_shape(contour)
-
-            if shape == "Rectangle":  # Focus on detecting ramp-like structures (rectangles)
-                x, y, w, h = cv2.boundingRect(contour)
-                detected_objects.append({
-                    "position": (x, y, w, h),
-                    "contour": contour,
-                    "shape": shape
-                })
+            x, y, w, h = cv2.boundingRect(contour)
+            detected_objects.append({
+                "position": (x, y, w, h),
+                "contour": contour,
+            })
 
         return detected_objects
-
-    def classify_shape(self, contour):
-        """
-        Classifies the shape as a rectangle using contour properties.
-        """
-        perimeter = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
-        
-        # Check if the contour is a rectangle by counting the vertices
-        if len(approx) == 4:  # A rectangle should have 4 vertices
-            return "Rectangle"
-        else:
-            return "Unknown"
 
     def draw_bounding_box(self, image, detected_ramp):
         """
