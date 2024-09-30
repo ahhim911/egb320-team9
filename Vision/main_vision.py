@@ -1,10 +1,8 @@
 from Camera.camera import Camera
 from Preprocessing.preprocessing import Preprocessing
 from Detection.detection import DetectionBase
-from Detection.distanceestimation import DistanceEstimation
-from threading.threadingmanager import ThreadingManager
-from Visualization.visualization import Visualization
 from Calibration.calibration import Calibration
+from threading import Thread
 import cv2
 
 
@@ -32,44 +30,35 @@ main()
 
 """
 
+class Vision(DetectionBase):
+    def __init__(self):
+        self.objectRB = None
+        self.requested_object = None
+        self.camera = Camera()
 
-def process_category(category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):
-    mask = Preprocessing.color_threshold(blurred_image, lower_hsv, upper_hsv)
-    processed_mask = Preprocessing.apply_morphological_filters(mask)
-    contour_image, objects = DetectionBase.analyze_contours(blurred_image, processed_mask)
-    classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
-    return classified_objects
+        self.calibration = Calibration()
 
-def process_image_pipeline(camera, color_ranges, calibration):
-    while True:
-        frame = camera.get_frame()
-        if frame is None:
-            continue
-
-        blurred_image = Preprocessing.preprocess(frame)
-        image_width = blurred_image.shape[1]
-        output_data = {"items": [None] * 6, "shelves": [None] * 6, "row_markers": [None, None, None], "obstacles": None, "packing_bay": None}
-
-        tasks = [{"function": process_category, "args": (category, blurred_image, color_ranges[category][0], color_ranges[category][1], image_width, output_data)} for category in color_ranges]
-
-        ThreadingManager.run_parallel_processing(tasks) # Run the tasks in parallel
+    # def process_category(self, category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):
         
-        Visualization.show_image("Processed Frame", blurred_image)
+    #     return 
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    def process_image_pipeline(self, camera, color_ranges):
+        while True:
+            frame = camera.get_frame()
+            if frame is None:
+                continue
+            
+            blurred_image = Preprocessing.preprocess(frame)
+        return
 
-def main():
-    camera = Camera()
+    def start(self):
+        self.color_ranges, homography_matrix, focal_length = self.calibration.load_csv()
+        Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
+        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges, self.calibration)).start()
+        return self
+    
 
-    calibration = Calibration()
-    color_ranges, homography_matrix, focal_length = calibration.load_csv()
-
-
-    process_image_pipeline(camera, color_ranges, calibration)
-
-    camera.close()
-    cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    main()
+    def __del__(self):
+        self.camera.close()
+        cv2.destroyAllWindows()
+        return

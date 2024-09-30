@@ -22,6 +22,11 @@ def main():
     picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))  # Set a larger resolution
     picam2.start()
 
+    # start the vision threads (one is sampling images, one is processing)
+    # thread should update attribute of class to store object RB (Vision.objectRB)
+    # Vision = VisionClass()
+    # Vision.start()
+
     print('Start Loop')
     while True:
         frame = picam2.capture_array()
@@ -29,12 +34,15 @@ def main():
             print('Get Frame Success')
             # Process the frame
             process_frame(frame, color_ranges)
-            # Path to the JSON file
-            json_file_path = 'output_data.json'
+            # # Path to the JSON file
+            # json_file_path = 'output_data.json'
 
-            # Open and load the JSON file
-            with open(json_file_path, 'r') as file:
-                data = json.load(file)
+            # # Open and load the JSON file
+            # with open(json_file_path, 'r') as file:
+            #     data = json.load(file)
+
+            # access the attributes of the data
+            # data = Vision.objectRB
                         
             # Extract the range and bearing data
             itemsRB = data['items']
@@ -44,8 +52,10 @@ def main():
             shelfRangeBearing = data['shelves']
             # Run the state machine using treading
             print(shelfRangeBearing)
-            state_machine.run_state_machine(itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing)
+            state_machine.run_state_machine(data)
 
+            # send information back to the vision
+            # Vision.requested_objects = ["items", "obstacles"]
 
     # Stop the camera
 if __name__ == "__main__":

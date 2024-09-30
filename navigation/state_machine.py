@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 # import item_collection.item_collection as itemCollection
-from threading import Thread, Event
+# from threading import Thread, Event
 import os
 import sys
 
