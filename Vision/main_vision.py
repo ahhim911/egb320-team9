@@ -33,30 +33,35 @@ main()
 class Vision(DetectionBase):
     def __init__(self):
         self.objectRB = None
-        self.requested_object = None
+        self.requested_objects = []
         self.camera = Camera()
 
         self.calibration = Calibration()
+        self.color_ranges = None
+        self.homography_matrix = None
+        self.focal_length = None
 
+    def start(self):
+        self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
+        Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
+        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges, self.calibration,)).start()
+        return
+
+    def process_image_pipeline(self, self.camera, color_ranges):
+        while True:
+            frame = self.camera.get_frame()
+            if frame is None:
+                continue
+            self.local_frame = frame.copy()
+            
+            blurred_image = Preprocessing.preprocess(self.local_frame)
+            image_width = blurred_image.shape[1]
+        return
+
+    
     # def process_category(self, category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):
         
     #     return 
-
-    def process_image_pipeline(self, camera, color_ranges):
-        while True:
-            frame = camera.get_frame()
-            if frame is None:
-                continue
-            
-            blurred_image = Preprocessing.preprocess(frame)
-        return
-
-    def start(self):
-        self.color_ranges, homography_matrix, focal_length = self.calibration.load_csv()
-        Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
-        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges, self.calibration)).start()
-        return self
-    
 
     def __del__(self):
         self.camera.close()

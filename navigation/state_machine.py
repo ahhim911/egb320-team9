@@ -162,7 +162,7 @@ class StateMachine:
                     self.robot_state = 'COLLECT_ITEM'
                     self.action['forward_vel'] = 0
                     self.action['rotational_vel'] = 0
-
+    
     def collect_item(self):
         print("Collecting item")
         # item_collection.grip('open')
@@ -171,23 +171,30 @@ class StateMachine:
 
     # Add more methods for other states...
 
-    def run_state_machine(self, itemsRB, packingBayRB, obstaclesRB, rowMarkerRangeBearing, shelfRangeBearing):
+    def run_state_machine(self, dataRB):
         print(self.robot_state)
         if self.robot_state == 'INIT':
             self.init_state()
         elif self.robot_state == 'SEARCH_FOR_SHELF':
-            self.search_for_shelf(rowMarkerRangeBearing, shelfRangeBearing)
+            self.search_for_shelf(dataRB[0], dataRB[1])
+            return ["RowMarkers", "Shelves"]
         elif self.robot_state == 'MOVE_TO_SHELF':
-            self.move_to_shelf(shelfRangeBearing, obstaclesRB)
+            self.move_to_shelf(dataRB[0], dataRB[1])
+            return ["Shelves", "Obstacles"]
         elif self.robot_state == 'SEARCH_FOR_ROW':
-            self.search_for_row(rowMarkerRangeBearing)
+            self.search_for_row(dataRB[0])
+            return ["RowMarkers"]
         elif self.robot_state == 'MOVE_TO_ROW':
-            self.move_to_row(rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing)
+            self.move_to_row(dataRB[0], dataRB[1], dataRB[2])
+            return ["RowMarkers", "Obstacles", "Shelves"]
         elif self.robot_state == 'SEARCH_FOR_ITEM':
-            self.search_for_item(itemsRB)
+            self.search_for_item(dataRB[0])
+            return ["Items"]
         elif self.robot_state == 'COLLECT_ITEM':
             self.collect_item()
         # Add other state transitions...
 
         mobility.drive(self.action['forward_vel'], self.action['rotational_vel'])
+        return []
+        
         

@@ -199,7 +199,7 @@ if __name__ == '__main__':
 					action['forward_vel'] = 0
 					action['rotational_vel'] = 0
 					robot_state = 'MOVE_TO_ROW'
-
+				
 				if shelfRangeBearing[subtarget_shelf] != None:
 					found_shelf = True
 					goal_position['range'] = shelfRangeBearing[subtarget_shelf][0]
