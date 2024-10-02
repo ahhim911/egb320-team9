@@ -2,6 +2,7 @@
 from Vision.main_vision import Vision as VisionClass
 from navigation.state_machine import StateMachine
 from picamera2 import Picamera2
+import time
 
 def main():
     # Create the state machine object
@@ -20,6 +21,7 @@ def main():
 
     print('Start Loop')
     while True:
+        now = time.time()            # get the time
         # Process the frame
         # process_frame(frame, color_ranges)
 
@@ -28,7 +30,9 @@ def main():
 
         # Run State machine and send information back to the vision using "requested_objects"
         Vision.requested_objects = state_machine.run_state_machine(data)
-
+        elapsed = time.time() - now  # how long was it running?
+        fps = 1.0/elapsed
+        print('Elapsed Time: ', elapsed, 'FPS: ', fps)
 
     # Stop the camera
 if __name__ == "__main__":

@@ -11,6 +11,15 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 import navigation.path_planning as navigation
 import mobility.intergration_master as mobility
 
+# define the numbers
+# 0b000000 = [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints]
+
+PACKING_BAY = 0b100000
+ROW_MARKERS = 0b010000
+SHELVES = 0b001000
+ITEMS = 0b000100
+OBSTACLES = 0b000010
+WALLPOINTS = 0b000001
 
 
 class StateMachine:
@@ -25,6 +34,7 @@ class StateMachine:
         self.goal_position = {}
         self.current_item = 0
         self.draw = False
+        self.holding_item = False
 
         # Read the object order file
         with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
@@ -52,18 +62,68 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_ROW'
+        self.robot_state = 'SEARCH_FOR_PS'
+        self.holding_item = False
+
+        # Set the target item position
+        print(self.current_item)
         self.target_shelf = self.final_df['Shelf'][self.current_item]
         self.target_row = self.final_df['Row'][self.current_item]
-        self.target_bay = 3  # Example fixed value; change as needed
+        self.target_bay = self.final_df['Bay'][self.current_item]
         self.target_height = self.final_df['Height'][self.current_item]
-        self.action['forward_vel'] = 0
-        self.action['rotational_vel'] = 0
-        # item_collection.grip('open')
+
+        # Set the subtarget shelf (Opposite side of the target shelf)
         if self.target_shelf % 2 == 1:  # Odd
             self.subtarget_shelf = self.target_shelf - 1
         else:  # Even
             self.subtarget_shelf = self.target_shelf + 1
+
+        # Reset the actuators
+        self.action['forward_vel'] = 0
+        self.action['rotational_vel'] = 0
+        # item_collection.grip('open')
+
+    def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
+        self.found_ps = packStationRangeBearing[0] is not None
+        self.found_row = rowMarkerRangeBearing[self.target_row] is not None
+
+        if self.found_row:
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = 0
+            self.robot_state = 'MOVE_TO_ROW'
+        # Rotate on the spot
+        if self.at_ps:
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = 0
+            self.robot_state = 'SEARCH_FOR_SHELF'
+
+        self.action['forward_vel'] = 0
+        self.action['rotational_vel'] = -0.1 # Rotate on the spot
+
+        if self.found_ps:
+            self.robot_state = 'MOVE_TO_PS'
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = 0
+
+    def move_to_ps(self, packStationRangeBearing, obstaclesRB):
+        self.found_ps = packStationRangeBearing[0] is not None
+
+        if self.found_ps:
+            self.goal_position['range'] = packStationRangeBearing[0][0]
+            self.goal_position['bearing'] = packStationRangeBearing[0][1]
+            print(self.goal_position)
+
+            # Calculate goal velocities
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
+
+            if self.goal_position['range'] - 0.15 < 0.01:
+                self.robot_state = 'SEARCH_FOR_SHELF'
+                self.action['forward_vel'] = 0
+                self.action['rotational_vel'] = 0
+        else:
+            self.robot_state = 'SEARCH_FOR_PS'
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = 0
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
@@ -151,7 +211,7 @@ class StateMachine:
     def search_for_item(self, itemsRB):
         print(f"Searching for item in bay {self.target_bay} at shelf {self.target_shelf}")
         self.action['forward_vel'] = 0
-        self.action['rotational_vel'] = -0.1 if self.target_shelf % 2 == 1 else 0.1
+        self.action['rotational_vel'] = -0.1 if self.target_shelf % 2 == 1 else 0.1 # Rotate Right if odd, Left if even
 
         print(f"itemsRB: {itemsRB}")
         for i in itemsRB:
@@ -172,29 +232,41 @@ class StateMachine:
     # Add more methods for other states...
 
     def run_state_machine(self, dataRB):
+        
+        # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
+        # co-responding to the binary number 0b000000
+
         print(self.robot_state)
         if self.robot_state == 'INIT':
             self.init_state()
+            return 0
+        elif self.robot_state == 'SEARCH_FOR_PS':
+            self.search_for_ps(dataRB[0], dataRB[1])
+            return PACKING_BAY | ROW_MARKERS
+        elif self.robot_state == 'MOVE_TO_PS':
+            self.move_to_ps(dataRB[0], dataRB[4])
+            return PACKING_BAY | OBSTACLES
         elif self.robot_state == 'SEARCH_FOR_SHELF':
-            self.search_for_shelf(dataRB[0], dataRB[1])
-            return ["RowMarkers", "Shelves"]
+            self.search_for_shelf(dataRB[1], dataRB[2])
+            return ROW_MARKERS | SHELVES
         elif self.robot_state == 'MOVE_TO_SHELF':
-            self.move_to_shelf(dataRB[0], dataRB[1])
-            return ["Shelves", "Obstacles"]
+            self.move_to_shelf(dataRB[2], dataRB[4])
+            return SHELVES | OBSTACLES
         elif self.robot_state == 'SEARCH_FOR_ROW':
-            self.search_for_row(dataRB[0])
-            return ["RowMarkers"]
+            self.search_for_row(dataRB[1])
+            return ROW_MARKERS
         elif self.robot_state == 'MOVE_TO_ROW':
-            self.move_to_row(dataRB[0], dataRB[1], dataRB[2])
-            return ["RowMarkers", "Obstacles", "Shelves"]
+            self.move_to_row(dataRB[1], dataRB[4], dataRB[2])
+            return ROW_MARKERS | OBSTACLES | SHELVES
         elif self.robot_state == 'SEARCH_FOR_ITEM':
-            self.search_for_item(dataRB[0])
-            return ["Items"]
+            self.search_for_item(dataRB[3])
+            return ITEMS
         elif self.robot_state == 'COLLECT_ITEM':
             self.collect_item()
+            return ITEMS
         # Add other state transitions...
 
         mobility.drive(self.action['forward_vel'], self.action['rotational_vel'])
-        return []
+        return 0
         
         

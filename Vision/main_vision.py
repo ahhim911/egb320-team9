@@ -29,11 +29,25 @@ main()
 - Close the camera and destroy all windows.
 
 """
-
+PACKING_BAY = 0b100000
+ROW_MARKERS = 0b010000
+SHELVES = 0b001000
+ITEMS = 0b000100
+OBSTACLES = 0b000010
+WALLPOINTS = 0b000001
 class Vision(DetectionBase):
     def __init__(self):
-        self.objectRB = None
-        self.requested_objects = []
+        """
+        REQUESTED OBJECTS
+        
+        USAGE: Compare the requested_objects with the binary number to determine if the object is requested
+        Example: if requested_objects & PACKING_BAY:
+        """
+        # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
+        # co-responding to the binary number 0b000000
+        self.objectRB = [None, None, None, None, None, None]
+        self.requested_objects = 0b000000
+
         self.camera = Camera()
 
         self.calibration = Calibration()
