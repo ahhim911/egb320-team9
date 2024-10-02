@@ -7,6 +7,7 @@ from wall import Wall
 from packing_station import PackingStationRamp
 from obstacle import Obstacle
 from item import Item
+import time
 
 # Predefined color ranges for different categories
 color_ranges = {
@@ -43,6 +44,7 @@ def detect_in_image(image):
     if image is None:
         print("Error: No image to process.")
         return
+        
 
     # Initialize detectors
     shelf_detector = Shelf()
@@ -76,39 +78,47 @@ def detect_in_video(video_path):
         print(f"Error: Unable to open video {video_path}")
         return
 
+    homography_matrix = np.array([[-0.0006663705008854376, 0.00010599070501256366, 0.11950082342807557],
+                              [-2.7981731315770147e-05, -0.00026224463974209775, -0.13070560750233118],
+                              [1.5216246479124574e-05, -0.007464510917774103, 1.0]])
+
     # Initialize detectors
-    shelf_detector = Shelf()
+    shelf_detector = Shelf(homography_matrix=homography_matrix)
     marker_detector = Marker()
     wall_detector = Wall()
     ramp_detector = PackingStationRamp()  # Initialize the ramp detector
-    obstacle_detector = Obstacle()
+    obstacle_detector = Obstacle(focal_length=300, homography_matrix=homography_matrix)
     item_detector = Item()
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break  # End of video
-
+        now = time.time()
         # Detect objects in the current frame
-        #detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
-        #detected_walls, filled_wall_mask, wall_mask = wall_detector.find_wall(frame, color_ranges)
-        #detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, filled_wall_mask, color_ranges)
+        detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
+        detected_walls, filled_wall_mask, wall_mask = wall_detector.find_wall(frame, color_ranges)
+        detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, filled_wall_mask, color_ranges)
         #detected_ramp, ramp_frame, ramp_mask = ramp_detector.find_packing_station_ramp(frame, color_ranges)  # Ramp detection
         detected_obstacles, obstacle_frame, obstacle_mask = obstacle_detector.find_obstacle(frame, color_ranges)
-        detected_items, item_frame, item_mask = item_detector.find_item(frame, color_ranges)
+        #detected_items, item_frame, item_mask = item_detector.find_item(frame, color_ranges)
 
-        # Display the detection results
-        #cv2.imshow('Shelf Detection', shelf_frame)
-        #cv2.imshow('Shelf Mask', shelf_mask)
-        #cv2.imshow('Marker Detection', marker_frame)
-        #cv2.imshow('Marker Mask', marker_mask)
-        #cv2.imshow('Obstacle Detection', obstacle_frame)
-        #cv2.imshow('Obstacle Mask', obstacle_mask)
-        cv2.imshow('Item Detection', item_frame)
-        cv2.imshow('Item Mask', item_mask)
-        #cv2.imshow('Ramp Detection', ramp_frame)  # Display ramp detection results
-        #cv2.imshow('Ramp Mask', ramp_mask)
-        #cv2.imshow('Wall Mask', filled_wall_mask)
+    #    # Display the detection results
+    #    cv2.imshow('Shelf Detection', shelf_frame)
+    #    #cv2.imshow('Shelf Mask', shelf_mask)
+    #    cv2.imshow('Marker Detection', marker_frame)
+    #    cv2.imshow('Marker Mask', marker_mask)
+    #    cv2.imshow('Obstacle Detection', obstacle_frame)
+    #    #cv2.imshow('Obstacle Mask', obstacle_mask)
+    #    cv2.imshow('Item Detection', item_frame)
+    #    #cv2.imshow('Item Mask', item_mask)
+    #    #cv2.imshow('Ramp Detection', ramp_frame)  # Display ramp detection results
+    #    #cv2.imshow('Ramp Mask', ramp_mask)
+    #    cv2.imshow('Wall Mask', filled_wall_mask)
+
+        elapsed = time.time() - now
+        fps = 1/elapsed
+        print('Time: ', elapsed, ' - FPS: ',fps)
 
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -132,7 +142,7 @@ def run_detection(file_path):
 
 def main():
     # Replace with your file path (video or image)
-    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/NG_search_packing station.mp4'
+    file_path = '/home/edmond3321/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4'
     # file_path = '../Camera/Videos/1_going_row3_2.mp4'
     # file_path = '../Camera/Videos/1_searching_left_1.mp4'
     # file_path = '../Camera/Videos/NG_search_packing station.mp4'
