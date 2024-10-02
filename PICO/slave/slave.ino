@@ -170,16 +170,75 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  // Function to set target velocities in m/s and rad/s (similar to simulation code)
-  int x_dot = text[1];
-  int theta_dot = text[2];
-  // Drive the motors using the calculated wheel speeds
-  float x_dot1 = x_dot/100;
-  float theta_dot1 = theta_dot/100;
-  Drive(x_dot, theta_dot);
+  switch (text[1]) {
+    
+    // Drive command
+    case 'D': 
+      // Function to set target velocities in m/s and rad/s (similar to simulation code)
+      int x_dot = text[2];
+      int theta_dot = text[3];
+      // Drive the motors using the calculated wheel speeds
+      float x_dot1 = x_dot/100;
+      float theta_dot1 = theta_dot/100;
+      Drive(x_dot, theta_dot);
+      break;
+
+    // Gripper control
+    case 'G':
+      if (text[2] == '0') {
+        gripper_open();
+      } else if (text[2] == '1') {
+        gripper_close();
+      }
+      break;
+
+    // Lift control
+    case 'H':
+      switch (text[2]) {
+        case '1':
+          lift_level1();
+          break;
+        case '2':
+          lift_level2();
+          break;
+        case '3':
+          lift_level3();
+          break;
+        default:
+          Serial.println("Invalid Given Index");
+          break;
+      }
+      break;
+
+    //LED control
+    case 'L':
+     int led;
+      switch (text[2]) {
+        case '1':
+          led = LED1;
+          break;
+        case '2':
+          led = LED2;
+          break;
+        case '3':
+          led = LED3;
+          break;
+        default:
+          Serial.println("Invalid Given Index");
+          break;
+      }
+      if (text[3] == '1') {
+        ledControl(led, HIGH);
+      } else if (text[3] == '0') {
+        ledControl(led, LOW);
+      }
+      break;
+    default:
+      Serial.println("Invalid Command");
+      break;
+  }
 
 
-  // Servos control
   if (text[9] == 'O') {
     gripper_open();
   } else if (text[9] == 'C') {
