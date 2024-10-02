@@ -16,16 +16,20 @@ import mobility.intergration_master as mobility
 
 PACKING_BAY = 0b100000
 ROW_MARKERS = 0b010000
-SHELVES = 0b001000
-ITEMS = 0b000100
-OBSTACLES = 0b000010
-WALLPOINTS = 0b000001
+SHELVES =     0b001000
+ITEMS =       0b000100
+OBSTACLES =   0b000010
+WALLPOINTS =  0b000001
 
+LEFT = 0
+RIGHT = 1
 
 class StateMachine:
     def __init__(self):
         # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
+        self.row_position_L = [0.3, 1, 1.7] # row positions for left shelf
+        self.row_position_R = [1.7, 1, 0.3] # row positions for left shelf
         self.found_shelf = False
         self.found_row = False
         self.at_ps = False
@@ -116,8 +120,13 @@ class StateMachine:
             # Calculate goal velocities
             self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
-            if self.goal_position['range'] - 0.15 < 0.01:
+            if self.goal_position['range'] - 1 < 0.01: # Middle of the area
                 self.robot_state = 'SEARCH_FOR_SHELF'
+                if self.target_row == 2:
+                    self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
+                    # can rotate to the left faster with time delay
+                else:
+                    self.shelf_side = LEFT # Will turn right to find Left shelf (0)
                 self.action['forward_vel'] = 0
                 self.action['rotational_vel'] = 0
         else:
@@ -126,48 +135,67 @@ class StateMachine:
             self.action['rotational_vel'] = 0
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
+        # Check if the row marker is found
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
-        if self.target_shelf % 2 == 1:  # Odd
-            if shelfRangeBearing[self.subtarget_shelf] is not None:
-                self.found_shelf = True
-        else:
-            if shelfRangeBearing[self.target_shelf] is not None:
-                self.found_shelf = True
-
-        # Rotate on the spot
-        self.action['forward_vel'] = 0
-        self.action['rotational_vel'] = -0.1 if not self.at_ps else 0.1
-        print(self.robot_state, "looking for: ", self.subtarget_shelf, "Found: ", shelfRangeBearing[self.subtarget_shelf])
-
         if self.found_row:
             self.action['forward_vel'] = 0
             self.action['rotational_vel'] = 0
             self.robot_state = 'MOVE_TO_ROW'
-        elif self.found_shelf:
+
+        # Turn direction based on the shelf side
+        if self.shelf_side == LEFT:  # Odd
+            # Turn right
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = 0.1
+            if shelfRangeBearing[0] is not None:
+                self.found_shelf = True
+                # LEFT SHELF FOUND
+            
+        else:
+            # Turn left
+            self.action['forward_vel'] = 0
+            self.action['rotational_vel'] = -0.1
+            if shelfRangeBearing[1] is not None:
+                self.found_shelf = True
+                # RIGHT SHELF FOUND
+
+        # Rotate on the spot
+
+        if self.found_shelf:
             self.action['forward_vel'] = 0
             self.action['rotational_vel'] = 0
             self.robot_state = 'MOVE_TO_SHELF'
 
     def move_to_shelf(self, shelfRangeBearing, obstaclesRB):
         self.found_shelf = False
-        
-        if shelfRangeBearing[self.target_shelf] is not None:
-            self.found_shelf = True
-            self.goal_position['range'] = shelfRangeBearing[self.target_shelf][0]
-            self.goal_position['bearing'] = shelfRangeBearing[self.target_shelf][1]
-            print(self.robot_state, "Going to: ", self.target_shelf, self.goal_position)
 
-            # Add shelves to obstacles
-            np.append(obstaclesRB, shelfRangeBearing[self.target_shelf])
+        if self.shelf_side == LEFT & shelfRangeBearing[0] is not None:
+            self.found_shelf = True
+            self.goal_position['range'] = shelfRangeBearing[0][0]
+            self.goal_position['bearing'] = shelfRangeBearing[0][1]
+            print(self.robot_state, "Going to: LEFT shelf", self.goal_position)
 
             # Calculate goal velocities
             self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             
-            if self.goal_position['range'] - 0.15 < 0.01:
+            if self.goal_position['range'] - self.row_position_L[self.target_row] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.action['forward_vel'] = 0
                 self.action['rotational_vel'] = 0
 
+        elif self.shelf_side == RIGHT & shelfRangeBearing[1] is not None:
+            self.found_shelf = True
+            self.goal_position['range'] = shelfRangeBearing[1][0]
+            self.goal_position['bearing'] = shelfRangeBearing[1][1]
+            print(self.robot_state, "Going to: RIGHT shelf", self.goal_position)
+
+            # Calculate goal velocities
+            self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
+
+            if self.goal_position['range'] - self.row_position_R[self.target_row] < 0.01:
+                self.robot_state = 'SEARCH_FOR_ROW'
+                self.action['forward_vel'] = 0
+                self.action['rotational_vel'] = 0
         else:
             self.robot_state = 'SEARCH_FOR_SHELF'
             self.action['forward_vel'] = 0
@@ -179,7 +207,7 @@ class StateMachine:
 
         # Rotate on the spot
         self.action['forward_vel'] = 0
-        self.action['rotational_vel'] = -0.1
+        self.action['rotational_vel'] = -0.1 if self.shelf_side == LEFT else 0.1
 
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
