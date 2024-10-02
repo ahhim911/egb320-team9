@@ -12,6 +12,10 @@
 #define MAX_SPEED 255      // Maximum PWM value for motor speed
 #define MAX_INPUT_SPEED 100 // Maximum input speed value (user input scale)
 #define MAX_DIRECTION 100 
+#define WHEEL_BASE 0.15  // Distance between wheels in meters
+#define WHEEL_RADIUS 0.04  // Radius of the wheels in meters
+#define MAX_WHEEL_SPEED 10 
+#define SCALING_FACTOR 127.5
 
 volatile int last_pos = 45;
 int gripservoPin = 9;  // SV1
@@ -71,49 +75,34 @@ void ledControl(int led, int state) {
 
 
 // Drive function that scales speed and direction
-void drive(int speed, int direction) {
-  // Scale factor to convert speed and direction to PWM range
-  const float scale_factor = MAX_SPEED / MAX_INPUT_SPEED;
-
-  // Constrain direction between -10 and 10
-  direction = constrain(direction, -MAX_DIRECTION, MAX_DIRECTION);
-
-  // Scale speed and direction
-  int scaled_speed = constrain(speed * scale_factor, -MAX_SPEED, MAX_SPEED);
-  int scaled_direction = constrain(direction * scale_factor, -MAX_SPEED, MAX_SPEED);
-
-  int motor_left, motor_right;
-
-  // Calculate motor speeds based on speed and direction
-  if (direction < 0) { // Turning left
-    motor_left = scaled_speed;
-    motor_right = scaled_speed + scaled_direction; // slower on the right
-  } else { // Turning right
-    motor_right = scaled_speed;
-    motor_left = scaled_speed - scaled_direction; // slower on the left
-  }
-
-  // Constrain motor speeds between -255 and 255
-  motor_left = constrain(motor_left, -MAX_SPEED, MAX_SPEED);
-  motor_right = constrain(motor_right, -MAX_SPEED, MAX_SPEED);
-
-  // Control motor 1 (left motor)
-  if (motor_left < 0) {
+void driveint(int left_motor_speed, int right_motor_speed){
+    // Control motor 1 (left motor)
+  if (left_motor_speed < 0) {
     digitalWrite(PHS1, LOW);  // Reverse direction
   } else {
     digitalWrite(PHS1, HIGH); // Forward direction
   }
-  analogWrite(EN1, abs(motor_left));  // Set the speed with PWM
+  analogWrite(EN1, abs(left_motor_speed));  // Set the speed with PWM
 
   // Control motor 2 (right motor)
-  if (motor_right < 0) {
+  if (right_motor_speed < 0) {
     digitalWrite(PHS2, LOW);  // Reverse direction
   } else {
     digitalWrite(PHS2, HIGH); // Forward direction
   }
-  analogWrite(EN2, abs(motor_right));  // Set the speed with PWM
+  analogWrite(EN2, abs(right_motor_speed));  // Set the speed with PWM
 }
 
+void Drive(float x_dot, float theta_dot) {
+  // Calculate left and right wheel speeds (rad/s) based on forward and rotational velocity
+  float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+  float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+  float leftWheelSpeed1 = constrain(round(leftWheelSpeed*SCALING_FACTOR),-255,255);
+  float rightWheelSpeed1 = constrain(round(rightWheelSpeed*SCALING_FACTOR),-255,255);
+
+    driveint(leftWheelSpeed1, rightWheelSpeed1);
+
+}
 
 
 
@@ -181,23 +170,13 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  // Extract speed value from command
-  char Speed1[4] = { text[2], text[3], text[4], '\0' };  // Extract speed value
-  int speed1 = atoi(Speed1);
-
-  // Extract direction value from command
-  char Direction[4] = { text[6], text[7], text[8], '\0' };  // Extract direction value
-  int direction = atoi(Direction);
-
-  if (text[1] == 'N') {
-    speed1 = speed1 * -1;  // Negate speed if necessary
-  }
-  if (text[5] == 'N') {
-    direction = direction * -1;  // Negate direction if necessary
-  }
-
-  // Call drive function with scaled values
-  drive(speed1, direction);
+  // Function to set target velocities in m/s and rad/s (similar to simulation code)
+  int x_dot = text[1];
+  int theta_dot = text[2];
+  // Drive the motors using the calculated wheel speeds
+  float x_dot1 = x_dot/100;
+  float theta_dot1 = theta_dot/100;
+  Drive(x_dot, theta_dot);
 
 
   // Servos control
@@ -222,9 +201,22 @@ void ControlSystem(uint8_t* command, int length) {
   }
 
   // LED control
-  ledControl(LED1, text[11] == '1');
-  ledControl(LED2, text[12] == '1');
-  ledControl(LED3, text[13] == '1');
+  
+  if (text[11] == '1') {
+    ledControl(LED1, HIGH);
+  } else if (text[11] == '0') {
+    ledControl(LED1, LOW);
+  }
+  if (text[12] == '1') {
+    ledControl(LED2, HIGH);
+  } else if (text[12] == '0') {
+    ledControl(LED2, LOW);
+  }
+  if (text[13] == '1') {
+    ledControl(LED3, HIGH);
+  } else if (text[13] == '0') {
+    ledControl(LED3, LOW);
+  }
   
 }
 
