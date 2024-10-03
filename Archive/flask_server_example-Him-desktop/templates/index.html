@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Streaming Demonstration</title>
+    <style>
+        .slider {
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Streaming Demonstration</h1>
+    <img src="{{ url_for('video_feed') }}" width="640" height="640">
+    
+    <h2>Adjust HSV Values</h2>
+    <div>
+        <label for="hMin">HMin:</label>
+        <input type="range" id="hMin" class="slider" min="0" max="179" value="{{ hsv_values.hMin }}">
+        <span id="hMinValue">{{ hsv_values.hMin }}</span>
+    </div>
+    <div>
+        <label for="sMin">SMin:</label>
+        <input type="range" id="sMin" class="slider" min="0" max="255" value="{{ hsv_values.sMin }}">
+        <span id="sMinValue">{{ hsv_values.sMin }}</span>
+    </div>
+    <div>
+        <label for="vMin">VMin:</label>
+        <input type="range" id="vMin" class="slider" min="0" max="255" value="{{ hsv_values.vMin }}">
+        <span id="vMinValue">{{ hsv_values.vMin }}</span>
+    </div>
+    <div>
+        <label for="hMax">HMax:</label>
+        <input type="range" id="hMax" class="slider" min="0" max="179" value="{{ hsv_values.hMax }}">
+        <span id="hMaxValue">{{ hsv_values.hMax }}</span>
+    </div>
+    <div>
+        <label for="sMax">SMax:</label>
+        <input type="range" id="sMax" class="slider" min="0" max="255" value="{{ hsv_values.sMax }}">
+        <span id="sMaxValue">{{ hsv_values.sMax }}</span>
+    </div>
+    <div>
+        <label for="vMax">VMax:</label>
+        <input type="range" id="vMax" class="slider" min="0" max="255" value="{{ hsv_values.vMax }}">
+        <span id="vMaxValue">{{ hsv_values.vMax }}</span>
+    </div>
+
+    <script>
+        const sliders = document.querySelectorAll('.slider');
+        sliders.forEach(slider => {
+            slider.addEventListener('input', () => {
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                valueSpan.innerText = slider.value;
+                
+                // Send the updated HSV values to the server
+                fetch('/update_hsv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        [slider.id]: parseInt(slider.value)
+                    })
+                });
+            });
+        });
+    </script>
+</body>
+</html>

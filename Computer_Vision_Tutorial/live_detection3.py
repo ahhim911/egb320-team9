@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import csv
 import json
-# from picamera2 import Picamera2
+from picamera2 import Picamera2
 import time  # Import the time module
 
 # Global variables to store calibration data
@@ -323,7 +323,7 @@ def process_frame(frame, color_ranges):
     return
 
 
-"""
+
 def main():
     global captured_image
 
@@ -394,4 +394,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
+

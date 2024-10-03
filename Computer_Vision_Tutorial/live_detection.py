@@ -6,61 +6,60 @@ from picamera2 import Picamera2
 from threading import Thread, Lock
 import time
 
-# Global variables
+# Global variables for frame handling
 frame = None
 processed_masks = {}
 detected_objects = {}
 frame_lock = Lock()
 
-# Calibration data
+# Global variables to store calibration data
 focal_length = None
 homography_matrix = None
 
-frame_condition = threading.Condition()
-
 def capture_frames(picam2):
+    """Capture frames from the camera and store them in a global variable."""
     global frame
     while True:
         with frame_lock:
-            frame = picam2.capture_array()
-            frame = cv2.flip(frame, -1)
-            frame_condition.notify_all()  # Notify that a new frame is available
-        time.sleep(0.01)  # Manage frame rate
+            try:
+                frame = picam2.capture_array()
+                frame = cv2.flip(frame, -1)  # Upside Down
+            except Exception as e:
+                print(f"Error capturing frame: {e}")
+                frame = None
+        time.sleep(0.01)  # Small delay to reduce CPU usage
 
-# Preprocess the image by resizing and applying Gaussian blur
-def preprocess_image(image, scale=0.3, blur_ksize=(3, 3), sigmaX=1.5):
+def preprocess_image(image, scale=0.5, blur_ksize=(3, 3), sigmaX=2):
     resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
     blurred_image = cv2.GaussianBlur(resized_image, blur_ksize, sigmaX)
     return blurred_image
 
-# Apply color thresholding to segment specific colors in the image
 def color_threshold(image, lower_hsv, upper_hsv):
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
     return mask
 
-# Apply morphological operations to clean up the thresholded mask
 def apply_morphological_filters(mask, kernel_size=(5, 5)):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
     opened_image = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     closed_image = cv2.morphologyEx(opened_image, cv2.MORPH_CLOSE, kernel)
     return closed_image
 
-# Analyze contours in the mask to detect objects and extract features
-def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect_ratio=3.0):
+def analyze_contours(image, mask, min_area=150, min_aspect_ratio=0.3, max_aspect_ratio=3.0):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contour_image = image.copy()
+
     detected_objects = []
 
     for contour in contours:
         area = cv2.contourArea(contour)
         if area < min_area:
-            continue  # Skip small contours
+            continue
 
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = float(w) / h
         if not (min_aspect_ratio <= aspect_ratio <= max_aspect_ratio):
-            continue  # Skip contours with invalid aspect ratio
+            continue
 
         epsilon = 0.02 * cv2.arcLength(contour, True)
         approx_vertices = cv2.approxPolyDP(contour, epsilon, True)
@@ -76,17 +75,15 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
         bounding_box_area = w * h
         fill_ratio = (area / bounding_box_area) if bounding_box_area > 0 else 0
 
-        # Filter based on solidity and fill ratio
         if solidity < 0.5 or fill_ratio < 0.1:
             continue
 
-        # Draw the contours and bounding box
         cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 2)
         cv2.rectangle(contour_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
         for corner in bottom_corners:
             cv2.circle(contour_image, tuple(corner[0]), 5, (0, 0, 255), -1)
 
-        # Store detected object features
         detected_objects.append({
             "position": (x, y, w, h),
             "area": area,
@@ -101,7 +98,6 @@ def analyze_contours(image, mask, min_area=400, min_aspect_ratio=0.3, max_aspect
 
     return contour_image, detected_objects
 
-# Apply category-specific logic to classify detected objects
 def apply_object_logic(detected_objects, category, image_width, contour_image, output_data):
     classified_objects = []
 
@@ -110,18 +106,17 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
         obj_type = category
         distance = None
 
-        # Marker-specific logic
         if category == "Marker":
             obj_type = classify_marker(obj, detected_objects)
             distance = estimate_distance(w, 0.07)
+            bearing = estimate_bearing(x + w // 2, image_width)
             if obj_type.startswith("Row Marker"):
                 marker_index = int(obj_type.split()[-1]) - 1
                 if marker_index < 3:
-                    output_data['row_markers'][marker_index] = [distance, estimate_bearing(x + w // 2, image_width)]
+                    output_data['row_markers'][marker_index] = [distance, bearing]
             elif obj_type == "Packing Station Marker":
-                output_data['packing_bay'] = [distance, estimate_bearing(x + w // 2, image_width)]
+                output_data['packing_bay'] = [distance, bearing]
         
-        # Obstacle-specific logic
         elif category == "Obstacle":
             obj_type = "Obstacle"
             distance = estimate_distance(w, 0.05)
@@ -129,7 +124,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
                 output_data['obstacles'] = []
             output_data['obstacles'].append([distance, estimate_bearing(x + w // 2, image_width)])
 
-        # Shelf-specific logic
         elif category == "Shelf":
             obj_type = "Shelf"
             distance = estimate_homography_distance(obj['position'])
@@ -139,7 +133,6 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
                 if i < 6:
                     output_data['shelves'][i] = [corner_distance, bearing]
 
-        # Item-specific logic
         elif category == "Item":
             obj_type = "Item"
             distance = estimate_distance(w, 0.03)
@@ -162,12 +155,11 @@ def apply_object_logic(detected_objects, category, image_width, contour_image, o
 
     return classified_objects
 
-# Classify markers based on shape and circularity
 def classify_marker(obj, detected_objects):
     circularity = obj['circularity']
     aspect_ratio = obj['aspect_ratio']
 
-    if circularity > 0.8:  # Close to circular
+    if circularity > 0.8:
         circle_count = sum(1 for o in detected_objects if o['circularity'] > 0.8)
         if circle_count == 1:
             return "Row Marker 1"
@@ -175,12 +167,11 @@ def classify_marker(obj, detected_objects):
             return "Row Marker 2"
         elif circle_count == 3:
             return "Row Marker 3"
-    elif 0.9 < aspect_ratio < 1.1:  # Square-like
+    elif 0.9 < aspect_ratio < 1.1:
         return "Packing Station Marker"
 
     return "Unknown Marker"
 
-# Draw the text label on the image with range and bearing
 def draw_category_text(image, label, center, distance, bearing):
     label_text = f'{label}:'
     range_text = f'Range: {distance:.2f}m'
@@ -194,12 +185,10 @@ def draw_category_text(image, label, center, distance, bearing):
     cv2.putText(image, range_text, range_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
     cv2.putText(image, bearing_text, bearing_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
-# Estimate distance using the known object width and focal length
 def estimate_distance(object_width, real_object_width):
     global focal_length
     return (real_object_width * focal_length) / object_width
 
-# Estimate distance using the homography matrix
 def estimate_homography_distance(position):
     global homography_matrix
     if homography_matrix is None:
@@ -214,21 +203,18 @@ def estimate_homography_distance(position):
     distance = np.sqrt(ground_coords[0]**2 + ground_coords[1]**2)
     return distance
 
-# Apply the homography matrix to a point
 def apply_homography_to_point(x, y, M):
     point = np.array([[x, y]], dtype='float32')
     point = np.array([point])
     transformed_point = cv2.perspectiveTransform(point, M)
     return transformed_point[0][0]
 
-# Estimate the bearing of an object relative to the camera center
 def estimate_bearing(object_center_x, image_width):
     horizontal_offset = object_center_x - (image_width / 2)
-    max_bearing_angle = 30  # Maximum bearing angle in degrees
+    max_bearing_angle = 30
     bearing = (max_bearing_angle * horizontal_offset) / (image_width / 2)
     return bearing
 
-# Load color thresholds from a CSV file
 def load_color_thresholds(csv_file):
     color_ranges = {}
     category_mapping = {
@@ -238,93 +224,114 @@ def load_color_thresholds(csv_file):
         'black': 'Marker'
     }
     
-    with open(csv_file, mode='r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            category = category_mapping.get(row[0], None)
-            if category:
-                lower_hsv = np.array([int(row[1]), int(row[2]), int(row[3])])
-                upper_hsv = np.array([int(row[4]), int(row[5]), int(row[6])])
-                color_ranges[category] = (lower_hsv, upper_hsv)
+    try:
+        with open(csv_file, mode='r') as file:
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                category = category_mapping.get(row[0], None)
+                if category:
+                    lower_hsv = np.array([int(row[1]), int(row[2]), int(row[3])])
+                    upper_hsv = np.array([int(row[4]), int(row[5]), int(row[6])])
+                    color_ranges[category] = (lower_hsv, upper_hsv)
+    except Exception as e:
+        print(f"Error loading color thresholds: {e}")
+    
     return color_ranges
 
-# Load focal length from a CSV file
 def load_focal_length(csv_file):
     global focal_length
-    with open(csv_file, mode='r') as file:
-        csv_reader = csv.reader(file)
-        focal_length = float(next(csv_reader)[1])
+    try:
+        with open(csv_file, mode='r') as file:
+            csv_reader = csv.reader(file)
+            focal_length = float(next(csv_reader)[1])
+    except Exception as e:
+        print(f"Error loading focal length: {e}")
 
-# Load homography matrix from a CSV file
 def load_homography_matrix(csv_file):
     global homography_matrix
-    homography_matrix = []
-    with open(csv_file, mode='r') as file:
-        csv_reader = csv.reader(file)
-        next(csv_reader)  # Skip the header
-        for row in csv_reader:
-            homography_matrix.append([float(val) for val in row])
-    homography_matrix = np.array(homography_matrix)
+    try:
+        homography_matrix = []
+        with open(csv_file, mode='r') as file:
+            csv_reader = csv.reader(file)
+            next(csv_reader)
+            for row in csv_reader:
+                homography_matrix.append([float(val) for val in row])
+        homography_matrix = np.array(homography_matrix)
+    except Exception as e:
+        print(f"Error loading homography matrix: {e}")
 
-# Export the range and bearing data to a JSON file
 def export_range_bearing(data, output_json='output_data.json'):
-    with open(output_json, 'w') as file:
-        json.dump(data, file, indent=4)
+    try:
+        with open(output_json, 'w') as file:
+            json.dump(data, file, indent=4)
+    except Exception as e:
+        print(f"Error exporting range and bearing data: {e}")
 
-# Process the image pipeline to detect and classify objects
+def process_frame(frame, color_ranges):
+    blurred_image = preprocess_image(frame)
+    image_width = blurred_image.shape[1]
+
+    # Initialize a blank image to draw all contours
+    all_contours_image = np.zeros_like(blurred_image)
+
+    local_processed_masks = {}
+    local_detected_objects = {}
+
+    output_data = {
+        "items": [None] * 6,
+        "shelves": [None] * 6,
+        "row_markers": [None, None, None],
+        "obstacles": None,
+        "packing_bay": None
+    }
+
+    for category, (lower_hsv, upper_hsv) in color_ranges.items():
+        mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
+        processed_mask = apply_morphological_filters(mask)
+        contour_image, objects = analyze_contours(blurred_image, processed_mask)
+        classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
+
+        # Draw the contours onto the combined image
+        all_contours_image = cv2.addWeighted(all_contours_image, 1.0, contour_image, 1.0, 0)
+
+        local_processed_masks[category] = (mask, processed_mask, contour_image)
+        local_detected_objects[category] = classified_objects
+
+    export_range_bearing(output_data)
+
+    return all_contours_image
+
 def process_image_pipeline(color_ranges):
     global frame, processed_masks, detected_objects
     while True:
         with frame_lock:
             if frame is None:
                 continue
-            local_frame = frame
+            local_frame = frame.copy()
 
-        blurred_image = preprocess_image(local_frame)
-        image_width = blurred_image.shape[1]
-
-        local_processed_masks = {}
-        local_detected_objects = {}
-
-        output_data = {
-            "items": [None] * 6,
-            "shelves": [None] * 6,
-            "row_markers": [None, None, None],
-            "obstacles": None,
-            "packing_bay": None
-        }
-
-        for category, (lower_hsv, upper_hsv) in color_ranges.items():
-            mask = color_threshold(blurred_image, lower_hsv, upper_hsv)
-            processed_mask = apply_morphological_filters(mask)
-            contour_image, objects = analyze_contours(blurred_image, processed_mask)
-            classified_objects = apply_object_logic(objects, category, image_width, contour_image, output_data)
-
-            local_processed_masks[category] = (mask, processed_mask, contour_image)
-            local_detected_objects[category] = classified_objects
+        all_contours_image = process_frame(local_frame, color_ranges)
 
         with frame_lock:
-            processed_masks = local_processed_masks.copy()
-            detected_objects = local_detected_objects.copy()
+            processed_masks['Combined Contour Analysis'] = all_contours_image
+            # If needed, you can store other masks or detected objects here
 
-        # Export the range and bearing data after each frame
-        export_range_bearing(output_data)
+        # Optionally, save the combined contours image periodically
+        cv2.imwrite('combined_contour_image_output.png', all_contours_image)
 
-# Main function to set up the camera and start processing
+        time.sleep(0.1)  # Add a small delay to control the frame processing rate
+
 def main():
     global processed_masks
 
-    # Load calibration data
     color_ranges = load_color_thresholds('calibrate.csv')
     load_homography_matrix('calibrate_homography.csv')
     load_focal_length('calibrate_focal_length.csv')
-
-    # Initialize the Picamera2
+    
+    print('Initializing camera...')
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))
     picam2.start()
 
-    # Start the capture and processing threads
     capture_thread = Thread(target=capture_frames, args=(picam2,))
     capture_thread.daemon = True
     capture_thread.start()
@@ -333,16 +340,12 @@ def main():
     processing_thread.daemon = True
     processing_thread.start()
 
-    # Display the results
     while True:
         start_time = time.time()
 
         with frame_lock:
-            if processed_masks:
-                for category in color_ranges.keys():
-                    _, _, contour_image = processed_masks.get(category, (None, None, None))
-                    if contour_image is not None:
-                        cv2.imshow(f'{category} Contour Analysis', contour_image)
+            if 'Combined Contour Analysis' in processed_masks:
+                cv2.imshow('Combined Contour Analysis', processed_masks['Combined Contour Analysis'])
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
@@ -352,7 +355,6 @@ def main():
         fps = 1 / (end_time - start_time)
         print(f"FPS: {fps:.2f}")
 
-    # Clean up
     picam2.close()
     cv2.destroyAllWindows()
 

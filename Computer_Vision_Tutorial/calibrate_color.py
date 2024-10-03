@@ -33,7 +33,7 @@ color_ranges = {
 current_color_key = None
 
 # Buffer to be applied to the HSV range
-bufferHSV = np.array([10, 50, 50])
+bufferHSV = np.array([255, 120, 120])
 
 def add_point_in(point):
     global valueHSV
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
         frame = cap.capture_array()  # Capture a single image frame
         frame = resize_image(frame)  # Resize image
-        frame = cv2.flip(frame, 0)  # Flip horizontally and vertically
+        frame = cv2.flip(frame, -1)  # Flip horizontally and vertically
 
         # Display the obtained frame in a window called "CameraImage"
         cv2.imshow("Image", frame)

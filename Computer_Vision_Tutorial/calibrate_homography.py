@@ -16,11 +16,17 @@ angle_deg = 30
 angle_rad = np.radians(angle_deg)
 
 # Ground plane points relative to the camera (for homography calibration)
+#ground_points = np.float32([
+#    [-0.20 * np.sin(angle_rad), 0.20 * np.cos(angle_rad)],
+#    [0.20 * np.sin(angle_rad), 0.20 * np.cos(angle_rad)],
+#    [0.35 * np.sin(angle_rad), 0.35 * np.cos(angle_rad)],
+#    [-0.35 * np.sin(angle_rad), 0.35 * np.cos(angle_rad)]
+#])
 ground_points = np.float32([
-    [-0.20 * np.sin(angle_rad), 0.20 * np.cos(angle_rad)],
-    [0.20 * np.sin(angle_rad), 0.20 * np.cos(angle_rad)],
-    [0.35 * np.sin(angle_rad), 0.35 * np.cos(angle_rad)],
-    [-0.35 * np.sin(angle_rad), 0.35 * np.cos(angle_rad)]
+    [-0.06, 0.20],
+    [0.09, 0.20],
+    [0.19, 0.50],
+    [-0.16, 0.50]
 ])
 
 # Function to handle mouse click events for homography calibration
@@ -62,7 +68,7 @@ def main():
     
     while True:
         frame = picam2.capture_array()
-        frame = cv2.flip(frame, 0)  # Flip horizontally and vertically
+        frame = cv2.flip(frame, -1)  # Flip horizontally and vertically
         cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF

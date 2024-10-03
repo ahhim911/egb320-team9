@@ -2,18 +2,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-MAX_ROBOT_VEL = 0.1
-MAX_ROBOT_ROT = 0.2
+MAX_ROBOT_VEL = 0.1 # m/s
+MAX_ROBOT_ROT = 0.2 # rad/s
 GOAL_P = 0.5
 ROT_BIAS = 0.5
 CAMERA_FOV = 60
 WORKER_WIDTH_SCALE = 0.15 #m
-
-# def draw_field(field):
-
-
-# rotate to the specified angle
-# def rotate_to_angle(angle):
 
 
 def calculate_goal_velocities(goal_position, obstacles, draw=False):
@@ -66,42 +60,46 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     return nav_state
 
 def clip_deg_fov(deg, fov):
-     # clip the degree to the range of the camera fov
-    return max(0, min(deg, fov - 1))
-
-
+    # Convert degrees to NumPy array if not already
+    deg = np.asarray(deg)
+    # Clip the degree to the range of the camera fov
+    return np.clip(deg, 0, fov - 1)
 
 def compute_attractive_field(goal_deg):
-    attractive_field = np.zeros(CAMERA_FOV + 1)
-    attractive_field[goal_deg] = 1
-    gradient = 1 / 30
-    for angle in range(0, int((CAMERA_FOV/2 +1))):
-        attractive_field[clip_deg_fov(goal_deg - angle, CAMERA_FOV)] = 1 - gradient * angle
-        attractive_field[clip_deg_fov(goal_deg + angle, CAMERA_FOV)] = 1 - gradient * angle
-    return attractive_field
+    angles = np.arange(-CAMERA_FOV//2, CAMERA_FOV//2 + 1) # angles from -30 to 30
+    field_indices = clip_deg_fov(goal_deg + angles, CAMERA_FOV) # indices from 0 to 60
+    gradient = 1 / 30 # gradient of the field
+    attractive_field = np.maximum(1 - gradient * np.abs(angles), 0) # attractive field
+    field = np.zeros(CAMERA_FOV + 1) # field of view
+    field[field_indices.astype(int)] = attractive_field
+    return field
 	
 def compute_repulsive_field(obstacles):
     repulsive_field = np.zeros(CAMERA_FOV + 1)
 
-    if obstacles != None:
+    if obstacles:
         for obs in obstacles:
-            obs_range = obs[0]
-            obs_bearing = obs[1]
-        
+            obs_range, obs_bearing = obs
             if obs_range < 0.8:
-                 obs_width = WORKER_WIDTH_SCALE
+                obs_width = WORKER_WIDTH_SCALE
+                
+                # Convert bearing to degrees
+                obs_deg = int(np.rad2deg(obs_bearing) + CAMERA_FOV/2)
+                
+                # Calculate the width of the obstacle in degrees
+                obs_width_rad = 2*math.atan(obs_width / obs_range)
+                obs_width_deg = int(np.rad2deg(obs_width_rad))
+                
+                # Calculate the effect of the obstacle on the repulsive field
+                obs_effect = max(0, 1- min(1, obs_range - WORKER_WIDTH_SCALE * 2))
+                
+                # Update the repulsive field
+                repulsive_field[obs_deg] = obs_effect
 
-                 obs_deg = int(np.rad2deg(obs_bearing) + CAMERA_FOV/2)
-
-                 obs_width_rad = 2*math.atan(obs_width / obs_range)
-                 obs_width_deg = int(np.rad2deg(obs_width_rad))
-
-                 obs_effect = max(0, 1- min(1, obs_range - WORKER_WIDTH_SCALE * 2))
-
-                 repulsive_field[obs_deg] = obs_effect
-
-                 for angle in range(1, obs_width_deg + 1):
-                    repulsive_field[clip_deg_fov(obs_deg - angle, CAMERA_FOV)] = max(repulsive_field[clip_deg_fov(obs_deg - angle, CAMERA_FOV)], obs_effect * (1 - angle/obs_width_deg))
-                    repulsive_field[clip_deg_fov(obs_deg + angle, CAMERA_FOV)] = max(repulsive_field[clip_deg_fov(obs_deg + angle, CAMERA_FOV)], obs_effect * (1 - angle/obs_width_deg))
+                # Update the repulsive field for the obstacle width
+                angles = np.arange(-obs_width_deg, obs_width_deg + 1)
+                indices = clip_deg_fov(obs_deg + angles, CAMERA_FOV).astype(int)
+                effects = obs_effect * (1 - np.abs(angles) / obs_width_deg)
+                np.maximum.at(repulsive_field, indices, effects)
 
     return repulsive_field

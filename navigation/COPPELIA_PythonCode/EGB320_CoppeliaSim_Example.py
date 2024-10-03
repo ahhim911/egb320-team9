@@ -6,7 +6,6 @@ from warehousebot_lib import *
 import time
 import numpy as np
 import pandas as pd
-from "../../"
 #import any other required python modules
 import path_planning as navigation
 import csv
@@ -150,8 +149,8 @@ if __name__ == '__main__':
 				
 
 				robot_state = 'SEARCH_FOR_SHELF'
-				target_shelf = final_df['Shelf'][current_item]
-				target_row = final_df['Row'][current_item]
+				target_shelf = 4
+				target_row = 2
 				# target_bay = final_df['Bay'][current_item]
 				target_bay = 3
 				target_height = final_df['Height'][current_item]
@@ -200,7 +199,7 @@ if __name__ == '__main__':
 					action['forward_vel'] = 0
 					action['rotational_vel'] = 0
 					robot_state = 'MOVE_TO_ROW'
-
+				
 				if shelfRangeBearing[subtarget_shelf] != None:
 					found_shelf = True
 					goal_position['range'] = shelfRangeBearing[subtarget_shelf][0]
