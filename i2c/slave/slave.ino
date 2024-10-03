@@ -20,7 +20,7 @@
 volatile int last_pos = 45;
 int gripservoPin = 9;  // SV1
 int liftservoPin = 10; // SV2
-int LED1 = 4;
+int LED1 = 4; 
 int LED2 = 5;
 int LED3 = 6;
 Servo gripServo;  

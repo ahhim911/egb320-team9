@@ -31,23 +31,6 @@ class I2C:
         command = f"D{forwards_int} {rotational_int}"
         self.send_command(command)
 
-    def DC_motor(self, motor:int, direction:str, speed:int):
-        """Set the speed of a DC motor."""
-        if motor not in [1, 2]:
-            print("Invalid motor number")
-            return
-        if speed < 0 or speed > 255:
-            print("Invalid speed")
-            return
-        if direction not in ["0", "1", "S"]:
-            print("Invalid direction")
-            return
-
-
-        command = f"M{motor}{direction}{speed}"
-        self.send_command(command)
-
-
     def lift(self, level):
         """Set the lift level in the command array."""
         if level not in [1, 2, 3]:

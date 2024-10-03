@@ -9,7 +9,7 @@ import sys
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../')) 
 
 import navigation.path_planning as navigation
-import mobility.intergration_master as mobility
+import i2c.main_i2c as I2C
 
 # define the numbers
 # 0b000000 = [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints]
@@ -39,6 +39,7 @@ class StateMachine:
         self.current_item = 0
         self.draw = False
         self.holding_item = False
+        self.i2c = I2C()
 
         # Read the object order file
         with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
@@ -85,7 +86,7 @@ class StateMachine:
         # Reset the actuators
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
-        # item_collection.grip('open')
+        self.i2c.grip('open')
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         self.found_ps = packStationRangeBearing[0] is not None
@@ -222,7 +223,8 @@ class StateMachine:
                 print(self.goal_position)
 
             # Add shelves to obstacles
-            np.append(obstaclesRB, shelfRangeBearing[self.target_shelf])
+            np.append(obstaclesRB, shelfRangeBearing[0])
+            np.append(obstaclesRB, shelfRangeBearing[3])
 
             # Calculate goal velocities
             self.action = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
@@ -251,13 +253,17 @@ class StateMachine:
                     self.action['forward_vel'] = 0
                     self.action['rotational_vel'] = 0
     
-    def collect_item(self):
+    def collect_item(self, itemsRB):
         print("Collecting item")
-        # item_collection.grip('open')
-        # item_collection.lift(self.target_height)
+        self.i2c.grip('open')
+        # calibrate the orientation to the item
+        
+
+        self.i2c.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
-    # Add more methods for other states...
+
+
 
     def run_state_machine(self, dataRB):
         
@@ -294,7 +300,7 @@ class StateMachine:
             return ITEMS
         # Add other state transitions...
 
-        mobility.drive(self.action['forward_vel'], self.action['rotational_vel'])
+        self.i2c.drive(self.action['forward_vel'], self.action['rotational_vel'])
         return 0
         
         
