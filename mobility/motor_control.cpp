@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <Servo.h>
+
 #define I2C_ADDRESS 0x08  // I2C address of the device
 #define I2C_SDA 0         // Use GPIO 26 as SDA
 #define I2C_SCL 1         // Use GPIO 27 as SCL
@@ -15,6 +16,7 @@ Servo gripServo;
 Servo liftServo;
 
 
+
 void receiveEvent(int howMany);
 void ControlSystem(uint8_t* command, int length);
 
@@ -22,10 +24,6 @@ uint8_t waitingflag = 1;
 
 void setup() {
   // Attach servos
-  gripServo.attach(gripservoPin);  // Attach the servo to the pin
-  liftServo.attach(liftservoPin);
-  liftServo.write(10);
-  gripServo.write(170);
 
   // Set up I2C on specific pins for the Raspberry Pi Pico
   Wire.setSDA(I2C_SDA);
@@ -69,8 +67,11 @@ void ControlSystem(uint8_t* command, int length) {
   int speedrot = atoi(SpeedRot);// done in percentages where 0 - 100 percentage forwards or rotational velocity
   
 
-  int speed1 = speedfor*255 + (((speedrot*255) * width)/2);
-  int speed2 = speedfor*255 - (((speedrot*255) * width)/2);
+  int speed1 = round(speedfor*2.55 + (((speedrot*2.55) * width)/2)); //calcualted output functions for left and right motors based on forwards and rotaional velocities
+  int speed2 = round(speedfor*2.55 - (((speedrot*2.55) * width)/2));
+
+  speed1 = constrain(speed1, -255, 255);
+  speed2 = constrain(speed2, -255, 255)
   if(speed1 < 0){
     digitalWrite(PHS1, LOW);
     analogWrite(EN1, abs(speed1));
@@ -85,59 +86,6 @@ void ControlSystem(uint8_t* command, int length) {
     digitalWrite(PHS2, HIGH);
     analogWrite(EN2, abs(speed2));;
   }
-//   if (text[1] != 'S') {
-//     switch (text[1]) {
-//       case 'N':
-//         digitalWrite(PHS1, LOW);   //sets motor 1 to a reverse direction
-//         analogWrite(EN1, speed1);  //sets the motor to the specified speed
-//         break;
-//       case 'P':
-//         digitalWrite(PHS1, HIGH);  //sets motor 1 to a forwards direction
-//         analogWrite(EN1, speed1);
-//         break;
-//       default:
-//         Serial.println("Invalid Given Index");
-//         break;
-//     }
-//     switch (text[4]) {
-//       case 'P':
-//         digitalWrite(PHS2, HIGH);
-//         analogWrite(EN2, speed2);
-//         break;
-//       case 'N':
-//         digitalWrite(PHS2, LOW);
-//         analogWrite(EN2, speed2);
-//         break;
-//       default:
-//         Serial.println("Invalid Given Index");
-//         break;
-//     }
-//   } else if (text[1] == 'S') {
-//     analogWrite(EN1, 0);
-//     analogWrite(EN1, 0);
-//   }
-  
-//   if (text[9] == 'O') {
-//     gripper_open();
-//     switch (text[10]) {
-//       case '1':
-//         lift_level1();
-//         break;
-//       case '2':
-//         lift_level2();
-//         break;
-//       case '3':
-//         lift_level3();
-//         break;
-//       default:
-//         Serial.println("Invalid Given Index");
-//         break;
-//     }
-//   } else if (text[9] == 'C') {
-//     gripper_close();
-//     lift_level1();
-//   }
-// }
 
 
 void receiveEvent(int howMany) {
