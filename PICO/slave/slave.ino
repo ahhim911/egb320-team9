@@ -173,7 +173,7 @@ void ControlSystem(uint8_t* command, int length) {
   switch (text[1]) {
     
     // Drive command
-    case 'D': 
+    case 'D': {
       // Function to set target velocities in m/s and rad/s (similar to simulation code)
       int x_dot = text[2];
       int theta_dot = text[3];
@@ -182,18 +182,18 @@ void ControlSystem(uint8_t* command, int length) {
       float theta_dot1 = theta_dot/100;
       Drive(x_dot, theta_dot);
       break;
-
+    }
     // Gripper control
-    case 'G':
+    case 'G': {
       if (text[2] == '0') {
         gripper_open();
       } else if (text[2] == '1') {
         gripper_close();
       }
       break;
-
+    }
     // Lift control
-    case 'H':
+    case 'H': {
       switch (text[2]) {
         case '1':
           lift_level1();
@@ -209,10 +209,10 @@ void ControlSystem(uint8_t* command, int length) {
           break;
       }
       break;
-
+    }
     //LED control
-    case 'L':
-     int led;
+    case 'L': {
+      int led;
       switch (text[2]) {
         case '1':
           led = LED1;
@@ -233,50 +233,12 @@ void ControlSystem(uint8_t* command, int length) {
         ledControl(led, LOW);
       }
       break;
-    default:
+    }
+    default:{
       Serial.println("Invalid Command");
       break;
+    }
   }
-
-
-  if (text[9] == 'O') {
-    gripper_open();
-  } else if (text[9] == 'C') {
-    gripper_close();
-  }
-  switch (text[10]) {
-    case '1':
-      lift_level1();
-      break;
-    case '2':
-      lift_level2();
-      break;
-    case '3':
-      lift_level3();
-      break;
-    default:
-      Serial.println("Invalid Given Index");
-      break;
-  }
-
-  // LED control
-  
-  if (text[11] == '1') {
-    ledControl(LED1, HIGH);
-  } else if (text[11] == '0') {
-    ledControl(LED1, LOW);
-  }
-  if (text[12] == '1') {
-    ledControl(LED2, HIGH);
-  } else if (text[12] == '0') {
-    ledControl(LED2, LOW);
-  }
-  if (text[13] == '1') {
-    ledControl(LED3, HIGH);
-  } else if (text[13] == '0') {
-    ledControl(LED3, LOW);
-  }
-  
 }
 
 
