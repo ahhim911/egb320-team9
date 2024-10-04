@@ -3,3 +3,4 @@ Computer_Vision_Tutorial\output_data.json
 Computer_Vision_Tutorial/__pycache__
 item_collection/__pycache__
 navigation/__pycache__
+*.pyc
