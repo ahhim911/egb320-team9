@@ -9,6 +9,7 @@ from picamera2.outputs import FfmpegOutput
 
 class Camera:
     def __init__(self, config=None):
+        print("init cam")
         self.picam2 = Picamera2()
         if config is None:
             config = self.picam2.create_preview_configuration(
@@ -17,6 +18,7 @@ class Camera:
                 )
         self.picam2.configure(config)
         self.picam2.start()
+        print("init cam finished")
     
     def capture_frame(self):
         """Capture a single frame."""
@@ -26,6 +28,15 @@ class Camera:
         except Exception as e:
             print(f"Error capturing frame: {e}")
             return None
+
+    def live_feed(self):
+        while True:
+            frame = self.picam2.capture_array()
+            print("In live feed")    
+            cv2.imshow('Recording...', frame)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+
 
     def capture_image(self, filename=None):
         """Capture an image and save it to the Images folder."""

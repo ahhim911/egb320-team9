@@ -55,17 +55,17 @@ class Vision(DetectionBase):
 
         self.camera = Camera()
 
-        self.calibration = Calibration()
+        # self.calibration = Calibration()
         self.color_ranges = None
         self.homography_matrix = None
         self.focal_length = None
 
     def start(self):
-        self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
-        shelf_detector = Shelf(homography_matrix=self.homography_matrix)
+        # self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
+        # shelf_detector = Shelf(homography_matrix=self.homography_matrix)
         
-        Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
-        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges)).start()
+        Thread(target=self.camera.live_feed, args=()).start()
+        # Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges)).start()
         return
 
     def process_image_pipeline(self, camera, color_ranges):
@@ -77,7 +77,7 @@ class Vision(DetectionBase):
             now = time.time()
             # blurred_image = Preprocessing.preprocess(self.local_frame)
             detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
-        
+            self.objectRB[2] = [] # packing the RB into the RB
             cv2.imshow('Shelf Detection', shelf_frame)
             elapsed = time.time() - now
             fps = 1/elapsed
