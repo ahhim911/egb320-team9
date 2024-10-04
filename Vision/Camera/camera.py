@@ -10,6 +10,7 @@ from picamera2.outputs import FfmpegOutput
 class Camera:
     def __init__(self, config=None):
         print("init cam")
+        self.frame = None
         self.picam2 = Picamera2()
         if config is None:
             config = self.picam2.create_preview_configuration(
@@ -32,6 +33,7 @@ class Camera:
         try:
             if frame is not None:
                 cv2.imshow('Frame', frame)
+                cv2.waitKey(1)
         except Exception as e:
             print(f"Error displaying frame: {e}")
 
@@ -39,6 +41,7 @@ class Camera:
         """Capture a single frame."""
         try:
             frame = self.picam2.capture_array()
+            cv2.imshow("Frame",frame)
             return frame
         except Exception as e:
             print(f"Error capturing frame: {e}")

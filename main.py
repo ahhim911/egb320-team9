@@ -20,6 +20,9 @@ def main():
 
     print('Start Loop')
     # while True:
+        # frame = camera.capture_frame()
+        #frame = Camera.get_frame()
+        #Camera.display_frame(frame)
     #     now = time.time()            # get the time
     #     # Process the frame
     #     # process_frame(frame, color_ranges)

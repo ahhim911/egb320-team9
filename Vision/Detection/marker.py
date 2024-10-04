@@ -1,13 +1,13 @@
 # Import the necessary modules
 import cv2
 import numpy as np
-from detection import DetectionBase
 import os
 import sys
-from range_bearing import DistanceEstimation
 
 # Define the system path "../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
+from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Marker(DetectionBase):
@@ -24,8 +24,7 @@ class Marker(DetectionBase):
         
         # Preprocess image for marker detection
         marker_mask, scaled_image = Preprocessing.preprocess(
-            image, blur_ksize=(5, 5), sigmaX=2, lower_hsv=lower_hsv, upper_hsv=upper_hsv
-        )
+            image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
 
         # Use bitwise AND to keep only markers on the wall
         marker_on_wall_mask = cv2.bitwise_and(marker_mask, filled_wall_mask)

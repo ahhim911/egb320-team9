@@ -24,7 +24,7 @@ class FocalLength:
         with open(csv_file, mode='r') as file:
             csv_reader = csv.reader(file)
             self.focal_length = float(next(csv_reader)[1])
-
+        return self.focal_length
 
 
 class CalibrateFocalLength:

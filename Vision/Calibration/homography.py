@@ -21,6 +21,7 @@ class Homography:
             for row in csv_reader:
                 self.homography_matrix.append([float(val) for val in row])
         self.homography_matrix = np.array(self.homography_matrix)
+        return self.homography_matrix
 
 class CalibrateHomography:
     # Define the angle in degrees

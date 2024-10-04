@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-from detection import DetectionBase  # Inherit from DetectionBase
 import os
 import sys
-from range_bearing import DistanceEstimation  # Import DistanceEstimation class
 
 # Define the system path "../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
+from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 
@@ -24,8 +24,7 @@ class Item(DetectionBase):
         lower_hsv, upper_hsv = color_ranges['Item']
 
         # Preprocess the image to create a mask for the item
-        mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(5, 5), sigmaX=2, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(5, 5))
-
+        mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
         # Analyze the contours of the detected item
         detected_items = self.analyze_contours(mask, scaled_image.shape[1])
 

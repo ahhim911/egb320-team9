@@ -16,7 +16,9 @@ class Color:
         'orange': 'Item',
         'green': 'Obstacle',
         'blue': 'Shelf',
-        'black': 'Marker'
+        'black': 'Marker',
+        'white': 'Wall',
+        'yellow': 'Ramp'
     }
     def __init__(self, csv_file: str = ""):
         """

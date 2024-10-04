@@ -6,9 +6,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Visi
 from Camera.camera import Camera
 from Preprocessing.preprocessing import Preprocessing
 from Detection.detection import DetectionBase
+from Detection.shelf import Shelf
+from Detection.marker import Marker
+from Detection.wall import Wall
+from Detection.packing_station import PackingStationRamp
+from Detection.obstacle import Obstacle
+from Detection.item import Item
 from Calibration.calibration import Calibration
 from threading import Thread
 import cv2
+import time
 
 
 """
@@ -55,36 +62,63 @@ class Vision(DetectionBase):
 
         self.camera = Camera()
 
-        # self.calibration = Calibration()
-        # self.color_ranges = None
-        # self.homography_matrix = None
-        # self.focal_length = None
+        self.calibration = Calibration()
+        self.color_ranges = None
+        self.homography_matrix = None
+        self.focal_length = None
 
     def start(self):
-        # self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
-        # shelf_detector = Shelf(homography_matrix=self.homography_matrix)
+        self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
+        print(self.homography_matrix)
+        self.shelf_detector = Shelf(homography_matrix=self.homography_matrix)
+        self.marker_detector = Marker()
+        self.wall_detector = Wall()
+        self.ramp_detector = PackingStationRamp(focal_length=300, homography_matrix=self.homography_matrix)  # Initialize the ramp detector
+        self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix)
+        self.item_detector = Item()
+
         
         Thread(target=self.camera.live_feed, args=()).start()
-        Thread(target=self.process_image_pipeline, args=(self.camera)).start()
+        Thread(target=self.process_image_pipeline, args=()).start()
         return
 
-    def process_image_pipeline(self, camera):
+    def process_image_pipeline(self):
         while True:
-            frame = camera.get_frame()
-            # if frame is None:
-            #     continue
-            # self.local_frame = frame.copy()
-            # now = time.time()
-            # # blurred_image = Preprocessing.preprocess(self.local_frame)
-            # detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
-            # self.objectRB[2] = [] # packing the RB into the RB
-            # cv2.imshow('Shelf Detection', shelf_frame)
-            # elapsed = time.time() - now
-            # fps = 1/elapsed
-            # print('Time: ', elapsed, ' - FPS: ',fps)
+            frame = self.camera.get_frame()
+            if frame is None:
+                continue
+            self.local_frame = frame.copy()
+            now = time.time()
+            # blurred_image = Preprocessing.preprocess(self.local_frame)
+            detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(frame, self.color_ranges)
+            detected_walls, filled_wall_mask, wall_mask = self.wall_detector.find_wall(frame,  self.color_ranges)
+            detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(frame, filled_wall_mask,  self.color_ranges)
+            detected_ramp, ramp_frame, ramp_mask = self.ramp_detector.find_packing_station_ramp(frame,  self.color_ranges)  # Ramp detection
+            detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(frame,  self.color_ranges)
+            detected_items, item_frame, item_mask = self.item_detector.find_item(frame,  self.color_ranges)
 
+            # Display the detection results
+            cv2.imshow('Shelf Detection', shelf_frame)
+            #cv2.imshow('Shelf Mask', shelf_mask)
+            cv2.imshow('Marker Detection', marker_frame)
+            #cv2.imshow('Marker Mask', marker_mask)
+            cv2.imshow('Ramp Detection', ramp_frame)
+            #cv2.imshow('Ramp Mask', ramp_mask)
+            cv2.imshow('Obstacle Detection', obstacle_frame)
+            #cv2.imshow('Obstacle Mask', obstacle_mask)
+            cv2.imshow('Item Detection', item_frame)
+            #cv2.imshow('Item Mask', item_mask)
+            #cv2.imshow('Ramp Detection', ramp_frame)  # Display ramp detection results
+            #cv2.imshow('Ramp Mask', ramp_mask)
+            cv2.imshow('Wall Mask', filled_wall_mask)
+            # self.objectRB[2] = [] # packing the RB into the RB
+
+            elapsed = time.time() - now
+            fps = 1/elapsed
+            print('Time: ', elapsed, ' - FPS: ',fps)
+            cv2.waitKey(1)
             # display the frame
-            camera.display_frame(frame)
+            # self.camera.display_frame(frame)
 
     
     # def process_category(self, category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):

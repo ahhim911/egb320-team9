@@ -1,11 +1,13 @@
 # Import the necessary modules
 import cv2
 import numpy as np
-from detection import DetectionBase  # Inherit from DetectionBase
 import os
 import sys
+
 # Define the system path "../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
+from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Wall(DetectionBase):
@@ -17,7 +19,7 @@ class Wall(DetectionBase):
         Detect the wall based on HSV color range, generate a filled mask, and return contours.
         """
         lower_hsv, upper_hsv = color_ranges['Wall']
-        mask, scaled_image = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+        mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
 
         # Analyze contours for the wall and generate a filled mask
         detected_walls = self.analyze_contours(mask)

@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-from detection import DetectionBase  # Import DetectionBase from detection.py
 import os
 import sys
-from range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 
 # Define the system path "../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
+from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 from Preprocessing.preprocessing import Preprocessing
 
 
@@ -22,7 +22,7 @@ class Shelf(DetectionBase):
         Find the shelf by creating a mask based on the color range, analyzing contours, and calculating range/bearing for corners.
         """
         lower_hsv, upper_hsv = color_ranges['Shelf']
-        mask, scaled_image = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+        mask, scaled_image = Preprocessing.preprocess(image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
         self.analyze_contours(scaled_image, mask)
 
         # Iterate through each detected object and get the bottom-left and bottom-right corners
