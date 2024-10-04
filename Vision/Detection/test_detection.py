@@ -101,7 +101,7 @@ def detect_in_video(video_path):
         detected_markers, marker_frame, marker_mask = marker_detector.find_marker(frame, filled_wall_mask, color_ranges)
         #detected_ramp, ramp_frame, ramp_mask = ramp_detector.find_packing_station_ramp(frame, color_ranges)  # Ramp detection
         detected_obstacles, obstacle_frame, obstacle_mask = obstacle_detector.find_obstacle(frame, color_ranges)
-        #detected_items, item_frame, item_mask = item_detector.find_item(frame, color_ranges)
+        detected_items, item_frame, item_mask = item_detector.find_item(frame, color_ranges)
 
     #    # Display the detection results
     #    cv2.imshow('Shelf Detection', shelf_frame)
