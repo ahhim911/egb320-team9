@@ -59,12 +59,12 @@ class Vision(DetectionBase):
 
     def start(self):
         self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
-        self.shelf_detector = Shelf(homography_matrix=self.homography_matrix,draw=True)
-        self.marker_detector = Marker(focal_length=300, draw=True)
-        self.wall_detector = Wall(homography_matrix=self.homography_matrix,draw=True)
-        self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix,draw=True)  # Initialize the ramp detector
-        self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
-        self.item_detector = Item(focal_length=300, draw=True)
+        self.shelf_detector = Shelf(homography_matrix=self.homography_matrix,draw=False)
+        self.marker_detector = Marker(focal_length=300, draw=False)
+        self.wall_detector = Wall(homography_matrix=self.homography_matrix,draw=False)
+        self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix,draw=False)  # Initialize the ramp detector
+        self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=False)
+        self.item_detector = Item(focal_length=300, draw=False)
 
         
         Thread(target=self.camera.live_feed, args=()).start()

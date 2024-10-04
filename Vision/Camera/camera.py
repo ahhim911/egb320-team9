@@ -23,7 +23,8 @@ class Camera:
 
     def live_feed(self):
         while True:
-            self.frame = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
+            frame = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
+            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             
     
     def get_frame(self):

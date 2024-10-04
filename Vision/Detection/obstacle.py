@@ -42,7 +42,7 @@ class Obstacle(DetectionBase):
 
         # 3. Extract Data (Bearing, Distance)
         data_list = [obj["data"] for obj in detected_obstacles]
-        print("OBST DATA ", data_list)
+        #print("OBST DATA ", data_list)
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(image, detected_obstacles)
