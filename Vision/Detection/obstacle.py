@@ -4,6 +4,7 @@ from .detection import DetectionBase  # Import DetectionBase from detection.py
 from .range_bearing import DistanceEstimation  # Import the DistanceEstimation class
 from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
+
 class Obstacle(DetectionBase):
     def __init__(self, real_obstacle_width=0.05, focal_length=300, homography_matrix=None, draw=False):
         """
@@ -21,7 +22,7 @@ class Obstacle(DetectionBase):
         self.distance_estimator = DistanceEstimation(homography_matrix=homography_matrix)
         self.draw = draw  # Flag to control drawing
 
-    def find_obstacle(self, image, color_ranges):
+    def find_obstacle(self, image, RGBframe, color_ranges):
         """
         Detects obstacles using color and contour analysis.
 
@@ -45,7 +46,7 @@ class Obstacle(DetectionBase):
         #print("OBST DATA ", data_list)
 
         # 4. Draw if enabled
-        final_image = self._draw_if_enabled(image, detected_obstacles)
+        final_image = self._draw_if_enabled(RGBframe, detected_obstacles)
 
         return data_list, final_image, mask
 
@@ -112,17 +113,16 @@ class Obstacle(DetectionBase):
         Returns:
         - The image with bounding boxes and labels drawn.
         """
-        local_image = image.copy()
         for obj in detected_obstacles:
             x, y, w, h = obj['position']
             distance = obj['distance']
             bearing = obj['bearing']
 
             # Draw bounding box
-            cv2.rectangle(local_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
             # Add label for distance and bearing
             label = f"{distance:.2f}m, {bearing:.2f}deg"
-            cv2.putText(local_image, label, (x + 10, y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            cv2.putText(image, label, (x + 10, y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-        return local_image
+        return image

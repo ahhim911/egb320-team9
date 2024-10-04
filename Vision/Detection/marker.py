@@ -14,7 +14,7 @@ class Marker(DetectionBase):
         self.distance_estimator = DistanceEstimation(focal_length=focal_length)
         self.draw = draw  # Flag to control drawing
 
-    def find_marker(self, image, filled_wall_mask, color_ranges):
+    def find_marker(self, image, RGBframe, filled_wall_mask, color_ranges):
         """
         Detect markers using color and contour analysis.
 
@@ -47,7 +47,7 @@ class Marker(DetectionBase):
             data_list.append([marker_type_value, marker['distance'], marker['bearing']])
 
         # 4. Draw if enabled
-        final_image = self._draw_if_enabled(image, detected_markers, marker_type)
+        final_image = self._draw_if_enabled(RGBframe, detected_markers, marker_type)
 
         return data_list, final_image, marker_on_wall_mask
 

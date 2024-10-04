@@ -4,6 +4,7 @@ from navigation.state_machine import StateMachine
 import time
 from threading import Thread
 
+
 def main():
     # Create the state machine object
     state_machine = StateMachine()
@@ -19,14 +20,17 @@ def main():
     Vision = VisionClass()
     Vision.start() # Start the threads (Captrue and Pipeline)
     Vision.requested_objects = 0b111111
+    time.sleep(5)
     data = [None] * 6
     print('Start Loop')
     while True:
+        Vision.requested_objects = 0b111111
         now = time.time()   # get the time
         print("Run single frame")
         process_thread = Thread(target=Vision.process_image)
         process_thread.start()
         process_thread.join()  # Wait for the thread to complete
+        print("Process Complete")
 
         # access the attributes of the data
         data = Vision.objectRB
@@ -34,7 +38,6 @@ def main():
 
         # Run State machine and send information back to the vision using "requested_objects"
         Vision.requested_objects = state_machine.run_state_machine(data)
-        print(Vision.requested_objects)
         # state_machine.run_state_machine(data)
         # Vision.requested_objects = 0b000010 # Shelves
         elapsed = time.time() - now  # how long was it running?

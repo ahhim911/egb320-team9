@@ -20,7 +20,7 @@ class Item(DetectionBase):
         self.distance_estimator = DistanceEstimation(focal_length=focal_length)
         self.draw = draw  # Flag to control drawing
 
-    def find_item(self, image, color_ranges):
+    def find_item(self, image, RGBframe, color_ranges):
         """
         Detects items using color and contour analysis.
 
@@ -43,7 +43,7 @@ class Item(DetectionBase):
         data_list = [obj["data"] for obj in detected_items]
 
         # 4. Draw if enabled
-        final_image = self._draw_if_enabled(image, detected_items)
+        final_image = self._draw_if_enabled(RGBframe, detected_items)
         #print("ITEM DATA: ", data_list)
 
         return data_list, final_image, mask
@@ -110,17 +110,16 @@ class Item(DetectionBase):
         Returns:
         - The image with bounding boxes and labels drawn.
         """
-        local_image = image.copy()
         for obj in detected_items:
             x, y, w, h = obj['position']
             distance = obj['distance']
             bearing = obj['bearing']
 
             # Draw bounding box
-            cv2.rectangle(local_image, (x, y), (x + w, y + h), (0, 165, 255), 2)
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 165, 255), 2)
 
             # Add label for distance and bearing
             label = f"{distance:.2f}m, {bearing:.2f}deg"
-            cv2.putText(local_image, label, (x + 10, y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            cv2.putText(image, label, (x + 10, y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-        return local_image
+        return image

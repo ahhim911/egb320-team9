@@ -21,7 +21,7 @@ class Shelf(DetectionBase):
         self.distance_estimator = DistanceEstimation(homography_matrix=homography_matrix)
         self.draw = draw  # Flag to control drawing
 
-    def find_shelf(self, image, color_ranges):
+    def find_shelf(self, image, RGBframe, color_ranges):
         """
         Detect the shelf by creating a mask based on the color range, analyzing contours, and calculating range/bearing for corners.
         """
@@ -39,8 +39,8 @@ class Shelf(DetectionBase):
                 data_list.append(shelf_data)  # Append the corner data for the current shelf
 
         # 4. Draw contours and corners if enabled
-        final_image = self._draw_if_enabled(image, detected_shelves, data_list)
-        #print("SHELF DATA: ", data_list)
+        final_image = self._draw_if_enabled(RGBframe, detected_shelves, data_list)
+        print("SHELF DATA: ", data_list)
 
         return data_list, final_image, mask
 
@@ -122,11 +122,10 @@ class Shelf(DetectionBase):
             return image  # Return original image if drawing is disabled
 
         # Draw contours and corners
-        local_image = image.copy()
-        local_image = self._draw_contours(local_image, detected_shelves)
-        local_image = self._draw_corners(local_image, corners_data)
+        image = self._draw_contours(image, detected_shelves)
+        image = self._draw_corners(image, corners_data)
 
-        return local_image
+        return image
 
 
     def _draw_contours(self, image, detected_shelves):

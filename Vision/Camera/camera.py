@@ -10,7 +10,8 @@ from picamera2.outputs import FfmpegOutput
 class Camera:
     def __init__(self, config=None):
         print("init cam")
-        self.frame = None
+        self.HSVframe = None
+        self.RGBframe = None
         self.picam2 = Picamera2()
         if config is None:
             config = self.picam2.create_preview_configuration(
@@ -23,12 +24,12 @@ class Camera:
 
     def live_feed(self):
         while True:
-            frame = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
-            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
+            self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
             
     
     def get_frame(self):
-        return self.frame
+        return self.RGBframe, self.HSVframe
     
     def display_frame(self, frame):
         """Display a single frame."""

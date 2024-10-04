@@ -27,7 +27,7 @@ from i2c.main_i2c import I2C
 # 	])
 
 PACKING_BAY = 0b100000
-ROW_MARKERS = 0b010000
+ROW_MARKERS = 0b010001
 SHELVES =     0b001000
 ITEMS =       0b000100
 OBSTACLES =   0b000010
@@ -124,6 +124,14 @@ class StateMachine:
         # self.i2c.grip('open')
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
+        if not packStationRangeBearing or len(packStationRangeBearing) == 0:
+            print("Warning: packStationRangeBearing is empty or None. Skipping processing.")
+            return
+        if not rowMarkerRangeBearing or len(rowMarkerRangeBearing) <= self.target_row:
+            print("Warning: rowMarkerRangeBearing is either empty or does not have enough elements.")
+            return
+        
+        
         self.found_ps = packStationRangeBearing[0] is not None
         self.found_row = rowMarkerRangeBearing[self.target_row] is not None
 
@@ -180,14 +188,14 @@ class StateMachine:
         if self.shelf_side == LEFT:  # Odd
             # Turn right
             self.rotate('R', MIN_SPEED)
-            if shelfRangeBearing[0] is not None:
+            if shelfRangeBearing[0][0] is not None:
                 self.found_shelf = True
                 # LEFT SHELF FOUND
             
         else:
             # Turn left
             self.rotate('L', MIN_SPEED)
-            if shelfRangeBearing[1] is not None:
+            if shelfRangeBearing[0][1] is not None:
                 self.found_shelf = True
                 # RIGHT SHELF FOUND
 
@@ -311,7 +319,8 @@ class StateMachine:
         self.RightmotorSpeed = 0
         # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
         # co-responding to the binary number 0b000000
-
+        if dataRB is None:
+            return 0b111111
         print(self.robot_state)
         if self.robot_state == 'INIT':
             self.init_state()
