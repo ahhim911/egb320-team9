@@ -39,7 +39,7 @@ class StateMachine:
         self.current_item = 0
         self.draw = False
         self.holding_item = False
-        self.i2c = I2C()
+        # self.i2c = I2C()
 
         # Read the object order file
         with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:

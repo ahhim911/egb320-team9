@@ -42,7 +42,7 @@ main()
 
 """
 PACKING_BAY = 0b100000
-ROW_MARKERS = 0b010000
+MARKERS = 0b010000
 SHELVES = 0b001000
 ITEMS = 0b000100
 OBSTACLES = 0b000010
@@ -57,8 +57,8 @@ class Vision(DetectionBase):
         """
         # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
         # co-responding to the binary number 0b000000
-        # self.objectRB = [None, None, None, None, None, None]
-        # self.requested_objects = 0b000000
+        self.objectRB = [None, None, None, None, None, None]
+        self.requested_objects = 0b000000
 
         self.camera = Camera()
 
@@ -90,28 +90,43 @@ class Vision(DetectionBase):
             self.local_frame = frame.copy()
             now = time.time()
             # blurred_image = Preprocessing.preprocess(self.local_frame)
-            detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(frame, self.color_ranges)
-            detected_walls, filled_wall_mask, wall_mask = self.wall_detector.find_wall(frame,  self.color_ranges)
-            detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(frame, filled_wall_mask,  self.color_ranges)
-            detected_ramp, ramp_frame, ramp_mask = self.ramp_detector.find_packing_station_ramp(frame,  self.color_ranges)  # Ramp detection
-            detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(frame,  self.color_ranges)
-            detected_items, item_frame, item_mask = self.item_detector.find_item(frame,  self.color_ranges)
+            if self.requested_objects & SHELVES:
+                detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(frame, self.color_ranges)
+                cv2.imshow('Shelf Detection', shelf_frame)
+                cv2.imshow('Shelf Mask', shelf_mask)
+                self.objectRB[2] = detected_shelves # [[[R,B],[R,B]],[[R,B],[R,B]],...]
 
-            # Display the detection results
-            cv2.imshow('Shelf Detection', shelf_frame)
-            #cv2.imshow('Shelf Mask', shelf_mask)
-            cv2.imshow('Marker Detection', marker_frame)
-            #cv2.imshow('Marker Mask', marker_mask)
-            cv2.imshow('Ramp Detection', ramp_frame)
-            #cv2.imshow('Ramp Mask', ramp_mask)
-            cv2.imshow('Obstacle Detection', obstacle_frame)
-            #cv2.imshow('Obstacle Mask', obstacle_mask)
-            cv2.imshow('Item Detection', item_frame)
-            #cv2.imshow('Item Mask', item_mask)
-            #cv2.imshow('Ramp Detection', ramp_frame)  # Display ramp detection results
-            #cv2.imshow('Ramp Mask', ramp_mask)
-            cv2.imshow('Wall Mask', filled_wall_mask)
-            # self.objectRB[2] = [] # packing the RB into the RB
+            if self.requested_objects & WALLPOINTS:
+                detected_walls, filled_wall_mask, wall_mask = self.wall_detector.find_wall(frame,  self.color_ranges)
+                cv2.imshow('Wall Mask', filled_wall_mask)
+                self.objectRB[5] = detected_walls # [[R,B],[R,B],...]
+
+            if self.requested_objects & MARKERS:
+                detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(frame, filled_wall_mask,  self.color_ranges)
+                cv2.imshow('Marker Detection', marker_frame)
+                cv2.imshow('Marker Mask', marker_mask)
+                self.objectRB[1] = detected_markers # [[R,B,T],[R,B,T]]
+
+            if self.requested_objects & PACKING_BAY:
+                detected_ramp, ramp_frame, ramp_mask = self.ramp_detector.find_packing_station_ramp(frame,  self.color_ranges)  # Ramp detection
+                cv2.imshow('Ramp Detection', ramp_frame)
+                cv2.imshow('Ramp Mask', ramp_mask)
+                self.objectRB[0] = detected_ramp # [[R,B],[R,B],...]
+
+            if self.requested_objects & OBSTACLES:
+                detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(frame,  self.color_ranges)
+                cv2.imshow('Obstacle Detection', obstacle_frame)
+                cv2.imshow('Obstacle Mask', obstacle_mask)
+                self.objectRB[4] = detected_obstacles # [[R,B],[R,B],...]
+
+            if self.requested_objects & ITEMS:
+                detected_items, item_frame, item_mask = self.item_detector.find_item(frame,  self.color_ranges)
+                cv2.imshow('Item Detection', item_frame)
+                cv2.imshow('Item Mask', item_mask)
+                self.objectRB[3] = detected_items # [[R,B,L],[R,B,L],...]
+
+                # # Display the detection results
+                # self.objectRB[2] = [] # packing the RB into the RB
 
             elapsed = time.time() - now
             fps = 1/elapsed

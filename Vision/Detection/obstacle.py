@@ -22,6 +22,7 @@ class Obstacle(DetectionBase):
         """
         Detects obstacles by using color and contour analysis.
         """
+        extracted_data=[]
         # Define the HSV color range for the obstacle
         lower_hsv, upper_hsv = color_ranges['Obstacle']
 
@@ -36,8 +37,11 @@ class Obstacle(DetectionBase):
             final_image = self.draw_bounding_box(scaled_image, detected_obstacles)
         else:
             final_image = scaled_image  # Return original image if no obstacle is found
-
-        return detected_obstacles, final_image, mask
+        
+        for obj in detected_obstacles:
+                extracted_data.append([obj["distance"], obj["bearing"]])
+        print(extracted_data)
+        return extracted_data, final_image, mask
 
     def analyze_contours(self, mask, image_width, min_area=400):
         """

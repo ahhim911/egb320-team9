@@ -19,24 +19,19 @@ def main():
     Vision.start() # Start the threads (Captrue and Pipeline)
 
     print('Start Loop')
-    # while True:
-        # frame = camera.capture_frame()
-        #frame = Camera.get_frame()
-        #Camera.display_frame(frame)
-    #     now = time.time()            # get the time
-    #     # Process the frame
-    #     # process_frame(frame, color_ranges)
+    while True:
+        # now = time.time()   # get the time
 
-    #     # access the attributes of the data
-    #     data = Vision.objectRB
+        # access the attributes of the data
+        # data = Vision.objectRB
 
-    #     # Run State machine and send information back to the vision using "requested_objects"
-    #     # Vision.requested_objects = state_machine.run_state_machine(data)
-    #     # state_machine.run_state_machine(data)
-    #     Vision.requested_objects = 0b001000 # Shelves
-    #     elapsed = time.time() - now  # how long was it running?
-    #     fps = 1.0/elapsed
-    #     print('Elapsed Time: ', elapsed, 'FPS: ', fps)
+        # Run State machine and send information back to the vision using "requested_objects"
+        # Vision.requested_objects = state_machine.run_state_machine(data)
+        # state_machine.run_state_machine(data)
+        Vision.requested_objects = 0b000010 # Shelves
+        # elapsed = time.time() - now  # how long was it running?
+        # fps = 1.0/elapsed
+        # print('Elapsed Time: ', elapsed, 'FPS: ', fps)
 
     # Stop the camera
 if __name__ == "__main__":
