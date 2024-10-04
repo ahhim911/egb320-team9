@@ -74,7 +74,7 @@ class StateMachine:
         # remaining_rows = df.drop(highest_bay_row_3.index)
 
         # Sort by 'Shelf' in descending order
-        sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
+        sorted_min_shelf  = min_shelf_by_height.sort_values(by='Height', ascending=False)
         remaining_rows = df.drop(min_shelf_by_height.index)
         sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
         self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
@@ -111,8 +111,7 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        # self.robot_state = 'SEARCH_FOR_PS'
-        self.robot_state = 'ROTATE_TO_EXIT'
+        self.robot_state = 'SEARCH_FOR_PS'
         self.holding_item = False
 
         # Set the target item position
@@ -141,7 +140,8 @@ class StateMachine:
         
         # Rotate on the spot
         self.rotate('R', MIN_SPEED)
-        if packStationRangeBearing == [] and rowMarkerRangeBearing == []:
+        if not packStationRangeBearing and not rowMarkerRangeBearing:
+            print("No Markers Detected")
             return
         
         self.found_row = False
@@ -153,19 +153,14 @@ class StateMachine:
 
         if rowMarkerRangeBearing != None:
             print("Row: ",rowMarkerRangeBearing)
-            self.found_row = rowMarkerRangeBearing[0] == self.target_row
-            # self.L_dir = 'S'
-            # self.R_dir = 'S'
+            self.found_row = rowMarkerRangeBearing[0] == self.target_row and self.target_row != 1
         # Rotate on the spot
         if self.at_ps:
-            # self.L_dir = 'S'
-            # self.R_dir = 'S'
             self.robot_state = 'SEARCH_FOR_SHELF'
 
         if self.found_ps:
-            self.robot_state = 'MOVE_TO_PS'
-            # self.L_dir = 'S'
-            # self.R_dir = 'S'
+            if abs(packStationRangeBearing[0][1]) < 5:
+                self.robot_state = 'MOVE_TO_PS'
         
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
@@ -207,10 +202,14 @@ class StateMachine:
             self.stop()
             self.robot_state = 'MOVE_TO_ROW'
 
-        shelf_right = None
+        shelf_corner = None
         if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:
-            print("Shelf detected: ", shelfRangeBearing)
-            shelf_right = shelfRangeBearing[0][1]
+            if self.shelf_side == LEFT:  # Odd
+                print("Shelf detected(Left): ", shelfRangeBearing[0][0])
+                shelf_corner = shelfRangeBearing[0][0]
+            if self.shelf_side == RIGHT:  
+                print("Shelf detected(Right): ", shelfRangeBearing[-1][1])
+                shelf_corner = shelfRangeBearing[-1][1] # Most right shelf, right corner
         else:
             print("No shelf detecetd")
 
@@ -218,7 +217,7 @@ class StateMachine:
         if self.shelf_side == LEFT:  # Odd
             print("Turn Right")
             # Turn right
-            self.rotate('R', 60)
+            self.rotate('R', MIN_SPEED)
             if shelf_right is not None:
                 self.found_shelf = True
                 # LEFT SHELF FOUND
@@ -226,12 +225,11 @@ class StateMachine:
         else:
             # Turn left
             print("Turn Left")
-            self.rotate('L', 60)
+            self.rotate('L', MIN_SPEED)
             if shelf_right is not None:
                 if shelf_right[2] < 0 and shelf_right[2] > -10:
                     self.found_shelf = True
                     # RIGHT SHELF FOUND
-
 
         if self.found_shelf:
             self.stop()
@@ -283,23 +281,24 @@ class StateMachine:
 
     def search_for_row(self, rowMarkerRangeBearing):
         print("Marker interested: ", self.target_row)
-        if rowMarkerRangeBearing is not None and rowMarkerRangeBearing != []:
+        if rowMarkerRangeBearing != []:
             print("Marker Detected, ", rowMarkerRangeBearing)
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         # Turn right
-        self.rotate('R', 70)
+        self.rotate('R', 42)
 
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
         
-        if rowMarkerRangeBearing != []:
+        if rowMarkerRangeBearing != None:
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         else:
 
             return
         if self.found_row:
+            print("Row Found: ", self.target_row, ", ", rowMarkerRangeBearing )
             self.goal_position['range'] = rowMarkerRangeBearing[1]
             self.goal_position['bearing'] = rowMarkerRangeBearing[2]
             print(self.goal_position)
@@ -325,6 +324,7 @@ class StateMachine:
     def search_for_item(self, itemsRB):
         print(f"Searching for item in bay {self.target_bay} at shelf {self.target_shelf}")
         print("Start Rotate")
+        # Rotate 90 deg
         if self.rotation_flag:
             if self.target_shelf % 2 == 1:
                 self.rotate("R", 70)
@@ -336,6 +336,7 @@ class StateMachine:
             self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
             time.sleep(2) #TBC duration for 90deg
             self.rotation_flag = False
+
         else:
             print(f"itemsRB: {itemsRB}")
             for item in itemsRB:
@@ -362,8 +363,8 @@ class StateMachine:
                 
                 
             # self.i2c.grip('close')
-        # self.holding_item = True
-        # self.robot_state = 'ROTATE_TO_EXIT'
+        self.holding_item = True
+        self.robot_state = 'ROTATE_TO_EXIT'
         # Check is the item is collected
         
         # self.i2c.lift(self.target_height)
@@ -371,18 +372,19 @@ class StateMachine:
 
     def rotate_to_exit(self, rowMarkerRangeBearing):
         if self.target_shelf % 2 == 1:
-            print("Turn LEFT")
-            self.rotate("L", MIN_SPEED)
+            self.rotate("L", 50)
         else:
-            print("Turn RIGHT")
-            self.rotate("R", MIN_SPEED)
-        if rowMarkerRangeBearing:
+            self.rotate("R", 50)
+        if rowMarkerRangeBearing[0] != None:
             print(rowMarkerRangeBearing)    
             if abs(rowMarkerRangeBearing[2]) < 1:
-                self.found_row = True
+                self.robot_state = "MOVE_TO_EXIT"
 
+            
+    def move_to_exit(self, rowMarkerRangeBearing):
         # Facing to Row marker
-        if self.found_row:
+        if rowMarkerRangeBearing:
+            print(rowMarkerRangeBearing)    
             self.goal_position['range'] = rowMarkerRangeBearing[1]
             self.goal_position['bearing'] = rowMarkerRangeBearing[2]
             print(self.goal_position)
@@ -392,11 +394,14 @@ class StateMachine:
             # np.append(obstaclesRB, shelfRangeBearing[3])
 
             # Calculate goal velocities
-            self.L_dir = '1'
-            self.R_dir = '1'
+            self.L_dir = '1' # Backwards
+            self.R_dir = '1'# Backwards
+            # flipped the left and right
             self.RightmotorSpeed, self.LeftmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstacles=None)
-            
-
+            if self.goal_position['range'] > 1.1:
+                self.robot_state = "SEARCH_FOR_PS"
+        else: 
+            self.robot_state = "ROTATE_TO_EXIT"
 
 
 
@@ -441,6 +446,9 @@ class StateMachine:
         elif self.robot_state == 'ROTATE_TO_EXIT':
             self.rotate_to_exit(dataRB[1])
             request = ROW_MARKERS
+        elif self.robot_state == 'MOVE_TO_EXIT':
+            self.move_to_exit(dataRB[1])
+            request = ROW_MARKERS
         # Add other state transitions...
         # print action
         self.LeftmotorSpeed = int(round(self.LeftmotorSpeed))
@@ -450,6 +458,9 @@ class StateMachine:
         self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
         return request
         
+    def update_state(self, state):
+        self.prev_state = self.robot_state.copy()
+        self.robot_state = state
         
 
     # Moving function
