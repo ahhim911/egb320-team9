@@ -36,7 +36,7 @@ WALLPOINTS =  0b000001
 LEFT = 0
 RIGHT = 1
 
-MIN_SPEED = 20
+MIN_SPEED = 50
 
 
 class StateMachine:
@@ -63,7 +63,12 @@ class StateMachine:
             df = pd.read_csv(csv_file)
 
         # Group by 'Height' and find the minimum 'Shelf' for each height
+        df['Row'] = df['Shelf'] // 2 + 1
         min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
+
+        # Ensure the first item is from Row 3 with the highest Bay number
+        # highest_bay_row_3 = df[(df['Row'] == 3)].sort_values(by='Bay', ascending=False).head(1)
+        # remaining_rows = df.drop(highest_bay_row_3.index)
 
         # Sort by 'Shelf' in descending order
         sorted_min_shelf  = min_shelf_by_height.sort_values(by='Shelf', ascending=False)
@@ -71,7 +76,6 @@ class StateMachine:
         sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
         self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 
-        self.final_df['Row'] = self.final_df['Shelf'] // 2 + 1
         # Redefine the index
         self.final_df = self.final_df.reset_index(drop=True)
 
@@ -85,6 +89,7 @@ class StateMachine:
 		# 5            3      3    3       0      Cube    1+1
 
 
+        max_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmax()]
 
 		# final_df for Order_2.csv
 		#    Item Number  Shelf  Bay  Height Item Name  Row
@@ -126,12 +131,7 @@ class StateMachine:
         # self.i2c.grip('open')
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
-        # if not packStationRangeBearing or len(packStationRangeBearing) == 0:
-        #     print("Warning: packStationRangeBearing is empty or None. Skipping processing.")
-        #     return
-        # if not rowMarkerRangeBearing or len(rowMarkerRangeBearing) <= self.target_row:
-        #     print("Warning: rowMarkerRangeBearing is either empty or does not have enough elements.")
-        #     return
+        
         self.found_row = False
         if packStationRangeBearing is not None:
             self.found_ps = True
@@ -139,23 +139,23 @@ class StateMachine:
                 self.found_row = rowMarkerRangeBearing[0][0] == 0 # Packing Station
 
         if self.found_row:
-            self.L_dir = 'S'
-            self.R_dir = 'S'
+            # self.L_dir = 'S'
+            # self.R_dir = 'S'
             self.robot_state = 'MOVE_TO_ROW'
         # Rotate on the spot
         if self.at_ps:
-            self.L_dir = 'S'
-            self.R_dir = 'S'
+            # self.L_dir = 'S'
+            # self.R_dir = 'S'
             self.robot_state = 'SEARCH_FOR_SHELF'
 
+        if self.found_ps:
+            self.robot_state = 'MOVE_TO_PS'
+            # self.L_dir = 'S'
+            # self.R_dir = 'S'
         
         # Rotate on the spot
         self.rotate('R', MIN_SPEED)
 
-        if self.found_ps:
-            self.robot_state = 'MOVE_TO_PS'
-            self.L_dir = 'S'
-            self.R_dir = 'S'
 
     def move_to_ps(self, packStationRangeBearing, obstaclesRB):
         self.found_ps = packStationRangeBearing is not None
@@ -171,6 +171,8 @@ class StateMachine:
             print(self.goal_position)
 
             # Calculate goal velocities
+            self.L_dir = '0'
+            self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - 1 < 0.01: # Middle of the area
@@ -229,6 +231,8 @@ class StateMachine:
             print(self.robot_state, "Going to: LEFT shelf", self.goal_position)
 
             # Calculate goal velocities
+            self.L_dir = '0'
+            self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - self.row_position_L[self.target_row - 1] < 0.01:
@@ -243,6 +247,8 @@ class StateMachine:
             print(self.robot_state, "Going to: RIGHT shelf", self.goal_position)
 
             # Calculate goal velocities
+            self.L_dir = '0'
+            self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - self.row_position_R[self.target_row - 1] < 0.01:
@@ -282,6 +288,8 @@ class StateMachine:
             np.append(obstaclesRB, shelfRangeBearing[3])
 
             # Calculate goal velocities
+            self.L_dir = '0'
+            self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
@@ -376,8 +384,8 @@ class StateMachine:
         # Add other state transitions...
         # print action
         print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
-        # self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
-        # self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
         return request
         
         
@@ -402,3 +410,6 @@ class StateMachine:
         self.LeftmotorSpeed = 0
         self.RightmotorSpeed = 0
         return
+
+    def __del__(self):
+        self.stop()

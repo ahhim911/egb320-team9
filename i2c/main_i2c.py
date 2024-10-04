@@ -14,7 +14,7 @@ class I2C:
         command = self.string_to_ascii_array(cmd)
         
         try:
-            print(f"Sending command: {command}")
+            # print(f"Sending command: {command}")
             self.bus.write_i2c_block_data(self.addr, 0, command)  # Send data to I2C device
         except IOError as e:
             print(f"Error communicating with I2C device: {e}")
