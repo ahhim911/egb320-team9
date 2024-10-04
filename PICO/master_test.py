@@ -4,8 +4,6 @@ import time
 addr = 0x08  # I2C address of the Arduino slave (check this with i2cdetect)
 bus = SMBus(0)  # Correct I2C bus for Raspberry Pi (usually 1)
 
-print("Enter a command to send (e.g., 'P150P 150'): ")
-
 def string_to_ascii_array(input_string):
     # Convert the input string to an array of ASCII values
     return [ord(char) for char in input_string]
