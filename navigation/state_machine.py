@@ -281,20 +281,20 @@ class StateMachine:
         print("Collecting item")
         # self.i2c.grip('open')
         # calibrate the orientation to the item
-        for i in itemsRB:
-            itemRange = itemsRB[i][0]
-            itemBearing = itemsRB[i][1]
-            itemLevel = itemsRB[i][2]
-            if itemLevel == self.target_height:
-                if abs(itemBearing) < 1: # 1 deg, TBC - select the right level
-                    # Oriented to the item
-                    # move to range 
-                    if itemRange < 0.20: # TBC - select the right level
+        # for i in itemsRB:
+        #     itemRange = itemsRB[i][0]
+        #     itemBearing = itemsRB[i][1]
+        #     itemLevel = itemsRB[i][2]
+        #     if itemLevel == self.target_height:
+        #         if abs(itemBearing) < 1: # 1 deg, TBC - select the right level
+        #             # Oriented to the item
+        #             # move to range 
+        #             if itemRange < 0.20: # TBC - select the right level
                 
                 
             # self.i2c.grip('close')
-            self.holding_item = True
-            self.robot_state = 'ROTATE_TO_EXIT'
+        # self.holding_item = True
+        # self.robot_state = 'ROTATE_TO_EXIT'
         # Check is the item is collected
         
         # self.i2c.lift(self.target_height)
