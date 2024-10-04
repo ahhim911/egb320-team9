@@ -32,7 +32,6 @@ class Marker(DetectionBase):
 
         # Use bitwise AND to keep only markers on the wall
         marker_on_wall_mask = cv2.bitwise_and(mask, filled_wall_mask)
-        cv2.imshow("Marker on Wall",marker_on_wall_mask)
 
         # 2. Detect Markers and Calculate Properties
         detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
