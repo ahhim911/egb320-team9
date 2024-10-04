@@ -44,8 +44,8 @@ class StateMachine:
     def __init__(self):
         # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
-        self.row_position_L = [0.4, 1, 1.6] # row positions for left shelf
-        self.row_position_R = [1.6, 1, 0.4] # row positions for left shelf
+        self.row_position_L = [0.45, 1, 1.55] # row positions for left shelf
+        self.row_position_R = [1.55, 1, 0.45] # row positions for left shelf
         self.found_shelf = False
         self.rotation_flag = False
         self.shelf_side = None
@@ -111,14 +111,16 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_PS'
+        # self.robot_state = 'SEARCH_FOR_PS'
+        self.robot_state = 'ROTATE_TO_EXIT'
         self.holding_item = False
 
         # Set the target item position
         print(self.current_item)
-        self.target_shelf = self.final_df['Shelf'][self.current_item]
+        # self.target_shelf = self.final_df['Shelf'][self.current_item]
+        self.target_shelf = 0
         # self.target_row = self.final_df['Row'][self.current_item]
-        self.target_row = 1
+        self.target_row = 2
         # self.target_bay = self.final_df['Bay'][self.current_item]
         self.target_bay = 1
         # self.target_height = self.final_df['Height'][self.current_item]
@@ -216,7 +218,7 @@ class StateMachine:
         if self.shelf_side == LEFT:  # Odd
             print("Turn Right")
             # Turn right
-            self.rotate('R', MIN_SPEED)
+            self.rotate('R', 60)
             if shelf_right is not None:
                 self.found_shelf = True
                 # LEFT SHELF FOUND
@@ -224,7 +226,7 @@ class StateMachine:
         else:
             # Turn left
             print("Turn Left")
-            self.rotate('L', MIN_SPEED)
+            self.rotate('L', 60)
             if shelf_right is not None:
                 if shelf_right[2] < 0 and shelf_right[2] > -10:
                     self.found_shelf = True
@@ -281,11 +283,11 @@ class StateMachine:
 
     def search_for_row(self, rowMarkerRangeBearing):
         print("Marker interested: ", self.target_row)
-        if rowMarkerRangeBearing != []:
+        if rowMarkerRangeBearing is not None and rowMarkerRangeBearing != []:
             print("Marker Detected, ", rowMarkerRangeBearing)
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         # Turn right
-        self.rotate('R', 42)
+        self.rotate('R', 70)
 
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
@@ -325,9 +327,9 @@ class StateMachine:
         print("Start Rotate")
         if self.rotation_flag:
             if self.target_shelf % 2 == 1:
-                self.rotate("R", 100)
+                self.rotate("R", 70)
             else:
-                self.rotate("L", 100)
+                self.rotate("L", 70)
             
             print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
             self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
@@ -336,10 +338,10 @@ class StateMachine:
             self.rotation_flag = False
         else:
             print(f"itemsRB: {itemsRB}")
-            for i in itemsRB:
-                if itemsRB[i] is not None:
-                    itemRange = itemsRB[i][0]
-                    itemBearing = itemsRB[i][1]
+            for item in itemsRB:
+                if item is not None:
+                    itemRange = itemsRB[0]
+                    itemBearing = itemsRB[1]
                     if abs(itemBearing) < 0.05 and itemRange < 0.20:
                         self.robot_state = 'COLLECT_ITEM'
                         self.stop()
@@ -369,10 +371,12 @@ class StateMachine:
 
     def rotate_to_exit(self, rowMarkerRangeBearing):
         if self.target_shelf % 2 == 1:
-            self.rotate("L", 50)
+            print("Turn LEFT")
+            self.rotate("L", MIN_SPEED)
         else:
-            self.rotate("R", 50)
-        if rowMarkerRangeBearing[0] != None:
+            print("Turn RIGHT")
+            self.rotate("R", MIN_SPEED)
+        if rowMarkerRangeBearing:
             print(rowMarkerRangeBearing)    
             if abs(rowMarkerRangeBearing[2]) < 1:
                 self.found_row = True

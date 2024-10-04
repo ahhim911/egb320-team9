@@ -20,7 +20,7 @@ class I2C:
             print(f"Error communicating with I2C device: {e}")
         
         # Optional short delay
-        time.sleep(0.1)  # Give some time between commands
+        time.sleep(0.005)  # Give some time between commands
 
     def drive(self, forwards:float,rotational:float): # used in the navigvation system to run at the desired 
         forwards_int = round(forwards*100)

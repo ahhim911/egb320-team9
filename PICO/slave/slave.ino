@@ -135,12 +135,12 @@ void driveMotors(float x_dot, float theta_dot) {
 
 void gripper_close() {
   // Move servo to 90 degrees
-  gripServo.write(0);  
+  gripServo.write(-10);  
   delay(1000);  // Wait for a second
 }
 
 void gripper_open(){
-   gripServo.write(170);  
+   gripServo.write(50);  
   delay(1000);  // Wait for a second
 }
 
