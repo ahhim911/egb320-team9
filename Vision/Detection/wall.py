@@ -35,29 +35,27 @@ class Wall(DetectionBase):
         # 1. Preprocess Image
         mask = self._preprocess_image(image, color_ranges)
 
+        #local_image = RGBframe.copy()
+
+        grayscale_mask = self._preprocess_grayscale(RGBframe)
+        #cv2.imshow("Grayscale Wall Mask", grayscale_mask)
+
         # 2. Detect Walls
         detected_walls = self._detect_walls(mask)
+        walls = self._detect_walls(grayscale_mask)
 
         # 3. Extract Data (Bearing, Distance to Bottom Center)
-        data_list = [obj["data"] for obj in detected_walls]
+        data_list = [obj["data"] for obj in walls]
 
         # 4. Create filled wall mask
         filled_wall_mask = self._create_filled_wall_mask(mask, detected_walls)
 
         # 5. Draw bounding boxes if enabled
-        final_image = self._draw_if_enabled(RGBframe, detected_walls)
+        final_image = self._draw_if_enabled(RGBframe, walls)
 
         #print("WALL DATA: ", data_list)
 
         return data_list, final_image, filled_wall_mask
-
-    #def _preprocess_image(self, image, color_ranges):
-    #    """
-    #    Preprocess the image using defined color ranges.
-    #    """
-    #    lower_hsv, upper_hsv = color_ranges['Wall']
-    #    mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
-    #    return mask
     
     def _preprocess_image(self, image, color_ranges):
         """
@@ -67,8 +65,22 @@ class Wall(DetectionBase):
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
     
         return mask
+    
+    def _preprocess_grayscale(self, image):
+        """
+        Convert the RGB image to grayscale and apply thresholding for wall detection.
+        
+        Args:
+        - image: Input image from the camera.
 
-    def _detect_walls(self, mask, min_area=800, solidity_threshold=0.1):
+        Returns:
+        - grayscale_mask: Binary mask from the grayscale image.
+        """
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        _, grayscale_mask = cv2.threshold(grayscale, 205, 255, cv2.THRESH_BINARY)
+        return grayscale_mask
+
+    def _detect_walls(self, mask, min_area=1000, solidity_threshold=0.1):
         """
         Analyzes contours to detect walls and estimates their distance and bearing.
 

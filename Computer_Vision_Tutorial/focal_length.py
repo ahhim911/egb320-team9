@@ -2,14 +2,14 @@ import cv2
 import numpy as np
 
 # Known parameters
-real_world_width = 0.03  # 7 cm object width in meters
-distance_to_object = 0.28  # 110 cm distance to the object in meters
+real_world_width = 0.07  # 7 cm object width in meters
+distance_to_object = 1.1  # 110 cm distance to the object in meters
 
 # Function to preprocess the image: resize, rotate, flip, and blur
 def preprocess_image(image, scale=0.5, blur_ksize=(5, 5), sigmaX=2):
     resized_image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-    blurred_image = cv2.GaussianBlur(resized_image, blur_ksize, sigmaX)
-    return blurred_image
+    #blurred_image = cv2.GaussianBlur(resized_image, blur_ksize, sigmaX)
+    return resized_image
 
 # Function to apply color thresholding
 def color_threshold(image, lower_hsv, upper_hsv):
@@ -30,32 +30,50 @@ def calculate_focal_length(object_width_in_pixels, real_world_width, distance_to
     return focal_length
 
 # Load the image
-frame = cv2.imread('captured_image_0.png')
+frame = cv2.imread('/home/edmond/egb320-team9/Computer_Vision_Tutorial/test_image.png')
 
 # Pre-process the image
 preprocessed_image = preprocess_image(frame)
 
 # Define the HSV range for the 'Marker' color
-marker_lower = np.array([0, 172, 168])
-marker_upper = np.array([14, 255, 255])
-0,172,168,14,255,255
+marker_lower = np.array([0,0,0])
+marker_upper = np.array([175,100,80])
+#0,0,0,175,100,80
 
 # Apply color segmentation
 marker_mask = color_threshold(preprocessed_image, marker_lower, marker_upper)
 
 # Apply morphological filtering
-filtered_mask = apply_morphological_filters(marker_mask)
+#filtered_mask = apply_morphological_filters(marker_mask)
 
 # Find contours in the mask
-contours, _ = cv2.findContours(filtered_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours, _ = cv2.findContours(marker_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 # Check if any contour was found
 if len(contours) == 0:
     print("Error: No marker object detected.")
     exit()
 
-# Assume the largest contour is the object
-contour = max(contours, key=cv2.contourArea)
+detected_markers = []
+
+for contour in contours:
+    area = cv2.contourArea(contour)
+    if area < 60:
+        continue
+    perimeter = cv2.arcLength(contour, True)
+    if perimeter == 0:
+        continue
+    circularity = 4 * np.pi * (area / (perimeter ** 2)) # type: ignore
+    # Classify shape
+    if circularity >= 0.8:
+        shape = "Circle"
+    else:
+        continue
+    detected_markers.append({
+                "contour": contour,
+                "shape": shape,
+            })
+
 
 # Get the bounding box around the object
 x, y, w, h = cv2.boundingRect(contour)

@@ -8,7 +8,6 @@ from .Detection.packing_station import PackingStationRamp
 from .Detection.obstacle import Obstacle
 from .Detection.item import Item
 from .Calibration.calibration import Calibration
-from navigation.state_machine import StateMachine
 from threading import Thread
 import cv2
 import time
@@ -65,11 +64,14 @@ class Vision(DetectionBase):
         self.wall_detector = Wall(homography_matrix=self.homography_matrix,draw=True)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix,draw=True)  # Initialize the ramp detector
         self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
-        self.item_detector = Item(focal_length=300, draw=True)
+        self.item_detector = Item(real_item_width=0.045, focal_length=300, draw=True)
 
-        # Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
-        Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
+        Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
+        #Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
         return
+    
+    def update_item(self, item_width):
+        self.item_detector = Item(real_item_width=item_width, focal_length=300, draw=True)
     
     def display_detection(self, window_name, frame):
         """
@@ -117,7 +119,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & OBSTACLES:
             detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(HSVframe, RGBframe,  self.color_ranges)
-            # self.display_detection('Obstacles', obstacle_mask)
+            self.display_detection('Obstacles', obstacle_mask)
             #cv2.imshow('Obstacle Detection', obstacle_frame)
             #cv2.imshow('Obstacle Mask', obstacle_mask)
             #print("Process obstacles",detected_obstacles)
@@ -125,7 +127,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & ITEMS:
             detected_items, item_frame, item_mask = self.item_detector.find_item(HSVframe, RGBframe,  self.color_ranges)
-            # self.display_detection('Items', item_mask)
+            self.display_detection('Items', item_mask)
             #cv2.imshow('Item Detection', item_frame)
             #cv2.imshow('Item Mask', item_mask)
             #print("Process item",detected_items)

@@ -3,7 +3,7 @@ import pandas as pd
 from enum import Enum
 import time 
 
-
+from Vision.main_vision import Vision
 import navigation.path_planning as navigation
 from i2c.main_i2c import I2C
 
@@ -40,12 +40,12 @@ RIGHT = 1
 MIN_SPEED = 60
 
 
-class StateMachine:
+class StateMachine():
     def __init__(self):
         # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
-        self.row_position_L = [0.45, 1, 1.55] # row positions for left shelf
-        self.row_position_R = [1.55, 1, 0.45] # row positions for left shelf
+        self.row_position_L = [0.4, 1, 1.55] # row positions for left shelf
+        self.row_position_R = [1.55, 1, 0.4] # row positions for left shelf
         self.found_shelf = False
         self.rotation_flag = False
         self.shelf_side = None
@@ -59,6 +59,7 @@ class StateMachine:
         self.draw = False
         self.holding_item = False
         self.i2c = I2C()
+        self.vision = None
 
         # Read the object order file
         with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
@@ -109,19 +110,44 @@ class StateMachine:
 
         self.robot_state = 'INIT'
 
+    def set_vision(self, vision):
+        self.vision = vision
+
+    def item_to_size(self, item_type):
+        if item_type == "Bottle":
+            size = 0.02 # 0.18 PU dis
+        elif item_type == "Ball":
+            size = 0.045
+        elif item_type == "Cube":
+            size = 0.04
+        elif item_type == "Bowl":
+            size = 0.055
+        elif item_type == "Mug":
+            size = 0.05
+        elif item_type == "Weetbots":
+            size = 0.065
+        return size
+
     def init_state(self):
         # Set initial parameters and switch to the next state
         self.robot_state = 'SEARCH_FOR_ITEM'
         # self.robot_state = 'MOVE_TO_ROW'
-        self.robot_state = 'COLLECT_ITEM'
+        # self.robot_state = 'COLLECT_ITEM'
         self.holding_item = False
+        # self.target_item= self.final_df['Item Name'][self.current_item]
+        self.target_item = "Bottle"
+        print("Collecting: ", self.target_item)
+        if self.vision:
+            self.vision.update_item(item_width=self.item_to_size(self.target_item))
+        else:
+            print("Vision not set")
 
         # Set the target item position
         print(self.current_item)
         # self.target_shelf = self.final_df['Shelf'][self.current_item]
         self.target_shelf = 0
         # self.target_row = self.final_df['Row'][self.current_item]
-        self.target_row = 1
+        self.target_row = 2
         # self.target_bay = self.final_df['Bay'][self.current_item]
         self.target_bay = 1
         # self.target_height = self.final_df['Height'][self.current_item]
@@ -136,7 +162,7 @@ class StateMachine:
         # Reset the actuators
         self.L_dir = 'S'
         self.R_dir = 'S'
-        # self.i2c.grip('open')
+        # self.i2c.grip(0)
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         
@@ -162,12 +188,12 @@ class StateMachine:
             if self.found_ps:
                 if abs(rowMarkerRangeBearing[2]) < 5: # 5 deg
                     self.robot_state = 'MOVE_TO_PS'
-        # Rotate on the spot
+
         if self.at_ps:
             self.robot_state = 'SEARCH_FOR_SHELF'
 
         
-        if self.found_row:
+        if self.found_row and self.holding_item == False:
             self.robot_state = 'MOVE_TO_ROW'
 
 
@@ -188,15 +214,22 @@ class StateMachine:
             self.L_dir = '0'
             self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
-            ps_distance = [0.65, 0.9, 1.1]
-            if self.goal_position['range'] - ps_distance[self.target_row - 1] < 0.05: # Middle of the area
-                self.robot_state = 'SEARCH_FOR_SHELF'
-                if self.target_row == 3:
-                    self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
-                    # can rotate to the left faster with time delay
-                else:
-                    self.shelf_side = LEFT # Will turn right to find Left shelf (0)
-                self.stop()
+            if self.holding_item:
+                ps_distance = 0.15
+                if self.goal_position['range'] - ps_distance < 0.02:
+                    self.i2c.grip(0)
+                    self.holding_item = False
+                    self.robot_state = 'INIT'
+            else:
+                ps_distance = [0.65, 0.9, 1.1]
+                if self.goal_position['range'] - ps_distance[self.target_row - 1] < 0.05: # Middle of the area
+                    self.robot_state = 'SEARCH_FOR_SHELF'
+                    if self.target_row == 3:
+                        self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
+                        # can rotate to the left faster with time delay
+                    else:
+                        self.shelf_side = LEFT # Will turn right to find Left shelf (0)
+                    self.stop()
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         # Check if the row marker is found
@@ -339,41 +372,57 @@ class StateMachine:
             print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
             self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
             self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
-            time.sleep(1.6) #TBC duration for 90deg
+            time.sleep(1.5) #TBC duration for 90deg
             self.rotation_flag = False
 
         else:
-            print(f"itemsRB: {itemsRB}")
-            for item in range(len(itemsRB)):
-                if item is not None:
-                    itemRange = itemsRB[item][0]
-                    itemBearing = itemsRB[item][1]
-                    if abs(itemBearing) < 1 and itemRange < 0.20:
-                        self.robot_state = 'COLLECT_ITEM'
-                        self.stop()
+            # print(f"itemsRB: {itemsRB}")
+            # for item in range(len(itemsRB)):
+            #     if item is not None:
+            #         itemRange = itemsRB[item][0]
+            #         itemBearing = itemsRB[item][1]
+            #         if abs(itemBearing) < 1 and itemRange < 0.30:
+            #             self.robot_state = 'COLLECT_ITEM'
+            #             self.stop()
+            self.robot_state = 'COLLECT_ITEM'
+            
+            # self.goal_position['range'] = itemsRB[0][0]
+            # self.goal_position['bearing'] = itemsRB[0][1]
+            # print(self.goal_position)
+            # self.L_dir = '0'
+            # self.R_dir = '0'
+            # self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
+            
     
     def collect_item(self, itemsRB):
         print("Collecting item")
-        self.i2c.grip('open')
-        time.sleep(1)
-        # calibrate the orientation to the item
-        # for i in itemsRB:
-        #     itemRange = itemsRB[i][0]
-        #     itemBearing = itemsRB[i][1]
-        #     itemLevel = itemsRB[i][2]
-        #     if itemLevel == self.target_height:
-        #         if abs(itemBearing) < 1: # 1 deg, TBC - select the right level
-        #             # Oriented to the item
-        #             # move to range 
-        #             if itemRange < 0.20: # TBC - select the right level
+        # self.i2c.grip(0)
+        # time.sleep(1)
+        
+        # self.R_dir = '1'
+        # self.L_dir = '1'
+        # self.LeftmotorSpeed = 50
+        # self.RightmotorSpeed = 50
+        # time.sleep(1)
+        # # calibrate the orientation to the item
+        # # for i in itemsRB:
+        # #     itemRange = itemsRB[i][0]
+        # #     itemBearing = itemsRB[i][1]
+        # #     itemLevel = itemsRB[i][2]
+        # #     if itemLevel == self.target_height:
+        # #         if abs(itemBearing) < 1: # 1 deg, TBC - select the right level
+        # #             # Oriented to the item
+        # #             # move to range 
+        # #             if itemRange < 0.20: # TBC - select the right level
                 
-        self.i2c.lift(3)
-        time.sleep(1)
-        self.i2c.grip('close')
-        time.sleep(1)
-        self.i2c.lift(1)
+        # self.i2c.lift(3)
+        # time.sleep(5)
+        # self.i2c.grip(1)
+        # time.sleep(1)
+        # self.i2c.lift(1)
+        # time.sleep(5)
                 
-            # self.i2c.grip('close')
+            # self.i2c.grip(1)
         self.holding_item = True
         # Check is the item is collected
         

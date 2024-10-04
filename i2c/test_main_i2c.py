@@ -17,17 +17,18 @@ def test_drive():
 def test_lift():
     print("Testing Lift Command...")
     i2c.lift(1)  # Set lift to level 1
-    time.sleep(1)
+    time.sleep(4)
     i2c.lift(2)  # Set lift to level 2
-    time.sleep(1)
+    time.sleep(3)
     i2c.lift(3)  # Set lift to level 3
-    time.sleep(1)
+    time.sleep(6)
+    i2c.lift(1)  # Set lift to level 1
 
 def test_grip():
     print("Testing Grip Command...")
-    i2c.grip('open')  # Open the gripper
+    i2c.grip(0)  # Open the gripper
     time.sleep(1)
-    i2c.grip('close')  # Close the gripper
+    i2c.grip(1)  # Close the gripper
     time.sleep(1)
 
 def test_led():
@@ -48,8 +49,8 @@ def test_led():
 if __name__ == "__main__":
     # Run tests for all functions
     try:
-        test_drive()
-        test_lift()
+        # test_drive()
+        #test_lift()
         test_grip()
         test_led()
         print("All tests completed successfully.")
