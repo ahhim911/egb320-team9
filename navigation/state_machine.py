@@ -111,16 +111,18 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'ROTATE_TO_EXIT'
+        self.robot_state = 'SEARCH_FOR_PS'
         self.holding_item = False
 
         # Set the target item position
         print(self.current_item)
         self.target_shelf = self.final_df['Shelf'][self.current_item]
         # self.target_row = self.final_df['Row'][self.current_item]
-        self.target_row = 3
-        self.target_bay = self.final_df['Bay'][self.current_item]
-        self.target_height = self.final_df['Height'][self.current_item]
+        self.target_row = 1
+        # self.target_bay = self.final_df['Bay'][self.current_item]
+        self.target_bay = 1
+        # self.target_height = self.final_df['Height'][self.current_item]
+        self.target_height = 0
 
         # Set the subtarget shelf (Opposite side of the target shelf)
         if self.target_shelf % 2 == 1:  # Odd
@@ -236,6 +238,10 @@ class StateMachine:
     def move_to_shelf(self, shelfRangeBearing, obstaclesRB):
         self.found_shelf = False
         print("shelf RB: ", shelfRangeBearing)
+        if shelfRangeBearing == []:
+            self.robot_state = 'SEARCH_FOR_SHELF'
+            self.stop()
+            return
         if shelfRangeBearing is not None and self.shelf_side == LEFT:
             # if len(shelfRangeBearing[0][0]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
@@ -249,14 +255,15 @@ class StateMachine:
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
             if self.goal_position['range'] - self.row_position_L[self.target_row - 1] < 0.01:
+                print("=================Seach For ROW==============")
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
 
         elif shelfRangeBearing is not None and self.shelf_side == RIGHT:
             # if len(shelfRangeBearing[1]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
-            self.goal_position['range'] = shelfRangeBearing[0][1][1]
-            self.goal_position['bearing'] = shelfRangeBearing[0][1][2]
+            self.goal_position['range'] = shelfRangeBearing[0][-1][1]
+            self.goal_position['bearing'] = shelfRangeBearing[0][-1][2]
             print(self.robot_state, "Going to: RIGHT shelf", self.goal_position)
 
             # Calculate goal velocities
@@ -268,27 +275,24 @@ class StateMachine:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
         
-        if shelfRangeBearing is None:
-            self.robot_state = 'SEARCH_FOR_SHELF'
-            self.stop()
 
 
         
 
     def search_for_row(self, rowMarkerRangeBearing):
         print("Marker interested: ", self.target_row)
-        if rowMarkerRangeBearing is not None:
+        if rowMarkerRangeBearing != []:
             print("Marker Detected, ", rowMarkerRangeBearing)
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         # Turn right
-        self.rotate('R', MIN_SPEED)
+        self.rotate('R', 42)
 
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
         
-        if rowMarkerRangeBearing is not None:
+        if rowMarkerRangeBearing != []:
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         else:
 
@@ -312,6 +316,7 @@ class StateMachine:
                 self.rotation_flag = True
                 self.stop()
         else:
+            self.found_row = False
             self.robot_state = 'SEARCH_FOR_ROW'
             self.stop()
 
@@ -320,9 +325,9 @@ class StateMachine:
         print("Start Rotate")
         if self.rotation_flag:
             if self.target_shelf % 2 == 1:
-                self.rotate("R", 80)
+                self.rotate("R", 100)
             else:
-                self.rotate("L", 80)
+                self.rotate("L", 100)
             
             print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
             self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
@@ -447,11 +452,11 @@ class StateMachine:
     def rotate(self, direction, speed):
         # Validate inputs
         if direction == "L":
-            self.L_dir = '0'
-            self.R_dir = '1'
-        elif direction == "R":
             self.L_dir = '1'
             self.R_dir = '0'
+        elif direction == "R":
+            self.L_dir = '0'
+            self.R_dir = '1'
         
         self.LeftmotorSpeed = speed
         self.RightmotorSpeed = speed

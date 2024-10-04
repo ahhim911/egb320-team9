@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 
-MIN_ROBOT_VEL = 45 # duty cycle
-MAX_ROBOT_VEL = 80 # duty cycle
+MIN_ROBOT_VEL = 35 # duty cycle
+MAX_ROBOT_VEL = 70 # duty cycle
 GOAL_P = 0.5
 ROT_BIAS = 0.5
 CAMERA_FOV = 60
@@ -25,7 +25,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     # Find heading angle by finding the index of the max value in the residual field
     heading_angle = np.argmax(nav_state['residual_field'])
 
-    goal_error = heading_angle - CAMERA_FOV/2
+    goal_error = heading_angle #- CAMERA_FOV/2
     print("HA: ",heading_angle, "ERROR: ", goal_error)
     # --------------- PWM Signals -------------------
     """
@@ -48,7 +48,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 5 # Gain
+    control_signal = goal_error * 0.75 # Gain
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal
