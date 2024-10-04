@@ -30,10 +30,10 @@ class CalibrateHomography:
     angle_rad = np.radians(angle_deg)
 
     ground_points = np.array([
-        [-0.06, 0.20],
-        [0.09, 0.20],
-        [0.19, 0.50],
-        [-0.16, 0.50]
+        [-0.06, 0.55],
+        [0.09, 0.55],
+        [0.19, 0.90],
+        [-0.16, 0.90]
     ], dtype=np.float32)
     def __init__(self):
         # Global variables for calibration
@@ -41,6 +41,23 @@ class CalibrateHomography:
         self.image_points = []
         self.found_homography = False
         self.captured_image = None
+
+    def draw_crosshair(self, frame, color=(255, 255, 255), thickness=2):
+        # Get the dimensions of the frame
+        height, width = frame.shape[:2]
+        
+        # Calculate the center of the frame
+        center_x = width // 2
+        center_y = height // 2
+        FrameCenter = (center_x, center_y)
+        # Define the length of the crosshair arms
+        crosshair_length = 5
+        
+        # Draw the vertical line of the crosshair
+
+        cv2.drawMarker(frame, FrameCenter, color, markerType=cv2.MARKER_CROSS, markerSize=10, thickness=2)
+        # Draw the horizontal line of the crosshair
+        return FrameCenter
 
     # Function to handle mouse click events for homography calibration
     def onClick(self, event, x, y, flags, params):
@@ -83,6 +100,7 @@ class CalibrateHomography:
         while True:
             frame = picam2.capture_array()
             frame = cv2.flip(frame, -1)  # Flip horizontally and vertically
+            # frame = self.draw_crosshair(frame)
             cv2.imshow("Live Feed", frame)
 
             key = cv2.waitKey(1) & 0xFF

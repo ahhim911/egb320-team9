@@ -1,5 +1,9 @@
 import numpy as np
 import csv
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Calibration')))
 from color import Color, CalibrateColor
 from homography import Homography, CalibrateHomography
 from focal_length import FocalLength, CalibrateFocalLength
