@@ -46,6 +46,7 @@ class StateMachine:
         self.row_position_L = [0.3, 1, 1.7] # row positions for left shelf
         self.row_position_R = [1.7, 1, 0.3] # row positions for left shelf
         self.found_shelf = False
+        self.shelf_side = None
         self.found_row = False
         self.at_ps = False
         self.action = []
@@ -70,29 +71,29 @@ class StateMachine:
         sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
         self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 
-        self.final_df['Row'] = self.final_df['Shelf'] // 2
+        self.final_df['Row'] = self.final_df['Shelf'] // 2 + 1
         # Redefine the index
         self.final_df = self.final_df.reset_index(drop=True)
 
 		# final_df for Order_1.csv
 		# 	 Item Number  Shelf  Bay  Height Item Name  Row
-		# 0            2      2    0       1    Bottle    1
-		# 1            6      1    3       0  Weetbots    0
-		# 2            1      0    2       2      Ball    0
-		# 3            4      5    2       2      Bowl    2
-		# 4            5      4    0       1       Mug    2
-		# 5            3      3    3       0      Cube    1
+		# 0            2      2    0       1    Bottle    1+1
+		# 1            6      1    3       0  Weetbots    0+1
+		# 2            1      0    2       2      Ball    0+1
+		# 3            4      5    2       2      Bowl    2+1
+		# 4            5      4    0       1       Mug    2+1
+		# 5            3      3    3       0      Cube    1+1
 
 
 
 		# final_df for Order_2.csv
 		#    Item Number  Shelf  Bay  Height Item Name  Row
-		# 0            2      3    1       1    Bottle    1
-		# 1            4      2    1       2      Ball    1
-		# 2            3      0    0       0      Cube    0
-		# 3            1      5    3       2      Bowl    2
-		# 4            6      3    0       1       Mug    1
-		# 5            5      1    2       0  Weetbots    0
+		# 0            2      3    1       1    Bottle    1+1
+		# 1            4      2    1       2      Ball    1+1
+		# 2            3      0    0       0      Cube    0+1
+		# 3            1      5    3       2      Bowl    2+1
+		# 4            6      3    0       1       Mug    1+1
+		# 5            5      1    2       0  Weetbots    0+1
 		
         # Display the result
         print("Optimised pickup order:")
@@ -102,13 +103,14 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_PS'
+        self.robot_state = 'SEARCH_FOR_ROW'
         self.holding_item = False
 
         # Set the target item position
         print(self.current_item)
         self.target_shelf = self.final_df['Shelf'][self.current_item]
-        self.target_row = self.final_df['Row'][self.current_item]
+        # self.target_row = self.final_df['Row'][self.current_item]
+        self.target_row = 3
         self.target_bay = self.final_df['Bay'][self.current_item]
         self.target_height = self.final_df['Height'][self.current_item]
 
@@ -124,16 +126,17 @@ class StateMachine:
         # self.i2c.grip('open')
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
-        if not packStationRangeBearing or len(packStationRangeBearing) == 0:
-            print("Warning: packStationRangeBearing is empty or None. Skipping processing.")
-            return
-        if not rowMarkerRangeBearing or len(rowMarkerRangeBearing) <= self.target_row:
-            print("Warning: rowMarkerRangeBearing is either empty or does not have enough elements.")
-            return
-        
-        
-        self.found_ps = packStationRangeBearing[0] is not None
-        self.found_row = rowMarkerRangeBearing[self.target_row] is not None
+        # if not packStationRangeBearing or len(packStationRangeBearing) == 0:
+        #     print("Warning: packStationRangeBearing is empty or None. Skipping processing.")
+        #     return
+        # if not rowMarkerRangeBearing or len(rowMarkerRangeBearing) <= self.target_row:
+        #     print("Warning: rowMarkerRangeBearing is either empty or does not have enough elements.")
+        #     return
+        self.found_row = False
+        if packStationRangeBearing is not None:
+            self.found_ps = True
+            if len(rowMarkerRangeBearing) != 0:
+                self.found_row = rowMarkerRangeBearing[0][0] == 0 # Packing Station
 
         if self.found_row:
             self.L_dir = 'S'
@@ -155,9 +158,14 @@ class StateMachine:
             self.R_dir = 'S'
 
     def move_to_ps(self, packStationRangeBearing, obstaclesRB):
-        self.found_ps = packStationRangeBearing[0] is not None
+        self.found_ps = packStationRangeBearing is not None
+        print("PS RB: ", packStationRangeBearing)
 
-        if self.found_ps:
+        if len(packStationRangeBearing) == 0:
+            self.robot_state = 'SEARCH_FOR_PS'
+            self.stop()
+            self.found_ps = False
+        else:
             self.goal_position['range'] = packStationRangeBearing[0][0]
             self.goal_position['bearing'] = packStationRangeBearing[0][1]
             print(self.goal_position)
@@ -173,19 +181,17 @@ class StateMachine:
                 else:
                     self.shelf_side = LEFT # Will turn right to find Left shelf (0)
                 self.stop()
-        else:
-            self.robot_state = 'SEARCH_FOR_PS'
-            self.stop()
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         # Check if the row marker is found
-        self.found_row = rowMarkerRangeBearing[self.target_row] is not None
+        self.found_row = any(row[0] == self.target_row for row in rowMarkerRangeBearing if len(row) > 0)
         if self.found_row:
             self.stop()
             self.robot_state = 'MOVE_TO_ROW'
 
         # Turn direction based on the shelf side
         if self.shelf_side == LEFT:  # Odd
+            print("Turn Right")
             # Turn right
             self.rotate('R', MIN_SPEED)
             if shelfRangeBearing[0][0] is not None:
@@ -194,6 +200,7 @@ class StateMachine:
             
         else:
             # Turn left
+            print("Turn Left")
             self.rotate('L', MIN_SPEED)
             if shelfRangeBearing[0][1] is not None:
                 self.found_shelf = True
@@ -207,8 +214,9 @@ class StateMachine:
 
     def move_to_shelf(self, shelfRangeBearing, obstaclesRB):
         self.found_shelf = False
-
-        if self.shelf_side == LEFT & shelfRangeBearing[0] is not None:
+        print("shelf RB: ", shelfRangeBearing)
+        if shelfRangeBearing is not None and self.shelf_side == LEFT:
+            # if len(shelfRangeBearing[0][0]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
             self.goal_position['range'] = shelfRangeBearing[0][0]
             self.goal_position['bearing'] = shelfRangeBearing[0][1]
@@ -216,12 +224,13 @@ class StateMachine:
 
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
-            
+
             if self.goal_position['range'] - self.row_position_L[self.target_row] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
 
-        elif self.shelf_side == RIGHT & shelfRangeBearing[1] is not None:
+        elif shelfRangeBearing is not None and self.shelf_side == RIGHT:
+            # if len(shelfRangeBearing[1]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
             self.goal_position['range'] = shelfRangeBearing[1][0]
             self.goal_position['bearing'] = shelfRangeBearing[1][1]
@@ -233,17 +242,20 @@ class StateMachine:
             if self.goal_position['range'] - self.row_position_R[self.target_row] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
-        else:
+        
+        if shelfRangeBearing is None:
             self.robot_state = 'SEARCH_FOR_SHELF'
             self.stop()
+
+
         
 
     def search_for_row(self, rowMarkerRangeBearing):
-        self.found_row = rowMarkerRangeBearing[self.target_row] is not None
+        if rowMarkerRangeBearing is not None:
+            self.found_row = any(row[0] == self.target_row for row in rowMarkerRangeBearing if len(row) > 0)
 
-        # Rotate on the spot
-        self.LeftmotorSpeed = 0
-        self.RightmotorSpeed = -0.1 if self.shelf_side == LEFT else 0.1
+        # Turn right
+        self.rotate('R', MIN_SPEED)
 
         if self.found_row:
             self.robot_state = 'MOVE_TO_ROW'
@@ -317,6 +329,7 @@ class StateMachine:
         self.L_dir = '1'
         self.LeftmotorSpeed = 0
         self.RightmotorSpeed = 0
+        request = 0
         # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
         # co-responding to the binary number 0b000000
         if dataRB is None:
@@ -327,38 +340,37 @@ class StateMachine:
             return 0
         elif self.robot_state == 'SEARCH_FOR_PS':
             self.search_for_ps(dataRB[0], dataRB[1])
-            return PACKING_BAY | ROW_MARKERS
+            request = PACKING_BAY | ROW_MARKERS
         elif self.robot_state == 'MOVE_TO_PS':
             self.move_to_ps(dataRB[0], dataRB[4])
-            return PACKING_BAY | OBSTACLES
+            request = PACKING_BAY | OBSTACLES
         elif self.robot_state == 'SEARCH_FOR_SHELF':
             self.search_for_shelf(dataRB[1], dataRB[2])
-            return ROW_MARKERS | SHELVES
+            request = ROW_MARKERS | SHELVES
         elif self.robot_state == 'MOVE_TO_SHELF':
             self.move_to_shelf(dataRB[2], dataRB[4])
-            return SHELVES | OBSTACLES
+            request = SHELVES | OBSTACLES
         elif self.robot_state == 'SEARCH_FOR_ROW':
             self.search_for_row(dataRB[1])
-            return ROW_MARKERS
+            request = ROW_MARKERS
         elif self.robot_state == 'MOVE_TO_ROW':
             self.move_to_row(dataRB[1], dataRB[4], dataRB[2])
-            return ROW_MARKERS | OBSTACLES | SHELVES
+            request = ROW_MARKERS | OBSTACLES | SHELVES
         elif self.robot_state == 'SEARCH_FOR_ITEM':
             self.search_for_item(dataRB[3])
-            return ITEMS
+            request = ITEMS
         elif self.robot_state == 'COLLECT_ITEM':
             self.collect_item([dataRB[3]])
-            return ITEMS
+            request = ITEMS
         elif self.robot_state == 'ROTATE_TO_EXIT':
             self.rotate_to_exit(dataRB[4], dataRB[5])
-            return SHELVES | WALLPOINTS
+            request = SHELVES | WALLPOINTS
         # Add other state transitions...
         # print action
-        print("Moving: ", self.LeftmotorSpeed, self.RightmotorSpeed)
-        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
-        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
-        # self.i2c.drive(self.LeftmotorSpeed, self.RightmotorSpeed)
-        return 0
+        print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
+        # self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        # self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        return request
         
         
 

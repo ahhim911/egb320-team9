@@ -20,11 +20,11 @@ def main():
     Vision = VisionClass()
     Vision.start() # Start the threads (Captrue and Pipeline)
     Vision.requested_objects = 0b111111
-    time.sleep(5)
+    time.sleep(3)
     data = [None] * 6
     print('Start Loop')
     while True:
-        Vision.requested_objects = 0b111111
+        # Vision.requested_objects = 0b111111
         now = time.time()   # get the time
         print("Run single frame")
         process_thread = Thread(target=Vision.process_image)
@@ -34,7 +34,7 @@ def main():
 
         # access the attributes of the data
         data = Vision.objectRB
-        print(data)
+        # print(data)
 
         # Run State machine and send information back to the vision using "requested_objects"
         Vision.requested_objects = state_machine.run_state_machine(data)

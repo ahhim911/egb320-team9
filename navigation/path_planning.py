@@ -50,7 +50,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 0.1 # Gain of 0.1, adjust as needed
+    control_signal = goal_error * 10 # Gain of 0.1, adjust as needed
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal
@@ -120,15 +120,15 @@ def compute_repulsive_field(obstacles):
             if obs_range < 0.8:
                 obs_width = WORKER_WIDTH_SCALE
                 
-                # Convert bearing to degrees
-                obs_deg = int(np.rad2deg(obs_bearing) + CAMERA_FOV/2)
+                # Convert bearing to degrees and clip to valid range
+                obs_deg = int(np.clip(np.rad2deg(obs_bearing) + CAMERA_FOV / 2, 0, CAMERA_FOV))
                 
                 # Calculate the width of the obstacle in degrees
-                obs_width_rad = 2*math.atan(obs_width / obs_range)
+                obs_width_rad = 2 * math.atan(obs_width / obs_range)
                 obs_width_deg = int(np.rad2deg(obs_width_rad))
                 
                 # Calculate the effect of the obstacle on the repulsive field
-                obs_effect = max(0, 1- min(1, obs_range - WORKER_WIDTH_SCALE * 2))
+                obs_effect = max(0, 1 - min(1, obs_range - WORKER_WIDTH_SCALE * 2))
                 
                 # Update the repulsive field
                 repulsive_field[obs_deg] = obs_effect
@@ -140,6 +140,7 @@ def compute_repulsive_field(obstacles):
                 np.maximum.at(repulsive_field, indices, effects)
 
     return repulsive_field
+
 
 
 

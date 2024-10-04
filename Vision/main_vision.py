@@ -93,7 +93,7 @@ class Vision(DetectionBase):
         if self.requested_objects & WALLPOINTS:
             detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe,  self.color_ranges)
             # self.display_detection('Wall', wall_frame)
-            #cv2.imshow('Wall Mask', filled_wall_mask)
+            cv2.imshow('Wall Mask', filled_wall_mask)
             #print("Process wall", detected_walls)
             self.objectRB[5] = detected_walls # [[R,B],[R,B],...]
         
@@ -102,7 +102,7 @@ class Vision(DetectionBase):
             detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, filled_wall_mask, self.color_ranges)
             #self.display_detection('Markers', marker_frame)
             #cv2.imshow('Marker Detection', marker_frame)
-            #cv2.imshow('Marker Mask', marker_mask)
+            cv2.imshow('Marker Mask', marker_mask)
             #print("Process Markers", detected_markers)
             self.objectRB[1] = detected_markers # [[R,B,T],[R,B,T]]
 

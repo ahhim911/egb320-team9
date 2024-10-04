@@ -32,6 +32,7 @@ class Marker(DetectionBase):
 
         # Use bitwise AND to keep only markers on the wall
         marker_on_wall_mask = cv2.bitwise_and(mask, filled_wall_mask)
+        cv2.imshow("Marker on Wall",marker_on_wall_mask)
 
         # 2. Detect Markers and Calculate Properties
         detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
@@ -59,7 +60,7 @@ class Marker(DetectionBase):
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
         return mask
 
-    def _detect_and_classify_markers(self, mask, min_area=100):
+    def _detect_and_classify_markers(self, mask, min_area=60):
         """
         Detects markers, classifies shapes, and calculates distances and bearings.
 
@@ -84,7 +85,7 @@ class Marker(DetectionBase):
             circularity = 4 * np.pi * (area / (perimeter ** 2)) # type: ignore
 
             # Classify shape
-            if circularity >= 0.85:
+            if circularity >= 0.8:
                 shape = "Circle"
             else:
                 # Approximate the contour

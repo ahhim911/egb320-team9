@@ -63,12 +63,9 @@ class Wall(DetectionBase):
         """
         Preprocess the image by converting it to grayscale and applying thresholding.
         """
-        # Convert image to grayscale
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Apply a threshold to the grayscale image
-        _, mask = cv2.threshold(gray_image, 175, 255, cv2.THRESH_BINARY)
-
+        lower_hsv, upper_hsv = color_ranges['Wall']
+        mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+    
         return mask
 
     def _detect_walls(self, mask, min_area=800, solidity_threshold=0.5):
