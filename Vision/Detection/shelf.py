@@ -187,7 +187,7 @@ class Shelf(DetectionBase):
         """
         return [tuple(point.ravel()) for point in obj["contour"]]
 
-    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=4):
+    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=6):
         """
         Get the bottom-right or bottom-left corner based on the criterion.
 
