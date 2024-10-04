@@ -8,20 +8,23 @@ i2c = I2C(addr=0x08, bus=0)
 
 def test_drive():
     print("Testing Drive Command...")
-    i2c.drive(forwards=0.01, rotational=0.01)  # Drive forwards at 0.5 m/s and rotate at 0.2 rad/s
     time.sleep(1)
-    i2c.drive(forwards=-0.01, rotational=-0.01)  # Drive backwards at 0.3 m/s and rotate at -0.1 rad/s
+    i2c.DCWrite(1, "0", 60)
+    i2c.DCWrite(2, "0", 60)
     time.sleep(1)
+    i2c.DCWrite(1, "S", 0)
+    i2c.DCWrite(2, "S", 0)
+
     i2c.drive(forwards=0, rotational=0)
 
 def test_lift():
     print("Testing Lift Command...")
     i2c.lift(1)  # Set lift to level 1
-    time.sleep(4)
+    time.sleep(10)
     i2c.lift(2)  # Set lift to level 2
-    time.sleep(3)
+    time.sleep(10)
     i2c.lift(3)  # Set lift to level 3
-    time.sleep(6)
+    time.sleep(10)
     i2c.lift(1)  # Set lift to level 1
 
 def test_grip():
@@ -49,13 +52,17 @@ def test_led():
 if __name__ == "__main__":
     # Run tests for all functions
     try:
-        # test_drive()
-        #test_lift()
+        test_drive()
+        # time.sleep(4)
+        # test_lift()
         test_grip()
         test_led()
         print("All tests completed successfully.")
+        i2c.DCWrite(1, 'S',0) #Left
+        i2c.DCWrite(2, 'S',0) #Right
     except Exception as e:
         print(f"An error occurred during testing: {e}")
+
 
 
 

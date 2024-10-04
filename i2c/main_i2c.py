@@ -70,9 +70,9 @@ class I2C:
     def grip(self, state):
         """Set the gripper state in the command array."""
         if state == 0:
-            command = 'G0'
+            command = f"G{state}"
         elif state == 1:
-            command = 'G1'
+            command = f"G{state}"
         else:
             print("Invalid gripper state")
             return

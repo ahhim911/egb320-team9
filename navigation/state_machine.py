@@ -62,7 +62,7 @@ class StateMachine():
         self.vision = None
 
         # Read the object order file
-        with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/Order_1.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
@@ -130,28 +130,29 @@ class StateMachine():
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_ITEM'
+        self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'COLLECT_ITEM'
         self.holding_item = False
-        # self.target_item= self.final_df['Item Name'][self.current_item]
-        self.target_item = "Bottle"
-        print("Collecting: ", self.target_item)
-        if self.vision:
-            self.vision.update_item(item_width=self.item_to_size(self.target_item))
-        else:
-            print("Vision not set")
 
         # Set the target item position
         print(self.current_item)
         # self.target_shelf = self.final_df['Shelf'][self.current_item]
-        self.target_shelf = 0
+        self.target_shelf = 3
         # self.target_row = self.final_df['Row'][self.current_item]
         self.target_row = 2
         # self.target_bay = self.final_df['Bay'][self.current_item]
         self.target_bay = 1
         # self.target_height = self.final_df['Height'][self.current_item]
-        self.target_height = 0
+        self.target_height = 1
+        # self.target_item = self.final_df['ShItelf'][self.current_item]
+        self.target_item = "Bottle"
+        # self.target_item= self.final_df['Item Name'][self.current_item]
+        print("Collecting: ", self.target_item)
+        if self.vision:
+            self.vision.update_item(item_width=self.item_to_size(self.target_item))
+        else:
+            print("Vision not set")
 
         # Set the subtarget shelf (Opposite side of the target shelf)
         if self.target_shelf % 2 == 1:  # Odd
@@ -216,6 +217,8 @@ class StateMachine():
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             if self.holding_item:
                 ps_distance = 0.15
+                self.LeftmotorSpeed = self.LeftmotorSpeed + 40
+                self.RightmotorSpeed = self.RightmotorSpeed + 40
                 if self.goal_position['range'] - ps_distance < 0.02:
                     self.i2c.grip(0)
                     self.holding_item = False
@@ -396,14 +399,20 @@ class StateMachine():
     
     def collect_item(self, itemsRB):
         print("Collecting item")
-        # self.i2c.grip(0)
-        # time.sleep(1)
-        
-        # self.R_dir = '1'
-        # self.L_dir = '1'
-        # self.LeftmotorSpeed = 50
-        # self.RightmotorSpeed = 50
-        # time.sleep(1)
+        self.i2c.grip(0)
+        time.sleep(1)
+        # 
+        self.R_dir = '0'
+        self.L_dir = '0'
+        self.LeftmotorSpeed = 50
+        self.RightmotorSpeed = 50
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        time.sleep(1)
+        self.stop()
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+
         # # calibrate the orientation to the item
         # # for i in itemsRB:
         # #     itemRange = itemsRB[i][0]
@@ -415,18 +424,26 @@ class StateMachine():
         # #             # move to range 
         # #             if itemRange < 0.20: # TBC - select the right level
                 
-        # self.i2c.lift(3)
-        # time.sleep(5)
-        # self.i2c.grip(1)
-        # time.sleep(1)
-        # self.i2c.lift(1)
-        # time.sleep(5)
-                
-            # self.i2c.grip(1)
+        self.i2c.lift(self.target_height + 1)
+        time.sleep(5)
+        self.i2c.grip(1)
+        time.sleep(2)
+        self.R_dir = '1'
+        self.L_dir = '1'
+        self.LeftmotorSpeed = 50
+        self.RightmotorSpeed = 50
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        time.sleep(1)
+        self.stop()
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        self.i2c.lift(1)
+
         self.holding_item = True
         # Check is the item is collected
         
-        # self.robot_state = 'ROTATE_TO_EXIT'
+        self.robot_state = 'ROTATE_TO_EXIT'
 
     def rotate_to_exit(self, rowMarkerRangeBearing):
         if self.target_shelf % 2 == 1:

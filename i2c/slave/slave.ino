@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <Servo.h> // Include the Servo library
 
-#define I2C_ADDRESS 0x35  // I2C address of the device
+#define I2C_ADDRESS 0x08  // I2C address of the device
 #define I2C_SDA 0        // Use GPIO 26 as SDA
 #define I2C_SCL 1        // Use GPIO 27 as SCL
 #define EN1 20
@@ -18,7 +18,7 @@
 #define SCALING_FACTOR 127.5
 
 volatile int last_pos = 45;
-int gripservoPin = 9;  // SV1
+int gripservoPin = 11;  // SV1
 int liftservoPin = 10; // SV2
 int LED1 = 4; 
 int LED2 = 5;
@@ -114,23 +114,23 @@ void ledControl(int led, int state) {
 //   int right_motor_speed = constrain(round(rightWheelSpeed * SCALING_FACTOR), -255, 255);
 
   // Control left motor
-  if (left_motor_speed < 0) {
-    digitalWrite(PHS1, LOW);
-    left_motor_speed = -left_motor_speed;
-  } else {
-    digitalWrite(PHS1, HIGH);
-  }
-  analogWrite(EN1, left_motor_speed);
+//   if (left_motor_speed < 0) {
+//     digitalWrite(PHS1, LOW);
+//     left_motor_speed = -left_motor_speed;
+//   } else {
+//     digitalWrite(PHS1, HIGH);
+//   }
+//   analogWrite(EN1, left_motor_speed);
 
-  // Control right motor
-  if (right_motor_speed < 0) {
-    digitalWrite(PHS2, LOW);
-    right_motor_speed = -right_motor_speed;
-  } else {
-    digitalWrite(PHS2, HIGH);
-  }
-  analogWrite(EN2, right_motor_speed);
-}
+//   // Control right motor
+//   if (right_motor_speed < 0) {
+//     digitalWrite(PHS2, LOW);
+//     right_motor_speed = -right_motor_speed;
+//   } else {
+//     digitalWrite(PHS2, HIGH);
+//   }
+//   analogWrite(EN2, right_motor_speed);
+// }
 
 
 void gripper_close() {
