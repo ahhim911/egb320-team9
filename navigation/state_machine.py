@@ -413,3 +413,5 @@ class StateMachine:
 
     def __del__(self):
         self.stop()
+        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
+        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
