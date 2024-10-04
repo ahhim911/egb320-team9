@@ -43,8 +43,8 @@ class StateMachine:
     def __init__(self):
         # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
-        self.row_position_L = [0.3, 1, 1.7] # row positions for left shelf
-        self.row_position_R = [1.7, 1, 0.3] # row positions for left shelf
+        self.row_position_L = [0.4, 1, 1.6] # row positions for left shelf
+        self.row_position_R = [1.6, 1, 0.4] # row positions for left shelf
         self.found_shelf = False
         self.shelf_side = None
         self.found_row = False
@@ -103,7 +103,7 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_ROW'
+        self.robot_state = 'SEARCH_FOR_PS'
         self.holding_item = False
 
         # Set the target item position
@@ -175,7 +175,7 @@ class StateMachine:
 
             if self.goal_position['range'] - 1 < 0.01: # Middle of the area
                 self.robot_state = 'SEARCH_FOR_SHELF'
-                if self.target_row == 2:
+                if self.target_row == 3:
                     self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
                     # can rotate to the left faster with time delay
                 else:
@@ -190,21 +190,27 @@ class StateMachine:
             self.robot_state = 'MOVE_TO_ROW'
 
         # Turn direction based on the shelf side
-        if self.shelf_side == LEFT:  # Odd
-            print("Turn Right")
-            # Turn right
-            self.rotate('R', MIN_SPEED)
-            if shelfRangeBearing[0][0] is not None:
-                self.found_shelf = True
-                # LEFT SHELF FOUND
-            
+        if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:
+            print("Shelf detected: ", shelfRangeBearing)
+            shelf_right = shelfRangeBearing[0][1]
+            if self.shelf_side == LEFT:  # Odd
+                print("Turn Right")
+                # Turn right
+                self.rotate('R', MIN_SPEED)
+                if shelf_right is not None:
+                    self.found_shelf = True
+                    # LEFT SHELF FOUND
+                
+            else:
+                # Turn left
+                print("Turn Left")
+                self.rotate('L', MIN_SPEED)
+                if shelf_right is not None:
+                    if shelf_right[2] < 0 and shelf_right[2] > -10:
+                        self.found_shelf = True
+                        # RIGHT SHELF FOUND
         else:
-            # Turn left
-            print("Turn Left")
-            self.rotate('L', MIN_SPEED)
-            if shelfRangeBearing[0][1] is not None:
-                self.found_shelf = True
-                # RIGHT SHELF FOUND
+            print("No shelf detecetd")
 
         # Rotate on the spot
 
@@ -218,28 +224,28 @@ class StateMachine:
         if shelfRangeBearing is not None and self.shelf_side == LEFT:
             # if len(shelfRangeBearing[0][0]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
-            self.goal_position['range'] = shelfRangeBearing[0][0]
-            self.goal_position['bearing'] = shelfRangeBearing[0][1]
+            self.goal_position['range'] = shelfRangeBearing[0][0][1]
+            self.goal_position['bearing'] = shelfRangeBearing[0][0][2]
             print(self.robot_state, "Going to: LEFT shelf", self.goal_position)
 
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
-            if self.goal_position['range'] - self.row_position_L[self.target_row] < 0.01:
+            if self.goal_position['range'] - self.row_position_L[self.target_row - 1] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
 
         elif shelfRangeBearing is not None and self.shelf_side == RIGHT:
             # if len(shelfRangeBearing[1]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
-            self.goal_position['range'] = shelfRangeBearing[1][0]
-            self.goal_position['bearing'] = shelfRangeBearing[1][1]
+            self.goal_position['range'] = shelfRangeBearing[0][1][1]
+            self.goal_position['bearing'] = shelfRangeBearing[0][1][2]
             print(self.robot_state, "Going to: RIGHT shelf", self.goal_position)
 
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
-            if self.goal_position['range'] - self.row_position_R[self.target_row] < 0.01:
+            if self.goal_position['range'] - self.row_position_R[self.target_row - 1] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
         
@@ -251,7 +257,9 @@ class StateMachine:
         
 
     def search_for_row(self, rowMarkerRangeBearing):
+        print("Marker interested: ", self.target_row)
         if rowMarkerRangeBearing is not None:
+            print("Marker Detected, ", rowMarkerRangeBearing)
             self.found_row = any(row[0] == self.target_row for row in rowMarkerRangeBearing if len(row) > 0)
 
         # Turn right

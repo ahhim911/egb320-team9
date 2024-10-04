@@ -16,7 +16,7 @@ def main():
 
         # Record a video for 5 seconds
         # camera.capture_video(duration=5)
-        camera.capture_video(duration=15)
+        camera.capture_video(duration=30)
 
     finally:
         camera.close()

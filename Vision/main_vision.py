@@ -57,7 +57,7 @@ class Vision(DetectionBase):
         self.homography_matrix = None
         self.focal_length = None
 
-    def start(self):
+    def start(self, path):
         self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
         self.shelf_detector = Shelf(homography_matrix=self.homography_matrix,draw=True)
         self.marker_detector = Marker(focal_length=300, draw=True)
@@ -66,8 +66,8 @@ class Vision(DetectionBase):
         self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
         self.item_detector = Item(focal_length=300, draw=True)
 
-        Thread(target=self.camera.play_video, args=("/home/edmond/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4",)).start() # Recorded video from files
-        # Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
+        # Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
+        Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
         return
     
     def display_detection(self, window_name, frame):

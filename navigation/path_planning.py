@@ -117,7 +117,7 @@ def compute_repulsive_field(obstacles):
     if obstacles:
         for obs in obstacles:
             obs_range, obs_bearing = obs
-            if obs_range < 0.8:
+            if obs_range < 0.8 and obs_range > 0:
                 obs_width = WORKER_WIDTH_SCALE
                 
                 # Convert bearing to degrees and clip to valid range
