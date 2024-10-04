@@ -24,6 +24,7 @@ class Camera:
                 )
         self.picam2.configure(config) # type: ignore
         self.picam2.start()
+        self.picam2.set_controls({"ExposureTime": 70000, "AnalogueGain": 1,  "ColourGains": (1.4,1.5)}) 
         print("init cam finished")
 
     def live_feed(self):
@@ -151,10 +152,10 @@ class Camera:
 
 
             # Simulate real-time frame rate (adjust sleep for desired speed)
-            time.sleep(1 / 30)  # Assuming 30 FPS playback
+            #time.sleep(1 / 30)  # Assuming 30 FPS playback
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            #if cv2.waitKey(1) & 0xFF == ord('q'):
+                #break
 
         cap.release()
         cv2.destroyAllWindows()
