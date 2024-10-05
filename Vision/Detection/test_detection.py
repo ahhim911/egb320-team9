@@ -19,11 +19,10 @@ color_ranges = {
     'PackingStationRamp': (np.array([0, 100, 200]), np.array([50, 255, 255]))
 }
 
-# from ..Calibration.calibration import Calibration
-
-# # Load the color ranges from the calibration file
-# calibration = Calibration()
-# color_ranges = calibration.load_csv()[0]
+ from ..Calibration.calibration import Calibration
+ # Load the color ranges from the calibration file
+ calibration = Calibration()
+ color_ranges = calibration.load_csv()[0]
 
 def is_video(file_path):
     """Check if the given file is a video based on its extension."""
