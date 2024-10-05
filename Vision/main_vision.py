@@ -60,7 +60,7 @@ class Vision(DetectionBase):
         shelf_detector = Shelf(homography_matrix=self.homography_matrix)
         
         Thread(target=self.camera.capture_frame, args=(self.camera, self.color_ranges)).start()
-        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges, self.calibration,)).start()
+        Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges)).start()
         return
 
     def process_image_pipeline(self, self.camera, color_ranges):

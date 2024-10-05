@@ -29,7 +29,9 @@ def main():
         data = Vision.objectRB
 
         # Run State machine and send information back to the vision using "requested_objects"
-        Vision.requested_objects = state_machine.run_state_machine(data)
+        # Vision.requested_objects = state_machine.run_state_machine(data)
+        # state_machine.run_state_machine(data)
+        Vision.requested_objects = 0b001000
         elapsed = time.time() - now  # how long was it running?
         fps = 1.0/elapsed
         print('Elapsed Time: ', elapsed, 'FPS: ', fps)
