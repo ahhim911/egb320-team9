@@ -1,3 +1,8 @@
+import sys 
+import os 
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Vision')))
+
 from Camera.camera import Camera
 from Preprocessing.preprocessing import Preprocessing
 from Detection.detection import DetectionBase
@@ -63,9 +68,9 @@ class Vision(DetectionBase):
         Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges)).start()
         return
 
-    def process_image_pipeline(self, self.camera, color_ranges):
+    def process_image_pipeline(self, camera, color_ranges):
         while True:
-            frame = self.camera.get_frame()
+            frame = camera.get_frame()
             if frame is None:
                 continue
             self.local_frame = frame.copy()
