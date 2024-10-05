@@ -50,39 +50,41 @@ class Vision(DetectionBase):
         """
         # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
         # co-responding to the binary number 0b000000
-        self.objectRB = [None, None, None, None, None, None]
-        self.requested_objects = 0b000000
+        # self.objectRB = [None, None, None, None, None, None]
+        # self.requested_objects = 0b000000
 
         self.camera = Camera()
 
         # self.calibration = Calibration()
-        self.color_ranges = None
-        self.homography_matrix = None
-        self.focal_length = None
+        # self.color_ranges = None
+        # self.homography_matrix = None
+        # self.focal_length = None
 
     def start(self):
         # self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
         # shelf_detector = Shelf(homography_matrix=self.homography_matrix)
         
         Thread(target=self.camera.live_feed, args=()).start()
-        # Thread(target=self.process_image_pipeline, args=(self.camera, self.color_ranges)).start()
+        Thread(target=self.process_image_pipeline, args=(self.camera)).start()
         return
 
-    def process_image_pipeline(self, camera, color_ranges):
+    def process_image_pipeline(self, camera):
         while True:
             frame = camera.get_frame()
-            if frame is None:
-                continue
-            self.local_frame = frame.copy()
-            now = time.time()
-            # blurred_image = Preprocessing.preprocess(self.local_frame)
-            detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
-            self.objectRB[2] = [] # packing the RB into the RB
-            cv2.imshow('Shelf Detection', shelf_frame)
-            elapsed = time.time() - now
-            fps = 1/elapsed
-            print('Time: ', elapsed, ' - FPS: ',fps)
-        return
+            # if frame is None:
+            #     continue
+            # self.local_frame = frame.copy()
+            # now = time.time()
+            # # blurred_image = Preprocessing.preprocess(self.local_frame)
+            # detected_shelves, shelf_frame, shelf_mask = shelf_detector.find_shelf(frame, color_ranges)
+            # self.objectRB[2] = [] # packing the RB into the RB
+            # cv2.imshow('Shelf Detection', shelf_frame)
+            # elapsed = time.time() - now
+            # fps = 1/elapsed
+            # print('Time: ', elapsed, ' - FPS: ',fps)
+
+            # display the frame
+            camera.display_frame(frame)
 
     
     # def process_category(self, category, blurred_image, lower_hsv, upper_hsv, image_width, output_data):

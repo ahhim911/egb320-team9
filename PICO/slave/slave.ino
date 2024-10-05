@@ -197,7 +197,7 @@ void ControlSystem(uint8_t* command, int length) {
   text[length] = '\0';  // Null-terminate the string
   Serial.println(text);
 
-  switch (text[1]) {
+  switch (text[1]) {  
     
     // Drive command
     case 'M':{

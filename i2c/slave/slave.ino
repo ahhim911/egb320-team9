@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <Servo.h> // Include the Servo library
 
-#define I2C_ADDRESS 0x08  // I2C address of the device
+#define I2C_ADDRESS 0x35  // I2C address of the device
 #define I2C_SDA 0        // Use GPIO 26 as SDA
 #define I2C_SCL 1        // Use GPIO 27 as SCL
 #define EN1 20

@@ -257,7 +257,7 @@ class StateMachine:
         print("Collecting item")
         self.i2c.grip('open')
         # calibrate the orientation to the item
-        
+
 
         self.i2c.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
@@ -296,8 +296,11 @@ class StateMachine:
             self.search_for_item(dataRB[3])
             return ITEMS
         elif self.robot_state == 'COLLECT_ITEM':
-            self.collect_item()
+            self.collect_item([dataRB[3]])
             return ITEMS
+        elif self.robot_state == 'ROTATE_TO_EXIT':
+            self.rotate_to_exit(dataRB[4], dataRB[5])
+            return SHELVES | WALLPOINTS
         # Add other state transitions...
 
         self.i2c.drive(self.action['forward_vel'], self.action['rotational_vel'])

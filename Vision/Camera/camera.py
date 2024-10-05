@@ -19,7 +19,22 @@ class Camera:
         self.picam2.configure(config)
         self.picam2.start()
         print("init cam finished")
+
+    def live_feed(self):
+        while True:
+            self.frame = self.picam2.capture_array() #capture_frame()
     
+    def get_frame(self):
+        return self.frame
+    
+    def display_frame(self, frame):
+        """Display a single frame."""
+        try:
+            if frame is not None:
+                cv2.imshow('Frame', frame)
+        except Exception as e:
+            print(f"Error displaying frame: {e}")
+
     def capture_frame(self):
         """Capture a single frame."""
         try:
@@ -28,15 +43,6 @@ class Camera:
         except Exception as e:
             print(f"Error capturing frame: {e}")
             return None
-
-    def live_feed(self):
-        while True:
-            frame = self.picam2.capture_array()
-            print("In live feed")    
-            cv2.imshow('Recording...', frame)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
-
 
     def capture_image(self, filename=None):
         """Capture an image and save it to the Images folder."""

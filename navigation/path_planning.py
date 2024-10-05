@@ -2,8 +2,9 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-MAX_ROBOT_VEL = 0.1 # m/s
-MAX_ROBOT_ROT = 0.2 # rad/s
+
+MIN_ROBOT_VEL = 20 # duty cycle
+MAX_ROBOT_VEL = 30 # duty cycle
 GOAL_P = 0.5
 ROT_BIAS = 0.5
 CAMERA_FOV = 60
@@ -28,15 +29,50 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
 
     goal_error = np.deg2rad(heading_angle) - np.deg2rad(CAMERA_FOV/2)
     
-    # Calculate rotational velocity
-    rotational_vel = min(MAX_ROBOT_ROT, max(-MAX_ROBOT_ROT, goal_error * GOAL_P))
+    # --------------- PWM Signals -------------------
+    """
+      float position = (sensorOutput[0] * -2) + (sensorOutput[1] * -1.5) + (sensorOutput[2] * -0.9) + (sensorOutput[3] * -0.9)+ (sensorOutput[4] * 0.9) + (sensorOutput[5] * 0.9) + (sensorOutput[6] * 1.5) + (sensorOutput[7] * 2);
+      //Serial.print(sensorOutput[3]);
+      // Serial.println();
+      int controlSignal = (position * 0.1); // Proportional gain of 0.1, adjust as needed
+    
+      // Adjust motor speeds based on control signal
+      int leftMotorSpeed = baseSpeed + controlSignal;
+      int rightMotorSpeed = baseSpeed - controlSignal;
 
-    # Calculate forward velocity based on residual field at the heading angle
-    forward_vel = MAX_ROBOT_VEL * (1.0 - ROT_BIAS * abs(rotational_vel) / MAX_ROBOT_ROT)
+      // Constrain speeds to allowable range
+      leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
+      rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
 
-    # Create the action dictionary
-    nav_state['rotational_vel'] = rotational_vel
-    nav_state['forward_vel'] = forward_vel
+      OCR0A = leftMotorSpeed; //left motor
+      OCR0B = rightMotorSpeed; //right motor
+    
+    """
+
+    # Calculate the control signal
+    control_signal = goal_error * 0.1 # Gain of 0.1, adjust as needed
+
+    # Calculate the motor speeds
+    left_motor_speed = MIN_ROBOT_VEL + control_signal
+    right_motor_speed = MIN_ROBOT_VEL - control_signal
+
+    # Constrain speeds to allowable range
+    left_motor_speed = min(MAX_ROBOT_VEL, max(0, left_motor_speed))
+    right_motor_speed = min(MAX_ROBOT_VEL, max(0, right_motor_speed))
+
+
+
+    # ---------------------Rot and Forward Vel------------------------
+    # # Calculate rotational velocity
+    # rotational_vel = min(MAX_ROBOT_ROT, max(-MAX_ROBOT_ROT, goal_error * GOAL_P))
+
+    # # Calculate forward velocity based on residual field at the heading angle
+    # forward_vel = MAX_ROBOT_VEL * (1.0 - ROT_BIAS * abs(rotational_vel) / MAX_ROBOT_ROT)
+
+    # # Create the action dictionary
+    # nav_state['rotational_vel'] = rotational_vel
+    # nav_state['forward_vel'] = forward_vel
+    #------------------------------------------------
 
     # If draw is True, update the plot
     if draw:    

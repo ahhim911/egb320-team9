@@ -16,7 +16,7 @@ def main():
     # start the vision threads (one is sampling images, one is processing)
     # thread should update attribute of class to store object RB (Vision.objectRB)
     Vision = VisionClass()
-    Vision.start()
+    Vision.start() # Start the threads (Captrue and Pipeline)
 
     print('Start Loop')
     # while True:
