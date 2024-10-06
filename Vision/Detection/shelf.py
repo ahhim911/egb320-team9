@@ -1,13 +1,8 @@
 import cv2
-import numpy as np
-import os
-import sys
 
-# Define the system path "../"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
-from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
-from Preprocessing.preprocessing import Preprocessing
+from .detection import DetectionBase  # Import DetectionBase from detection.py
+from .range_bearing import DistanceEstimation  # Import the DistanceEstimation class
+from ..Preprocessing.preprocessing import Preprocessing
 
 
 class Shelf(DetectionBase):
