@@ -39,7 +39,7 @@ class Marker(DetectionBase):
         detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
 
         if not detected_markers:
-            return [[]], image, mask  # Return early if no markers detected
+            return None, image, mask  # Return early if no markers detected
 
         # 3. Classify Markers based on counts
         marker_type = self._classify_marker_type(detected_markers)
@@ -50,7 +50,7 @@ class Marker(DetectionBase):
 
         # Create the data_list with marker type, average distance, and bearing
         marker_type_value = self._map_marker_type_to_int(marker_type)
-        data_list = [[marker_type_value, avg_distance, avg_bearing]]
+        data_list = [marker_type_value, avg_distance, avg_bearing]
         #print("Marker DATA: ",data_list)
 
         # 4. Draw if enabled

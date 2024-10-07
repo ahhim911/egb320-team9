@@ -132,7 +132,7 @@ class Camera:
     def play_video(self, video_path, loop=True):
         """Play a video as if it is a live feed."""
         cap = cv2.VideoCapture(video_path)
-        
+        time.sleep(2)
         if not cap.isOpened():
             print(f"Error: Unable to open video file {video_path}")
             return
