@@ -1,18 +1,13 @@
-import sys 
-import os 
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Vision')))
-
-from Camera.camera import Camera
-from Preprocessing.preprocessing import Preprocessing
-from Detection.detection import DetectionBase
-from Detection.shelf import Shelf
-from Detection.marker import Marker
-from Detection.wall import Wall
-from Detection.packing_station import PackingStationRamp
-from Detection.obstacle import Obstacle
-from Detection.item import Item
-from Calibration.calibration import Calibration
+from .Camera.camera import Camera  # Refers to Camera module in the same Vision directory
+from .Preprocessing.preprocessing import Preprocessing  # Preprocessing module within Vision
+from .Detection.detection import DetectionBase
+from .Detection.shelf import Shelf
+from .Detection.marker import Marker
+from .Detection.wall import Wall
+from .Detection.packing_station import PackingStationRamp
+from .Detection.obstacle import Obstacle
+from .Detection.item import Item
+from .Calibration.calibration import Calibration
 from threading import Thread
 import cv2
 import time
@@ -51,7 +46,7 @@ class Vision(DetectionBase):
         """
         # order of objects: [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints] 
         # co-responding to the binary number 0b000000
-        self.objectRB = [None, None, None, None, None, None]
+        self.objectRB = [[]]
         self.requested_objects = 0b000000
 
         self.camera = Camera()

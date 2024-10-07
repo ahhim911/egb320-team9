@@ -1,13 +1,8 @@
 import cv2
 import numpy as np
-import os
-import sys
-
-# Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from Detection.detection import DetectionBase
-from Detection.range_bearing import DistanceEstimation
-from Preprocessing.preprocessing import Preprocessing
+from .detection import DetectionBase  # Import DetectionBase from detection.py
+from .range_bearing import DistanceEstimation  # Import the DistanceEstimation class
+from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Wall(DetectionBase):
     def __init__(self, focal_length=300, homography_matrix=None, draw=True):
