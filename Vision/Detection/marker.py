@@ -66,7 +66,7 @@ class Marker(DetectionBase):
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
         return mask
 
-    def _detect_and_classify_markers(self, mask, min_area=60):
+    def _detect_and_classify_markers(self, mask, min_area=30):
         """
         Detects markers, classifies shapes, and calculates distances and bearings.
 
@@ -96,7 +96,7 @@ class Marker(DetectionBase):
             else:
                 # Approximate the contour
                 approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
-                if 4 <= len(approx) <= 7:
+                if 4 <= len(approx) <= 8:
                     shape = "Square"
                 else:
                     continue  # Skip unknown shapes
