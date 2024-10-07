@@ -66,8 +66,8 @@ class Vision(DetectionBase):
         self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
         self.item_detector = Item(focal_length=300, draw=True)
 
-        # Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
-        Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
+        Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
+        # Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
         return
     
     def display_detection(self, window_name, frame):

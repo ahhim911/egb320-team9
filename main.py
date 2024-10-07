@@ -17,19 +17,19 @@ def main():
     # start the vision threads (one is sampling images, one is processing)
     # thread should update attribute of class to store object RB (Vision.objectRB)
     Vision = VisionClass()
-    Vision.start("/home/edmond/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4") # Start the threads (Captrue and Pipeline)
+    Vision.start("/home/edmond/egb320-team9/Videos/obs_search_ps_left_row1.mp4") # Start the threads (Captrue and Pipeline)
     Vision.requested_objects = 0b111111
-    time.sleep(3)
+    time.sleep(1)
     data = [None] * 6
     print('Start Loop')
     while True:
         # Vision.requested_objects = 0b111111
         now = time.time()   # get the time
-        print("Run single frame")
+        #print("Run single frame")
         process_thread = Thread(target=Vision.process_image)
         process_thread.start()
         process_thread.join()  # Wait for the thread to complete
-        print("Process Complete")
+        #print("Process Complete")
 
         # access the attributes of the data
         data = Vision.objectRB
