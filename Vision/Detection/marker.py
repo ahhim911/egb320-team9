@@ -14,16 +14,18 @@ class Marker(DetectionBase):
         self.distance_estimator = DistanceEstimation(focal_length=focal_length)
         self.draw = draw  # Flag to control drawing
 
-    def find_marker(self, image, RGBframe, filled_wall_mask, color_ranges):
+    def find_marker(self, image, RGBframe, color_ranges, filled_wall_mask=None):
         """
         Detect markers using color and contour analysis.
 
         Args:
         - image: Input image from the camera.
+        - RGBframe: The RGB image to display results on.
+        - filled_wall_mask: Mask used to isolate markers on walls.
         - color_ranges: Dictionary with HSV color ranges for marker detection.
 
         Returns:
-        - data_list: List of detected markers in the format [[T, R, B], [T, R, B], ...].
+        - data_list: List of detected markers with average values in the format [[T, R, B]].
         - final_image: Processed image with or without bounding boxes and labels.
         - mask: Binary mask representing detected markers.
         """
@@ -32,20 +34,24 @@ class Marker(DetectionBase):
 
         # Use bitwise AND to keep only markers on the wall
         marker_on_wall_mask = cv2.bitwise_and(mask, filled_wall_mask)
-        cv2.imshow("Marker on Wall",marker_on_wall_mask)
 
         # 2. Detect Markers and Calculate Properties
         detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
 
         if not detected_markers:
-            return [], image, mask  # Return early if no markers detected
+            return [[]], image, mask  # Return early if no markers detected
 
-        # 3. Classify Markers based on counts and prepare data_list
-        data_list = []
-        for marker in detected_markers:
-            marker_type = self._classify_marker_type(marker)
-            marker_type_value = self._map_marker_type_to_int(marker_type)
-            data_list.append([marker_type_value, marker['distance'], marker['bearing']])
+        # 3. Classify Markers based on counts
+        marker_type = self._classify_marker_type(detected_markers)
+
+        # Calculate the average distance and bearing
+        avg_distance = np.mean([marker['distance'] for marker in detected_markers])
+        avg_bearing = np.mean([marker['bearing'] for marker in detected_markers])
+
+        # Create the data_list with marker type, average distance, and bearing
+        marker_type_value = self._map_marker_type_to_int(marker_type)
+        data_list = [[marker_type_value, avg_distance, avg_bearing]]
+        #print("Marker DATA: ",data_list)
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(RGBframe, detected_markers, marker_type)
@@ -113,21 +119,31 @@ class Marker(DetectionBase):
 
         return detected_markers
 
-    def _classify_marker_type(self, marker):
+    def _classify_marker_type(self, detected_markers):
         """
-        Classifies a single marker based on its shape.
+        Classifies markers based on the counts of circles and squares.
 
         Args:
-        - marker: The detected marker object.
+        - detected_markers: List of detected marker objects.
 
         Returns:
         - marker_type: String indicating the type of marker detected.
         """
-        shape = marker['shape']
-        if shape == "Square":
+        shape_counts = Counter(marker['shape'] for marker in detected_markers)
+        circle_count = shape_counts.get("Circle", 0)
+        square_count = shape_counts.get("Square", 0)
+
+        # Classify the marker type based on the counts of circles and squares
+        if square_count > 0:
             return "Packing Station Marker"
+        elif circle_count == 1:
+            return "Row Marker 1"
+        elif circle_count == 2:
+            return "Row Marker 2"
+        elif circle_count == 3:
+            return "Row Marker 3"
         else:
-            return "Row Marker"  # Assuming it's a row marker if it's circular
+            return "Unknown Marker"
 
     def _map_marker_type_to_int(self, marker_type):
         """
