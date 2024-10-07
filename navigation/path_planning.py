@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 
-MIN_ROBOT_VEL = 20 # duty cycle
-MAX_ROBOT_VEL = 30 # duty cycle
+MIN_ROBOT_VEL = 45 # duty cycle
+MAX_ROBOT_VEL = 80 # duty cycle
 GOAL_P = 0.5
 ROT_BIAS = 0.5
 CAMERA_FOV = 60
@@ -13,9 +13,7 @@ WORKER_WIDTH_SCALE = 0.15 #m
 
 def calculate_goal_velocities(goal_position, obstacles, draw=False):
     # Compute bearing to goal 
-    goal_rad = goal_position['bearing']
-    goal_deg = int(clip_deg_fov(np.rad2deg(goal_rad) + CAMERA_FOV/2, CAMERA_FOV))
-
+    goal_deg = goal_position['bearing']
     # Compute both attractive and repulsive field maps
     nav_state = {}
     nav_state['attractive_field'] = compute_attractive_field(goal_deg)
@@ -28,7 +26,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     heading_angle = np.argmax(nav_state['residual_field'])
 
     goal_error = np.deg2rad(heading_angle) - np.deg2rad(CAMERA_FOV/2)
-    
+    print("HA: ",heading_angle, "ERROR: ", goal_error)
     # --------------- PWM Signals -------------------
     """
       float position = (sensorOutput[0] * -2) + (sensorOutput[1] * -1.5) + (sensorOutput[2] * -0.9) + (sensorOutput[3] * -0.9)+ (sensorOutput[4] * 0.9) + (sensorOutput[5] * 0.9) + (sensorOutput[6] * 1.5) + (sensorOutput[7] * 2);
@@ -50,7 +48,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 10 # Gain of 0.1, adjust as needed
+    control_signal = goal_error * 15 # Gain of 0.1, adjust as needed
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal

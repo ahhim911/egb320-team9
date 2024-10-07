@@ -133,19 +133,23 @@ class StateMachine:
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         
+        # Rotate on the spot
+        self.rotate('R', MIN_SPEED)
+        if packStationRangeBearing is None:
+            return
+        
         self.found_row = False
         if packStationRangeBearing and len(packStationRangeBearing) > 0:
-            print("PS and row markers are not NONE", packStationRangeBearing[0])
+            print("PS is not NONE", packStationRangeBearing[0])
             self.found_ps = True
         else:
             print("PS is NONE or empty", packStationRangeBearing)
 
-        if len(rowMarkerRangeBearing) != 0:
-            self.found_row = any(row[0] == self.target_row for row in rowMarkerRangeBearing)
-        if self.found_row:
+        if len(rowMarkerRangeBearing[0]) > 2:
+            print("Row: ",rowMarkerRangeBearing[0])
+            self.found_row = rowMarkerRangeBearing[0][0] == self.target_row
             # self.L_dir = 'S'
             # self.R_dir = 'S'
-            self.robot_state = 'MOVE_TO_ROW'
         # Rotate on the spot
         if self.at_ps:
             # self.L_dir = 'S'
@@ -157,8 +161,8 @@ class StateMachine:
             # self.L_dir = 'S'
             # self.R_dir = 'S'
         
-        # Rotate on the spot
-        self.rotate('R', MIN_SPEED)
+        if self.found_row:
+            self.robot_state = 'MOVE_TO_ROW'
 
 
     def move_to_ps(self, packStationRangeBearing, obstaclesRB):

@@ -1,12 +1,12 @@
 # from Computer_Vision_Tutorial.live_detection3 import load_color_thresholds, load_focal_length, load_homography_matrix, process_frame
 from Vision.main_vision import Vision as VisionClass
-#from navigation.state_machine import StateMachine
+from navigation.state_machine import StateMachine
 import time
 from threading import Thread
 
 def main():
     # Create the state machine object
-    #state_machine = StateMachine()
+    state_machine = StateMachine()
     
 
     # print('init cam')
@@ -32,11 +32,11 @@ def main():
         #print("Process Complete")
 
         # access the attributes of the data
-        #data = Vision.objectRB
+        data = Vision.objectRB
         # print(data)
 
         # Run State machine and send information back to the vision using "requested_objects"
-        #Vision.requested_objects = state_machine.run_state_machine(data)
+        Vision.requested_objects = state_machine.run_state_machine(data)
         # state_machine.run_state_machine(data)
         #Vision.requested_objects = 0b000000 # Shelves
         elapsed = time.time() - now  # how long was it running?
