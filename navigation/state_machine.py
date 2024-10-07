@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from enum import Enum
 # import item_collection.item_collection as itemCollection
 # from threading import Thread, Event
 import os
@@ -13,6 +14,23 @@ import i2c.main_i2c as I2C
 
 # define the numbers
 # 0b000000 = [Packing bay, Rowmarkers, Shelves, Items,  Obstacles, Wallpoints]
+
+# STATE = Enum('STATE', [
+# 	'LOST',
+# 	'WANDER',
+# 	'FIND_AISLE_FROM_OUTSIDE',
+# 	'AISLE_DOWN',
+# 	'AISLE_DOWN_BAY3',
+# 	'FACE_BAY',
+# 	'COLLECT_ITEM',
+# 	'FACE_OUT',
+# 	'WANDER_OUT',
+# 	'FACE_PACKING',
+# 	'APPROACH_PACKING',
+# 	'ASCEND_PACKING',
+# 	'DROP_ITEM',
+# 	'DESCEND_PACKING',
+# 	])
 
 PACKING_BAY = 0b100000
 ROW_MARKERS = 0b010000
@@ -86,7 +104,7 @@ class StateMachine:
         # Reset the actuators
         self.action['forward_vel'] = 0
         self.action['rotational_vel'] = 0
-        self.i2c.grip('open')
+        # self.i2c.grip('open')
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         self.found_ps = packStationRangeBearing[0] is not None
@@ -255,13 +273,15 @@ class StateMachine:
     
     def collect_item(self, itemsRB):
         print("Collecting item")
-        self.i2c.grip('open')
+        # self.i2c.grip('open')
         # calibrate the orientation to the item
+        if abs(itemsRB[1]) < 0.05:
+            # Oriented to the item
 
-
-        self.i2c.lift(self.target_height)
+        # self.i2c.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
+    def rotate_to_exit(self, obstaclesRB, wallpointsRB):
 
 
 
@@ -302,8 +322,9 @@ class StateMachine:
             self.rotate_to_exit(dataRB[4], dataRB[5])
             return SHELVES | WALLPOINTS
         # Add other state transitions...
-
-        self.i2c.drive(self.action['forward_vel'], self.action['rotational_vel'])
+        # print action
+        print("Moving: ", self.action['forward_vel'], self.action['rotational_vel'])
+        # self.i2c.drive(self.action['forward_vel'], self.action['rotational_vel'])
         return 0
         
         

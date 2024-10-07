@@ -13,6 +13,7 @@ import cv2
 import time
 
 
+
 """
 process_image_pipeline(camera, color_ranges, calibration)
 - Process the image pipeline.
