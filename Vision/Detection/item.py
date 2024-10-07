@@ -44,7 +44,7 @@ class Item(DetectionBase):
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(image, detected_items)
-        print("ITEM DATA: ", data_list)
+        #print("ITEM DATA: ", data_list)
 
         return data_list, final_image, mask
 

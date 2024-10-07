@@ -45,7 +45,7 @@ class PackingStationRamp(DetectionBase):
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(image, detected_ramp)
-        print("RAMP DATA ", data_list)
+        #print("RAMP DATA ", data_list)
 
         return data_list, final_image, mask
 

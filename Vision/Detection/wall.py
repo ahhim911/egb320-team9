@@ -47,7 +47,7 @@ class Wall(DetectionBase):
         # 5. Draw bounding boxes if enabled
         final_image = self._draw_if_enabled(image, detected_walls)
 
-        print("WALL DATA: ", data_list)
+        #print("WALL DATA: ", data_list)
 
         return data_list, final_image, filled_wall_mask
 

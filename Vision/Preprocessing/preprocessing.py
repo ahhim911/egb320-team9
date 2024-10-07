@@ -30,8 +30,8 @@ class Preprocessing:
     @staticmethod
     def color_threshold(image, lower_hsv, upper_hsv):
         """Apply color thresholding in HSV color space."""
-        hsv_image = Preprocessing.to_hsv(image)
-        mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
+        #hsv_image = Preprocessing.to_hsv(image)
+        mask = cv2.inRange(image, lower_hsv, upper_hsv)
         return mask
 
     @staticmethod
