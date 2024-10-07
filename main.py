@@ -4,7 +4,6 @@ from navigation.state_machine import StateMachine
 import time
 from threading import Thread
 
-
 def main():
     # Create the state machine object
     state_machine = StateMachine()

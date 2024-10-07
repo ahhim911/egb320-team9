@@ -6,6 +6,10 @@ from libcamera import Transform # type: ignore
 import time
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
+import ctypes
+
+# Initialize Xlib threading for multi-threaded GUI operations
+ctypes.CDLL('libX11.so').XInitThreads()
 
 class Camera:
     def __init__(self, config=None):
@@ -116,16 +120,44 @@ class Camera:
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-
         # Stop recording
         self.picam2.stop_recording()
         print(f"Video saved to {filepath}")
 
         # Close the OpenCV window
         cv2.destroyAllWindows()
-
-
         return filepath
+
+    def play_video(self, video_path, loop=True):
+        """Play a video as if it is a live feed."""
+        cap = cv2.VideoCapture(video_path)
+        
+        if not cap.isOpened():
+            print(f"Error: Unable to open video file {video_path}")
+            return
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                if loop:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Restart video
+                    continue
+                else:
+                    break
+
+            # Resize frame if needed (similar to live_feed)
+            self.RGBframe = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) #capture_frame()
+            self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
+
+
+            # Simulate real-time frame rate (adjust sleep for desired speed)
+            time.sleep(1 / 30)  # Assuming 30 FPS playback
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
 
 
     def close(self):

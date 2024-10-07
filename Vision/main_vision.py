@@ -66,8 +66,8 @@ class Vision(DetectionBase):
         self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
         self.item_detector = Item(focal_length=300, draw=True)
 
-        
-        Thread(target=self.camera.live_feed, args=()).start()
+        Thread(target=self.camera.play_video, args=("/home/edmond/egb320-team9/Vision/Camera/Videos/1_searching_left_1.mp4",)).start() # Recorded video from files
+        # Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
         return
     
     def display_detection(self, window_name, frame):
@@ -93,7 +93,7 @@ class Vision(DetectionBase):
         if self.requested_objects & WALLPOINTS:
             detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe,  self.color_ranges)
             # self.display_detection('Wall', wall_frame)
-            cv2.imshow('Wall Mask', filled_wall_mask)
+            # cv2.imshow('Wall Mask', filled_wall_mask)
             #print("Process wall", detected_walls)
             self.objectRB[5] = detected_walls # [[R,B],[R,B],...]
         
@@ -102,7 +102,7 @@ class Vision(DetectionBase):
             detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, filled_wall_mask, self.color_ranges)
             #self.display_detection('Markers', marker_frame)
             #cv2.imshow('Marker Detection', marker_frame)
-            cv2.imshow('Marker Mask', marker_mask)
+            # cv2.imshow('Marker Mask', marker_mask)
             #print("Process Markers", detected_markers)
             self.objectRB[1] = detected_markers # [[R,B,T],[R,B,T]]
 
