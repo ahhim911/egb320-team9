@@ -74,44 +74,44 @@ void ledControl(int led, int state) {
 }
 
 
-// Drive function that scales speed and direction
-void driveint(int left_motor_speed, int right_motor_speed){
-    // Control motor 1 (left motor)
-  if (left_motor_speed < 0) {
-    digitalWrite(PHS1, LOW);  // Reverse direction
-  } else {
-    digitalWrite(PHS1, HIGH); // Forward direction
-  }
-  analogWrite(EN1, abs(left_motor_speed));  // Set the speed with PWM
+// // Drive function that scales speed and direction
+// void driveint(int left_motor_speed, int right_motor_speed){
+//     // Control motor 1 (left motor)
+//   if (left_motor_speed < 0) {
+//     digitalWrite(PHS1, LOW);  // Reverse direction
+//   } else {
+//     digitalWrite(PHS1, HIGH); // Forward direction
+//   }
+//   analogWrite(EN1, abs(left_motor_speed));  // Set the speed with PWM
 
-  // Control motor 2 (right motor)
-  if (right_motor_speed < 0) {
-    digitalWrite(PHS2, LOW);  // Reverse direction
-  } else {
-    digitalWrite(PHS2, HIGH); // Forward direction
-  }
-  analogWrite(EN2, abs(right_motor_speed));  // Set the speed with PWM
-}
+//   // Control motor 2 (right motor)
+//   if (right_motor_speed < 0) {
+//     digitalWrite(PHS2, LOW);  // Reverse direction
+//   } else {
+//     digitalWrite(PHS2, HIGH); // Forward direction
+//   }
+//   analogWrite(EN2, abs(right_motor_speed));  // Set the speed with PWM
+// }
 
-void Drive(float x_dot, float theta_dot) {
-  // Calculate left and right wheel speeds (rad/s) based on forward and rotational velocity
-  float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
-  float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
-  float leftWheelSpeed1 = constrain(round(leftWheelSpeed*SCALING_FACTOR),-255,255);
-  float rightWheelSpeed1 = constrain(round(rightWheelSpeed*SCALING_FACTOR),-255,255);
+// void Drive(float x_dot, float theta_dot) {
+//   // Calculate left and right wheel speeds (rad/s) based on forward and rotational velocity
+//   float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+//   float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+//   float leftWheelSpeed1 = constrain(round(leftWheelSpeed*SCALING_FACTOR),-255,255);
+//   float rightWheelSpeed1 = constrain(round(rightWheelSpeed*SCALING_FACTOR),-255,255);
 
-    driveint(leftWheelSpeed1, rightWheelSpeed1);
+//     driveint(leftWheelSpeed1, rightWheelSpeed1);
 
-}
+// }
 
-void driveMotors(float x_dot, float theta_dot) {
-  // Calculate left and right wheel speeds in rad/s based on forward and rotational velocity
-  float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
-  float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+// void driveMotors(float x_dot, float theta_dot) {
+//   // Calculate left and right wheel speeds in rad/s based on forward and rotational velocity
+//   float leftWheelSpeed = (x_dot - 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
+//   float rightWheelSpeed = (x_dot + 0.5 * theta_dot * WHEEL_BASE) / WHEEL_RADIUS;
 
-  // Convert wheel speeds to PWM values for motor control
-  int left_motor_speed = constrain(round(leftWheelSpeed * SCALING_FACTOR), -255, 255);
-  int right_motor_speed = constrain(round(rightWheelSpeed * SCALING_FACTOR), -255, 255);
+//   // Convert wheel speeds to PWM values for motor control
+//   int left_motor_speed = constrain(round(leftWheelSpeed * SCALING_FACTOR), -255, 255);
+//   int right_motor_speed = constrain(round(rightWheelSpeed * SCALING_FACTOR), -255, 255);
 
   // Control left motor
   if (left_motor_speed < 0) {

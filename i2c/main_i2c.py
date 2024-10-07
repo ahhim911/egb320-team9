@@ -31,6 +31,33 @@ class I2C:
         command = f"D{forwards_int} {rotational_int}"
         self.send_command(command)
 
+    def DCWrite(self, number, direction, speed):
+        # Validate inputs
+        if number not in range(1, 3):  # DC motor numbers start from 1 to 2
+            print(f"Invalid DC number: {number}. Please choose between 1 and 2.")
+            return
+
+        if speed < 0 or speed > 255:  # Speed range should be between 0 and 255
+            print(f"Invalid speed: {speed}. Please choose between 0 and 255.")
+            return
+
+        if direction not in ["0", "1", "S"]:  # Accept "0", "1", and "S" for STOP
+            print("Invalid direction. Please choose between '0', '1' or 'S' for STOP.")
+            return
+
+        if direction == "S":
+            command = f"M{number} S"
+            print(f"Sending command to DC motor: {command}")
+        else:
+            # Prepare the command string
+            command = f"M{number} {direction} {speed}"
+            print(f"Sending command to DC motor: {command}")
+
+        self.send_command(command)
+        return
+
+
+
     def lift(self, level):
         """Set the lift level in the command array."""
         if level not in [1, 2, 3]:
