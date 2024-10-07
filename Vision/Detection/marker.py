@@ -1,94 +1,130 @@
-# Import the necessary modules
 import cv2
 import numpy as np
 import os
 import sys
+from collections import Counter
 
-# Define the system path "../"
+# Add the parent directory to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from Detection.detection import DetectionBase  # Import DetectionBase from detection.py
-from Detection.range_bearing import DistanceEstimation  # Import the DistanceEstimation class
-from Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
+from Detection.detection import DetectionBase
+from Detection.range_bearing import DistanceEstimation
+from Preprocessing.preprocessing import Preprocessing
 
 class Marker(DetectionBase):
-    def __init__(self, real_marker_width=0.07, focal_length=300):
+    def __init__(self, real_marker_width=0.07, focal_length=300, draw=True):
         super().__init__("Marker")
         self.real_marker_width = real_marker_width  # Real-world width of the marker in meters
         self.focal_length = focal_length  # Focal length of the camera in pixels
+        self.distance_estimator = DistanceEstimation(focal_length=focal_length)
+        self.draw = draw  # Flag to control drawing
 
     def find_marker(self, image, filled_wall_mask, color_ranges):
         """
-        Detect markers within the wall's bounding box using a bitwise AND to isolate markers on walls.
+        Detect markers using color and contour analysis.
+
+        Args:
+        - image: Input image from the camera.
+        - color_ranges: Dictionary with HSV color ranges for marker detection.
+
+        Returns:
+        - detected_markers: List of detected marker objects with positions, distances, and bearings.
+        - final_image: Processed image with or without bounding boxes and labels.
+        - mask: Binary mask representing detected markers.
         """
-        lower_hsv, upper_hsv = color_ranges['Marker']
-        
-        # Preprocess image for marker detection
-        marker_mask, scaled_image = Preprocessing.preprocess(
-            image, blur_ksize=(1, 1), sigmaX=1, lower_hsv=lower_hsv, upper_hsv=upper_hsv, kernel_size=(1, 1))
+        # 1. Preprocess Image
+        mask = self._preprocess_image(image, color_ranges)
 
         # Use bitwise AND to keep only markers on the wall
-        marker_on_wall_mask = cv2.bitwise_and(marker_mask, filled_wall_mask)
+        marker_on_wall_mask = cv2.bitwise_and(mask, filled_wall_mask)
 
-        # Analyze contours for the markers
-        detected_markers = self.analyze_contours(marker_on_wall_mask)
-        
-        # Classify markers and determine their type
-        marker_type = self.classify_marker(detected_markers)
+        # 2. Detect Markers and Calculate Properties
+        detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
 
-        # Calculate distance and bearing for each marker
-        for marker in detected_markers:
-            marker_width = marker['position'][2]  # Width of the bounding box
-            marker_center_x = marker['position'][0] + (marker_width // 2)
+        if not detected_markers:
+            return [], image, mask  # Return early if no markers detected
 
-            # Estimate distance and bearing using DistanceEstimation
-            marker['distance'] = DistanceEstimation.estimate_distance(
-                marker_width, self.real_marker_width, self.focal_length
-            )
-            marker['bearing'] = DistanceEstimation.estimate_bearing(
-                marker_center_x, image.shape[1]/2
-            )
-            #print(image.shape[0])
+        # 3. Classify Markers based on counts
+        marker_type = self._classify_marker_type(detected_markers)
 
-        # Draw the bounding box with label
-        final_image = self.draw_bounding_boxes(scaled_image, detected_markers, marker_type)
+        # 4. Draw if enabled
+        final_image = self._draw_if_enabled(image, detected_markers, marker_type)
 
         return detected_markers, final_image, marker_on_wall_mask
 
-    def analyze_contours(self, mask):
+    def _preprocess_image(self, image, color_ranges):
         """
-        Analyzes contours for the detected markers, filters small noise.
+        Preprocess the image using defined color ranges.
+        """
+        lower_hsv, upper_hsv = color_ranges['Marker']
+        mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+        return mask
+
+    def _detect_and_classify_markers(self, mask, min_area=100):
+        """
+        Detects markers, classifies shapes, and calculates distances and bearings.
+
+        Args:
+        - mask: Binary mask from preprocessing.
+        - min_area: Minimum area for contour detection.
+
+        Returns:
+        - detected_markers: List of detected marker objects with positions, shapes, distances, and bearings.
         """
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         detected_markers = []
 
         for contour in contours:
-            if cv2.contourArea(contour) < 100:  # Skip small noise-like contours
+            area = cv2.contourArea(contour)
+            if area < min_area:
                 continue
 
-            shape = self.classify_shape(contour)
-            if shape == "Unknown":
+            perimeter = cv2.arcLength(contour, True)
+            if perimeter == 0:
                 continue
+            circularity = 4 * np.pi * (area / (perimeter ** 2)) # type: ignore
+
+            # Classify shape
+            if circularity >= 0.85:
+                shape = "Circle"
+            else:
+                # Approximate the contour
+                approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+                if 4 <= len(approx) <= 7:
+                    shape = "Square"
+                else:
+                    continue  # Skip unknown shapes
 
             x, y, w, h = cv2.boundingRect(contour)
+            marker_width = w  # Use width of bounding box
+            marker_center_x = x + (w / 2)
+
+            # Estimate distance and bearing
+            distance = self.distance_estimator.estimate_distance(marker_width, self.real_marker_width)
+            bearing = self.distance_estimator.estimate_bearing(marker_center_x)
+
             detected_markers.append({
                 "position": (x, y, w, h),
                 "contour": contour,
-                "shape": shape
+                "shape": shape,
+                "distance": distance,
+                "bearing": bearing
             })
 
         return detected_markers
 
-    def classify_marker(self, detected_markers):
+    def _classify_marker_type(self, detected_markers):
         """
-        Classifies markers as circles or squares and determines their type.
-        """
-        circle_count, square_count = 0, 0
+        Classifies markers based on the counts of circles and squares.
 
-        for marker in detected_markers:
-            if marker['shape'] == "Circle":
-                circle_count += 1
-            elif marker['shape'] == "Square":
-                square_count += 1
+        Args:
+        - detected_markers: List of detected marker objects.
+
+        Returns:
+        - marker_type: String indicating the type of marker detected.
+        """
+        shape_counts = Counter(marker['shape'] for marker in detected_markers)
+        circle_count = shape_counts.get("Circle", 0)
+        square_count = shape_counts.get("Square", 0)
 
         # Classify the marker type based on the counts of circles and squares
         if square_count > 0:
@@ -102,75 +138,66 @@ class Marker(DetectionBase):
         else:
             return "Unknown Marker"
 
-    def classify_shape(self, contour):
+    def _draw_if_enabled(self, image, detected_markers, marker_type):
         """
-        Classifies the shape as either a circle or a square using contour properties.
+        Draw bounding boxes and labels if the draw flag is enabled.
         """
-        perimeter = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)  # Approximate the contour shape
-        area = cv2.contourArea(contour)
+        if not self.draw:
+            return image  # Return the original image if drawing is disabled
 
-        # Use circularity to classify as a circle
-        circularity = 4 * np.pi * (area / (perimeter ** 2)) if perimeter > 0 else 0
+        return self._draw_bounding_box(image, detected_markers, marker_type)
 
-        if circularity >= 0.85:  # Threshold for circular shapes
-            return "Circle"
-        elif 4 <= len(approx) <= 7:  # Threshold for square-like shapes
-            return "Square"
-        else:
-            return "Unknown"
-
-    def draw_bounding_boxes(self, image, detected_markers, marker_type):
+    def _draw_bounding_box(self, image, detected_markers, marker_type):
         """
-        Draws bounding boxes around detected markers and adds a label in the middle of the box.
-        Also calculates and displays the average distance and bearing if there are multiple markers.
+        Draws bounding boxes around detected markers and adds a label with average distance and bearing.
+
+        Args:
+        - image: The image on which bounding boxes will be drawn.
+        - detected_markers: List of detected marker objects.
+        - marker_type: String indicating the type of marker detected.
+
+        Returns:
+        - image: The image with bounding boxes and labels drawn.
         """
-        if not detected_markers:
-            return image  # Return original image if no valid markers are found
+        # Avoid copying image if possible
+        x_coords = []
+        y_coords = []
+        distances = []
+        bearings = []
 
-        # Calculate the overall bounding box for all markers
-        x_min = min([marker['position'][0] for marker in detected_markers])
-        y_min = min([marker['position'][1] for marker in detected_markers])
-        x_max = max([marker['position'][0] + marker['position'][2] for marker in detected_markers])
-        y_max = max([marker['position'][1] + marker['position'][3] for marker in detected_markers])
-
-        # Calculate the average distance and bearing for multiple markers
-        distances = [marker.get('distance', 0) for marker in detected_markers if marker.get('distance') is not None]
-        bearings = [marker.get('bearing', 0) for marker in detected_markers if marker.get('bearing') is not None]
-
-        if distances:
-            avg_distance = sum(distances) / len(distances)
-        else:
-            avg_distance = "Unknown"
-
-        if bearings:
-            avg_bearing = sum(bearings) / len(bearings)
-        else:
-            avg_bearing = "Unknown"
-
-        # Draw the overall bounding box around all markers
-        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-
-        # Add marker type, average distance, and average bearing label to the image
-        text_x = 40  # Fixed x position for text
-        text_y = image.shape[0]-50  # Fixed y position for text
-        cv2.putText(image, f"{marker_type}",
-                    (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        cv2.putText(image, f"Avg Dist: {avg_distance:.2f}m | Avg Bearing: {avg_bearing:.2f}deg",
-                    (text_x, text_y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-        # Optionally, draw individual bounding boxes and display distances for each marker
         for marker in detected_markers:
             x, y, w, h = marker['position']
+            distance = marker['distance']
+            bearing = marker['bearing']
 
-            # Draw bounding box around each marker
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # Collect positions for overall bounding box
+            x_coords.extend([x, x + w])
+            y_coords.extend([y, y + h])
 
-            # Display the individual marker distance and bearing
-            distance = marker.get('distance', 'Unknown')
-            bearing = marker.get('bearing', 'Unknown')
-            #cv2.putText(image, f"Dist: {distance:.2f}m | Bearing: {bearing:.2f}°", (x + w // 2 - 50, y + h // 2),
-                        #cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            distances.append(distance)
+            bearings.append(bearing)
+
+            # Optionally, draw individual bounding boxes
+            # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+        # Calculate overall bounding box
+        x_min = min(x_coords)
+        y_min = min(y_coords)
+        x_max = max(x_coords)
+        y_max = max(y_coords)
+
+        # Draw the overall bounding box
+        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 0, 0), 2)
+
+        # Calculate average distance and bearing
+        avg_distance = np.mean(distances)
+        avg_bearing = np.mean(bearings)
+        #print(bearings)
+
+        # Add labels
+        cv2.putText(image, f"{marker_type}",
+                    (x+10, y+30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        cv2.putText(image, f"{avg_distance:.2f}m, {avg_bearing:.2f}deg",
+                    (x+10, y+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         return image
-

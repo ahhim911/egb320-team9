@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 from picamera2 import Picamera2
-from libcamera import Transform
+from libcamera import Transform # type: ignore
 import time
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
@@ -17,13 +17,14 @@ class Camera:
                 main={"format": "XRGB8888", "size": (820, 616)},
                 transform=Transform(vflip=True, hflip=True)
                 )
-        self.picam2.configure(config)
+        self.picam2.configure(config) # type: ignore
         self.picam2.start()
         print("init cam finished")
 
     def live_feed(self):
         while True:
-            self.frame = self.picam2.capture_array() #capture_frame()
+            self.frame = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
+            
     
     def get_frame(self):
         return self.frame
@@ -82,7 +83,7 @@ class Camera:
             main={"size": (820, 616)},
             transform=Transform(vflip=True, hflip=True)
         )
-        self.picam2.configure(video_config)
+        self.picam2.configure(video_config) # type: ignore
 
         # Create the encoder and output for MP4
         encoder = H264Encoder(bitrate=10000000)
