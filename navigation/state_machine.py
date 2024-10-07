@@ -111,7 +111,7 @@ class StateMachine:
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_PS'
+        self.robot_state = 'ROTATE_TO_EXIT'
         self.holding_item = False
 
         # Set the target item position
@@ -327,7 +327,7 @@ class StateMachine:
             print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
             self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
             self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
-            # time.sleep(2) #TBC duration for 90deg
+            time.sleep(2) #TBC duration for 90deg
             self.rotation_flag = False
         else:
             print(f"itemsRB: {itemsRB}")
@@ -362,19 +362,32 @@ class StateMachine:
         # self.i2c.lift(self.target_height)
         self.robot_state = 'ROTATE_TO_EXIT'
 
-    def rotate_to_exit(self, obstaclesRB, wallpointsRB):
-        if self.rotation_flag:
-            if self.target_shelf % 2 == 1:
-                self.rotate("R", 80)
-            else:
-                self.rotate("L", 80)
+    def rotate_to_exit(self, rowMarkerRangeBearing):
+        if self.target_shelf % 2 == 1:
+            self.rotate("L", 50)
+        else:
+            self.rotate("R", 50)
+        if rowMarkerRangeBearing[0] != None:
+            print(rowMarkerRangeBearing)    
+            if abs(rowMarkerRangeBearing[2]) < 1:
+                self.found_row = True
+
+        # Facing to Row marker
+        if self.found_row:
+            self.goal_position['range'] = rowMarkerRangeBearing[1]
+            self.goal_position['bearing'] = rowMarkerRangeBearing[2]
+            print(self.goal_position)
+
+            # Add shelves to obstacles
+            # np.append(obstaclesRB, shelfRangeBearing[0])
+            # np.append(obstaclesRB, shelfRangeBearing[3])
+
+            # Calculate goal velocities
+            self.L_dir = '1'
+            self.R_dir = '1'
+            self.RightmotorSpeed, self.LeftmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstacles=None)
             
-            print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
-            self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
-            self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
-            # time.sleep(2) #TBC duration for 90deg
-            self.rotation_flag = False
-        
+
 
 
 
@@ -417,8 +430,8 @@ class StateMachine:
             self.collect_item([dataRB[3]])
             request = ITEMS
         elif self.robot_state == 'ROTATE_TO_EXIT':
-            self.rotate_to_exit(dataRB[4], dataRB[5])
-            request = SHELVES | WALLPOINTS
+            self.rotate_to_exit(dataRB[1])
+            request = ROW_MARKERS
         # Add other state transitions...
         # print action
         self.LeftmotorSpeed = int(round(self.LeftmotorSpeed))
