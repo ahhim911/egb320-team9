@@ -7,7 +7,7 @@ from .range_bearing import DistanceEstimation  # Import the DistanceEstimation c
 from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Marker(DetectionBase):
-    def __init__(self, real_marker_width=0.07, focal_length=300, draw=True):
+    def __init__(self, real_marker_width=0.07, focal_length=300, draw=False):
         super().__init__("Marker")
         self.real_marker_width = real_marker_width  # Real-world width of the marker in meters
         self.focal_length = focal_length  # Focal length of the camera in pixels
@@ -23,7 +23,7 @@ class Marker(DetectionBase):
         - color_ranges: Dictionary with HSV color ranges for marker detection.
 
         Returns:
-        - detected_markers: List of detected marker objects with positions, distances, and bearings.
+        - data_list: List of detected markers in the format [[T, R, B], [T, R, B], ...].
         - final_image: Processed image with or without bounding boxes and labels.
         - mask: Binary mask representing detected markers.
         """
@@ -39,13 +39,17 @@ class Marker(DetectionBase):
         if not detected_markers:
             return [], image, mask  # Return early if no markers detected
 
-        # 3. Classify Markers based on counts
-        marker_type = self._classify_marker_type(detected_markers)
+        # 3. Classify Markers based on counts and prepare data_list
+        data_list = []
+        for marker in detected_markers:
+            marker_type = self._classify_marker_type(marker)
+            marker_type_value = self._map_marker_type_to_int(marker_type)
+            data_list.append([marker_type_value, marker['distance'], marker['bearing']])
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(image, detected_markers, marker_type)
 
-        return detected_markers, final_image, marker_on_wall_mask
+        return data_list, final_image, marker_on_wall_mask
 
     def _preprocess_image(self, image, color_ranges):
         """
@@ -108,31 +112,42 @@ class Marker(DetectionBase):
 
         return detected_markers
 
-    def _classify_marker_type(self, detected_markers):
+    def _classify_marker_type(self, marker):
         """
-        Classifies markers based on the counts of circles and squares.
+        Classifies a single marker based on its shape.
 
         Args:
-        - detected_markers: List of detected marker objects.
+        - marker: The detected marker object.
 
         Returns:
         - marker_type: String indicating the type of marker detected.
         """
-        shape_counts = Counter(marker['shape'] for marker in detected_markers)
-        circle_count = shape_counts.get("Circle", 0)
-        square_count = shape_counts.get("Square", 0)
-
-        # Classify the marker type based on the counts of circles and squares
-        if square_count > 0:
+        shape = marker['shape']
+        if shape == "Square":
             return "Packing Station Marker"
-        elif circle_count == 1:
-            return "Row Marker 1"
-        elif circle_count == 2:
-            return "Row Marker 2"
-        elif circle_count == 3:
-            return "Row Marker 3"
         else:
-            return "Unknown Marker"
+            return "Row Marker"  # Assuming it's a row marker if it's circular
+
+    def _map_marker_type_to_int(self, marker_type):
+        """
+        Maps marker type string to an integer value.
+
+        Args:
+        - marker_type: String indicating the type of marker detected.
+
+        Returns:
+        - int: 1 for Row Marker 1, 2 for Row Marker 2, 3 for Row Marker 3, 0 for Packing Station Marker.
+        """
+        if marker_type == "Packing Station Marker":
+            return 0
+        elif marker_type == "Row Marker 1":
+            return 1
+        elif marker_type == "Row Marker 2":
+            return 2
+        elif marker_type == "Row Marker 3":
+            return 3
+        else:
+            return -1  # Unknown or unclassified marker type
 
     def _draw_if_enabled(self, image, detected_markers, marker_type):
         """
@@ -188,12 +203,11 @@ class Marker(DetectionBase):
         # Calculate average distance and bearing
         avg_distance = np.mean(distances)
         avg_bearing = np.mean(bearings)
-        #print(bearings)
 
         # Add labels
         cv2.putText(image, f"{marker_type}",
-                    (x+10, y+30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    (x_min + 10, y_min + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.putText(image, f"{avg_distance:.2f}m, {avg_bearing:.2f}deg",
-                    (x+10, y+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    (x_min + 10, y_min + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         return image
