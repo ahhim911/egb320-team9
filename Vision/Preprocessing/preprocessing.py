@@ -53,8 +53,8 @@ class Preprocessing:
         5. Apply morphological filtering
         """
         #resized = Preprocessing.resize(image, resize_to)
-        scaled = Preprocessing.scale(image,fx=scale,fy=scale)
-        blurred = Preprocessing.blur(scaled, blur_ksize, sigmaX)
-        thresholded = Preprocessing.color_threshold(blurred, lower_hsv, upper_hsv)
-        processed = Preprocessing.apply_morphological_filters(thresholded, kernel_size)
-        return processed, scaled
+        #scaled = Preprocessing.scale(image,fx=scale,fy=scale)
+        #blurred = Preprocessing.blur(scaled, blur_ksize, sigmaX)
+        thresholded = Preprocessing.color_threshold(image, lower_hsv, upper_hsv)
+        #processed = Preprocessing.apply_morphological_filters(thresholded, kernel_size)
+        return thresholded, image
