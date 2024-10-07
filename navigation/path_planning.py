@@ -93,7 +93,8 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
         plt.pause(0.01)  # Pause briefly to allow the plot to update
         plt.show(block=False)  # Show the plot without blocking
 
-    return nav_state
+    return left_motor_speed, right_motor_speed
+    # return nav_state
 
 def clip_deg_fov(deg, fov):
     # Convert degrees to NumPy array if not already
@@ -139,3 +140,7 @@ def compute_repulsive_field(obstacles):
                 np.maximum.at(repulsive_field, indices, effects)
 
     return repulsive_field
+
+
+
+# move function
