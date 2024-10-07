@@ -25,7 +25,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     # Find heading angle by finding the index of the max value in the residual field
     heading_angle = np.argmax(nav_state['residual_field'])
 
-    goal_error = np.deg2rad(heading_angle) - np.deg2rad(CAMERA_FOV/2)
+    goal_error = heading_angle - CAMERA_FOV/2
     print("HA: ",heading_angle, "ERROR: ", goal_error)
     # --------------- PWM Signals -------------------
     """
@@ -48,7 +48,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 15 # Gain of 0.1, adjust as needed
+    control_signal = goal_error * 5 # Gain
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal

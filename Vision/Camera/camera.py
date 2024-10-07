@@ -164,3 +164,7 @@ class Camera:
     def close(self):
         """Close the camera and release resources."""
         self.picam2.close()
+
+
+    def __del__(self):
+        self.close()

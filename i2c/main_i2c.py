@@ -47,11 +47,11 @@ class I2C:
 
         if direction == "S":
             command = f"M{number} S"
-            print(f"Sending command to DC motor: {command}")
+            # print(f"Sending command to DC motor: {command}")
         else:
             # Prepare the command string
             command = f"M{number} {direction} {speed}"
-            print(f"Sending command to DC motor: {command}")
+            # print(f"Sending command to DC motor: {command}")
 
         self.send_command(command)
         return

@@ -283,7 +283,7 @@ class StateMachine:
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
-        self.found_row = rowMarkerRangeBearing[self.target_row] is not None
+        self.found_row = rowMarkerRangeBearing[0][0] == self.target_row
 
         if self.found_row:
             if rowMarkerRangeBearing[self.target_row] != None:

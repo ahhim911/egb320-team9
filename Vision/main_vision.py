@@ -8,6 +8,7 @@ from .Detection.packing_station import PackingStationRamp
 from .Detection.obstacle import Obstacle
 from .Detection.item import Item
 from .Calibration.calibration import Calibration
+from navigation.state_machine import StateMachine
 from threading import Thread
 import cv2
 import time
@@ -129,6 +130,10 @@ class Vision(DetectionBase):
             #cv2.imshow('Item Mask', item_mask)
             #print("Process item",detected_items)
             self.objectRB[3] = detected_items # [[R,B,L],[R,B,L],...]
+
+        # Add State from State machine
+        # cv2.putText(RGBframe, f"{StateMachine.robot_state}", (5, 10) ,cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
+        
         self.display_detection('Detection', RGBframe)
         cv2.waitKey(1)
 
