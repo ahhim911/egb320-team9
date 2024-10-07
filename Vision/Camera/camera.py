@@ -129,7 +129,7 @@ class Camera:
         cv2.destroyAllWindows()
         return filepath
 
-    def play_video(self, video_path, loop=False):
+    def play_video(self, video_path, loop=True):
         """Play a video as if it is a live feed."""
         cap = cv2.VideoCapture(video_path)
         

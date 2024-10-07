@@ -68,7 +68,7 @@ class Wall(DetectionBase):
     
         return mask
 
-    def _detect_walls(self, mask, min_area=800, solidity_threshold=0.5):
+    def _detect_walls(self, mask, min_area=800, solidity_threshold=0.1):
         """
         Analyzes contours to detect walls and estimates their distance and bearing.
 

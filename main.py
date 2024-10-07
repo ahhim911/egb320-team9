@@ -19,7 +19,7 @@ def main():
     Vision = VisionClass()
     Vision.start("/home/edmond/egb320-team9/Videos/obs_search_ps_right_row3.mp4") # Start the threads (Captrue and Pipeline)
     Vision.requested_objects = 0b111111
-    time.sleep(1)
+    time.sleep(3)
     data = [None] * 6
     print('Start Loop')
     while True:
