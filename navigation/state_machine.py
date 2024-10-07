@@ -48,6 +48,7 @@ class StateMachine:
         self.found_shelf = False
         self.shelf_side = None
         self.found_row = False
+        self.found_ps = False
         self.at_ps = False
         self.action = []
         self.final_df = {}
@@ -133,11 +134,14 @@ class StateMachine:
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         
         self.found_row = False
-        if packStationRangeBearing is not None:
+        if packStationRangeBearing and len(packStationRangeBearing) > 0:
+            print("PS and row markers are not NONE", packStationRangeBearing[0])
             self.found_ps = True
-            if len(rowMarkerRangeBearing) != 0:
-                self.found_row = rowMarkerRangeBearing[0][0] == 0 # Packing Station
+        else:
+            print("PS is NONE or empty", packStationRangeBearing)
 
+        if len(rowMarkerRangeBearing) != 0:
+            self.found_row = any(row[0] == self.target_row for row in rowMarkerRangeBearing)
         if self.found_row:
             # self.L_dir = 'S'
             # self.R_dir = 'S'
@@ -175,7 +179,7 @@ class StateMachine:
             self.R_dir = '0'
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
 
-            if self.goal_position['range'] - 1 < 0.01: # Middle of the area
+            if self.goal_position['range'] - 0.65 < 0.01: # Middle of the area
                 self.robot_state = 'SEARCH_FOR_SHELF'
                 if self.target_row == 3:
                     self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
@@ -383,6 +387,8 @@ class StateMachine:
             request = SHELVES | WALLPOINTS
         # Add other state transitions...
         # print action
+        self.LeftmotorSpeed = int(round(self.LeftmotorSpeed))
+        self.RightmotorSpeed = int(round(self.RightmotorSpeed))
         print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
         self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
         self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
