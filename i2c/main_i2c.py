@@ -3,7 +3,7 @@ import time
 
 class I2C:
     def __init__(self, addr=0x08, bus=0):
-        self.addr = addr
+        self.addr = addr 
         self.bus = smbus.SMBus(bus)
 
     def string_to_ascii_array(self, input_string):
@@ -13,11 +13,11 @@ class I2C:
     def send_command(self, cmd):
         command = self.string_to_ascii_array(cmd)
         
-        # try:
-            # print(f"Sending command: {command}")
-            # self.bus.write_i2c_block_data(self.addr, 0, command)  # Send data to I2C device
-        # except IOError as e:
-            # print(f"Error communicating with I2C device: {e}")
+        try:
+            print(f"Sending command: {command}")
+            self.bus.write_i2c_block_data(self.addr, 0, command)  # Send data to I2C device
+        except IOError as e:
+            print(f"Error communicating with I2C device: {e}")
         
         # Optional short delay
         time.sleep(0.1)  # Give some time between commands

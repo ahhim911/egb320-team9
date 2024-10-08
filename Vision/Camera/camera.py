@@ -24,7 +24,7 @@ class Camera:
                 )
         self.picam2.configure(config) # type: ignore
         self.picam2.start()
-        self.picam2.set_controls({"ExposureTime": 70000, "AnalogueGain": 1,  "ColourGains": (1.4,1.5)}) 
+        self.picam2.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)}) 
         print("init cam finished")
 
     def live_feed(self):
