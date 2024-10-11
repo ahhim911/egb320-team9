@@ -37,10 +37,10 @@ class Shelf(DetectionBase):
             shelf_data = self._process_corners(obj)
             if shelf_data:
                 data_list.append(shelf_data)  # Append the corner data for the current shelf
-
+        
         # 4. Draw contours and corners if enabled
         final_image = self._draw_if_enabled(RGBframe, detected_shelves, data_list)
-        # print("SHELF DATA: ", data_list)
+        print("SHELF DATA: ", data_list)
 
         return data_list, final_image, mask
 
@@ -167,7 +167,7 @@ class Shelf(DetectionBase):
                 corner_type, distance, bearing, corner_position = corner_data
     
                 # Assign the color based on the corner type
-                color = (0, 0, 255) if corner_type == 2 else (255, 0, 0)  # Red for bottom-right, blue for bottom-left
+                color = (0, 0, 255) if corner_type == 2 else (255, 255, 0)  # Red for bottom-right, yellow for bottom-left
     
                 # Draw circle at the corner position
                 cv2.circle(image, corner_position, 5, color, -1)
@@ -187,7 +187,7 @@ class Shelf(DetectionBase):
         """
         return [tuple(point.ravel()) for point in obj["contour"]]
 
-    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=4):
+    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=6):
         """
         Get the bottom-right or bottom-left corner based on the criterion.
 

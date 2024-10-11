@@ -5,7 +5,7 @@ from .range_bearing import DistanceEstimation  # Import the DistanceEstimation c
 from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Item(DetectionBase):
-    def __init__(self, real_item_width=0.03, focal_length=300, draw=False):
+    def __init__(self, real_item_width=0.044, focal_length=300, draw=False):
         """
         Initializes the Item class with optional parameters.
 
@@ -44,7 +44,7 @@ class Item(DetectionBase):
 
         # 4. Draw if enabled
         final_image = self._draw_if_enabled(RGBframe, detected_items)
-        #print("ITEM DATA: ", data_list)
+        print("ITEM DATA: ", data_list)
 
         return data_list, final_image, mask
 

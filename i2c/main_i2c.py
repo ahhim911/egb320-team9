@@ -20,7 +20,7 @@ class I2C:
             print(f"Error communicating with I2C device: {e}")
         
         # Optional short delay
-        time.sleep(0.1)  # Give some time between commands
+        time.sleep(0.005)  # Give some time between commands
 
     def drive(self, forwards:float,rotational:float): # used in the navigvation system to run at the desired 
         forwards_int = round(forwards*100)
@@ -69,10 +69,10 @@ class I2C:
 
     def grip(self, state):
         """Set the gripper state in the command array."""
-        if state == 'open':
-            command = 'G0'
-        elif state == 'close':
-            command = 'G1'
+        if state == 0:
+            command = f"G{state}"
+        elif state == 1:
+            command = f"G{state}"
         else:
             print("Invalid gripper state")
             return

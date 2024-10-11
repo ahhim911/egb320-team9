@@ -17,8 +17,9 @@ def main():
     # start the vision threads (one is sampling images, one is processing)
     # thread should update attribute of class to store object RB (Vision.objectRB)
     Vision = VisionClass()
+    state_machine.set_vision(Vision)
     Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4") # Start the threads (Captrue and Pipeline)
-    Vision.requested_objects = 0b111111
+    #Vision.requested_objects = 0b111111
     time.sleep(1)
     data = [None] * 6
     print('Start Loop')
@@ -37,8 +38,7 @@ def main():
 
         # Run State machine and send information back to the vision using "requested_objects"
         Vision.requested_objects = state_machine.run_state_machine(data)
-        # state_machine.run_state_machine(data)
-        #Vision.requested_objects = 0b000000 # Shelves
+        # Vision.requested_objects = 0b000001 # Shelves
         elapsed = time.time() - now  # how long was it running?
         fps = 1.0/elapsed
         print('Elapsed Time: ', elapsed, 'FPS: ', fps)

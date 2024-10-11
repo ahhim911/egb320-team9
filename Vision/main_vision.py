@@ -8,7 +8,6 @@ from .Detection.packing_station import PackingStationRamp
 from .Detection.obstacle import Obstacle
 from .Detection.item import Item
 from .Calibration.calibration import Calibration
-from navigation.state_machine import StateMachine
 from threading import Thread
 import cv2
 import time
@@ -65,11 +64,15 @@ class Vision(DetectionBase):
         self.wall_detector = Wall(homography_matrix=self.homography_matrix,draw=True)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix,draw=True)  # Initialize the ramp detector
         self.obstacle_detector = Obstacle(focal_length=300, homography_matrix=self.homography_matrix,draw=True)
-        self.item_detector = Item(focal_length=300, draw=True)
+        self.item_detector = Item(real_item_width=0.045, focal_length=300, draw=True)
 
         # Thread(target=self.camera.play_video, args=(path,)).start() # Recorded video from files
         Thread(target=self.camera.live_feed, args=()).start() # Live video from camera
         return
+    
+    def update_item(self, item_width):
+        print("Item width Updated: ", item_width)
+        self.item_detector = Item(real_item_width=item_width, focal_length=300, draw=True)
     
     def display_detection(self, window_name, frame):
         """
@@ -85,7 +88,7 @@ class Vision(DetectionBase):
         # cv2.imshow("Frame", frame)
         if self.requested_objects & SHELVES:
             detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
-            # self.display_detection('Shelf', shelf_mask)
+            self.display_detection('Shelf', shelf_mask)
             # cv2.imshow('Shelf Detection', shelf_frame)
             #cv2.imshow('Shelf Mask', shelf_mask)
             #print("Process shelf",detected_shelves)
@@ -93,7 +96,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & WALLPOINTS:
             detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe,  self.color_ranges)
-            self.display_detection('Wall', filled_wall_mask)
+            #self.display_detection('Wall', filled_wall_mask)
             # cv2.imshow('Wall Mask', filled_wall_mask)
             #print("Process wall", detected_walls)
             self.objectRB[5] = detected_walls # [[R,B],[R,B],...]
@@ -101,7 +104,7 @@ class Vision(DetectionBase):
         
         if self.requested_objects & MARKERS:
             detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
-            self.display_detection('Markers', marker_mask)
+            #self.display_detection('Markers', marker_mask)
             #cv2.imshow('Marker Detection', marker_frame)
             # cv2.imshow('Marker Mask', marker_mask)
             #print("Process Markers", detected_markers)
@@ -117,7 +120,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & OBSTACLES:
             detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(HSVframe, RGBframe,  self.color_ranges)
-            # self.display_detection('Obstacles', obstacle_mask)
+            self.display_detection('Obstacles', obstacle_mask)
             #cv2.imshow('Obstacle Detection', obstacle_frame)
             #cv2.imshow('Obstacle Mask', obstacle_mask)
             #print("Process obstacles",detected_obstacles)
@@ -125,8 +128,8 @@ class Vision(DetectionBase):
 
         if self.requested_objects & ITEMS:
             detected_items, item_frame, item_mask = self.item_detector.find_item(HSVframe, RGBframe,  self.color_ranges)
-            # self.display_detection('Items', item_mask)
-            #cv2.imshow('Item Detection', item_frame)
+            #self.display_detection('Items', item_mask)
+            # cv2.imshow('Item Detection', item_frame)
             #cv2.imshow('Item Mask', item_mask)
             #print("Process item",detected_items)
             self.objectRB[3] = detected_items # [[R,B,L],[R,B,L],...]

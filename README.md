@@ -92,6 +92,24 @@ Make sure you have the necessary permissions to push to the repository. If you e
 
 Happy Coding! If you have any questions or need further assistance, feel free to reach out to the team.
 
+# Package to be install
+## Opencv
+Use this code to install Opencv
+```
+sudo apt-get install python3-opencv
+```
+
+## Numpy
+```
+sudo apt-get install libopenblas-dev
+pip uninstall numpy
+pip install numpy==1.26.4
+```
+
+## Pandas
+```
+pip install pandas
+```
 
 
 
