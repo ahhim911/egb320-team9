@@ -24,12 +24,13 @@ class Camera:
                 )
         self.picam2.configure(config) # type: ignore
         self.picam2.start()
-        self.picam2.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)}) 
+        self.picam2.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)})
+        self.running = True
         print("init cam finished")
 
     def live_feed(self):
-        while True:
-            self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5) #capture_frame()
+        while self.running:
+            self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5)
             self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
             
     
@@ -163,7 +164,9 @@ class Camera:
 
     def close(self):
         """Close the camera and release resources."""
+        self.running = False
         self.picam2.close()
+        cv2.destroyAllWindows()
 
 
     def __del__(self):
