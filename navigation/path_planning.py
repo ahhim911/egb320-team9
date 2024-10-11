@@ -118,9 +118,6 @@ def compute_repulsive_field(obstacles):
             if obs_range < 0.8 and obs_range > 0:
                 obs_width = WORKER_WIDTH_SCALE
                 
-                # Convert bearing to degrees and clip to valid range
-                obs_deg = int(np.clip(np.rad2deg(obs_bearing) + CAMERA_FOV / 2, 0, CAMERA_FOV))
-                
                 # Calculate the width of the obstacle in degrees
                 obs_width_rad = 2 * math.atan(obs_width / obs_range)
                 obs_width_deg = int(np.rad2deg(obs_width_rad))
@@ -129,11 +126,11 @@ def compute_repulsive_field(obstacles):
                 obs_effect = max(0, 1 - min(1, obs_range - WORKER_WIDTH_SCALE * 2))
                 
                 # Update the repulsive field
-                repulsive_field[obs_deg] = obs_effect
+                repulsive_field[obs_bearing] = obs_effect
 
                 # Update the repulsive field for the obstacle width
                 angles = np.arange(-obs_width_deg, obs_width_deg + 1)
-                indices = clip_deg_fov(obs_deg + angles, CAMERA_FOV).astype(int)
+                indices = clip_deg_fov(obs_bearing + angles, CAMERA_FOV).astype(int)
                 effects = obs_effect * (1 - np.abs(angles) / obs_width_deg)
                 np.maximum.at(repulsive_field, indices, effects)
 
