@@ -78,14 +78,14 @@ class CalibrateColor:
         self.current_color_key = None
 
         # Buffer to be applied to the HSV range
-        self.bufferHSV = np.array([10, 50, 20])
+        self.bufferHSV = np.array([10, 20, 20])
 
         # Initialize the camera
         self.cap = Picamera2()
         frameWidth, frameHeight = 820, 616
-        config = self.cap.create_video_configuration(main={"format": 'RGB888', "size": (frameWidth, frameHeight)})
+        config = self.cap.create_video_configuration(main={"format": 'XRGB8888', "size": (frameWidth, frameHeight)})
         self.cap.configure(config)
-        self.cap.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)}) 
+        self.cap.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)})
         self.cap.start()
 
     def resize_image(self, image, scale=0.5):

@@ -5,7 +5,7 @@ from threading import Thread
 def main():
     Vision = VisionClass()
     Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4") # Start the threads (Captrue and Pipeline)
-    Vision.requested_objects = 0b111111
+    Vision.requested_objects = 0b000010
     time.sleep(1)
     data = [None] * 6
     print('Start Loop')

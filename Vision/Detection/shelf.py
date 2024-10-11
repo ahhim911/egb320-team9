@@ -50,9 +50,20 @@ class Shelf(DetectionBase):
         """
         lower_hsv, upper_hsv = color_ranges['Shelf']
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
+
+        # Define a kernel for the morphological operations
+        kernel = np.ones((5, 5), np.uint8)  # You can adjust the size (5, 5) as needed
+
+        # Apply the opening operation (erosion followed by dilation) to remove noise
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+        # Apply the closing operation (dilation followed by erosion) to fill small holes
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
         return mask
 
-    def _detect_shelves(self, mask, min_area=800):
+
+    def _detect_shelves(self, mask, min_area=1200):
         """
         Analyzes contours to detect shelves and calculates range/bearing for their corners.
 
@@ -67,19 +78,20 @@ class Shelf(DetectionBase):
         detected_objects = []
 
         for contour in contours:
-            if cv2.contourArea(contour) < min_area:
+            area = cv2.contourArea(contour)
+            if area < min_area:
                 continue  # Skip small contours
 
             x, y, w, h = cv2.boundingRect(contour)
             hull = cv2.convexHull(contour)
 
             # Simplify contour using cv2.approxPolyDP
-            epsilon = 0.001 * cv2.arcLength(hull, True)
+            epsilon = 0.01 * cv2.arcLength(hull, True)
             smoothed_contour = cv2.approxPolyDP(hull, epsilon, True)
 
             detected_objects.append({
                 "position": (x, y, w, h),
-                "contour": smoothed_contour
+                "contour": smoothed_contour,
             })
 
         return detected_objects
@@ -167,7 +179,7 @@ class Shelf(DetectionBase):
                 corner_type, distance, bearing, corner_position = corner_data
     
                 # Assign the color based on the corner type
-                color = (0, 0, 255) if corner_type == 2 else (255, 255, 0)  # Red for bottom-right, yellow for bottom-left
+                color = (0, 0, 255) if corner_type == 2 else (255, 255, 0)  # Red for bottom-right, cyan for bottom-left
     
                 # Draw circle at the corner position
                 cv2.circle(image, corner_position, 5, color, -1)
@@ -187,7 +199,7 @@ class Shelf(DetectionBase):
         """
         return [tuple(point.ravel()) for point in obj["contour"]]
 
-    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=6):
+    def _get_specific_corner(self, corners, criterion="bottom-right", x_threshold=12):
         """
         Get the bottom-right or bottom-left corner based on the criterion.
 

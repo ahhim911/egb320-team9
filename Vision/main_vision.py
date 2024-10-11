@@ -71,7 +71,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & SHELVES:
             detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
-            #self.display_detection('Shelf', shelf_mask)
+            self.display_detection('Shelf', shelf_mask)
             self.objectRB[2] = detected_shelves
 
         if self.requested_objects & WALLPOINTS:
@@ -92,7 +92,7 @@ class Vision(DetectionBase):
 
         if self.requested_objects & OBSTACLES:
             detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(HSVframe, RGBframe,  self.color_ranges)
-            #self.display_detection('Obstacles', obstacle_mask)
+            self.display_detection('Obstacles', obstacle_mask)
             self.objectRB[4] = detected_obstacles
 
         if self.requested_objects & ITEMS:
