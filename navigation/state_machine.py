@@ -34,6 +34,16 @@ ITEMS =       0b000100
 OBSTACLES =   0b000010
 WALLPOINTS =  0b000001
 
+Weetbots = [0.21, 0.20, 0.18]
+Bottle = [0.23, 0.22, 0.2]
+Bowls = [0.23, 0.22, 0.2]
+Ball = [0.225, 0.215, 0.205]
+Cube = [0.235, 0.225, 0.215]
+Mug = [0.235, 0.225, 0.215]
+
+ps_return_distance = [0.27, 0.35]
+
+
 LEFT = 0
 RIGHT = 1
 
