@@ -11,7 +11,7 @@ CAMERA_FOV = 60
 WORKER_WIDTH_SCALE = 0.15 #m
 
 
-def calculate_goal_velocities(goal_position, obstacles, draw=True):
+def calculate_goal_velocities(goal_position, obstacles, draw=True, Gain=0.75):
     # Compute bearing to goal 
     goal_deg = goal_position['bearing']
     # Compute both attractive and repulsive field maps
@@ -48,7 +48,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=True):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 0.75 # Gain
+    control_signal = goal_error * Gain # Gain
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal
