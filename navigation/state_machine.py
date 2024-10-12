@@ -156,7 +156,7 @@ class StateMachine():
 
     def init_state(self):
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_PS'
+        self.robot_state = 'SEARCH_FOR_ITEM'
         # self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'COLLECT_ITEM'
         self.holding_item = False
@@ -169,9 +169,9 @@ class StateMachine():
         # self.target_height = self.final_df['Height'][self.current_item]
         # self.target_item= self.final_df['Item Name'][self.current_item]
         self.target_shelf = 3
-        self.target_row = 2
+        self.target_row = 1
         self.target_bay = 1
-        self.target_height = 1
+        self.target_height = 0
         self.target_item = "Bottle"
         print("Collecting: ", self.target_item)
         if self.vision:

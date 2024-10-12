@@ -11,7 +11,7 @@ CAMERA_FOV = 60
 WORKER_WIDTH_SCALE = 0.15 #m
 
 
-def calculate_goal_velocities(goal_position, obstacles, draw=True, Gain=0.75):
+def calculate_goal_velocities(goal_position, obstacles, draw=False, Gain=0.75):
     # Compute bearing to goal 
     goal_deg = goal_position['bearing']
     # Compute both attractive and repulsive field maps

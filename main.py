@@ -18,7 +18,7 @@ def main():
     # thread should update attribute of class to store object RB (Vision.objectRB)
     Vision = VisionClass()
     state_machine.set_vision(Vision)
-    Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4") # Start the threads (Captrue and Pipeline)
+    Vision.start("/home/edmond/egb320-team9/Videos/find_collect_item.mp4") # Start the threads (Captrue and Pipeline)
     #Vision.requested_objects = 0b111111
     time.sleep(1)
     data = [None] * 6
