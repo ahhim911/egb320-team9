@@ -18,6 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)  # Create a logger for this file
 
 def main():
+    
     logger.info("Initializing Vision system for testing.")
 
     camera = Camera()
@@ -32,6 +33,8 @@ def main():
 
     # Initial state setup
     current_state = 'SEARCH_FOR_ITEM'
+    item_width = Vision.item_to_size('Weetbots')
+    Vision.update_item(item_width)
     Vision.update_requested_objects(current_state)  # Set the initial state
     logger.info(f"Set requested objects state to: {current_state}")
 

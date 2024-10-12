@@ -44,6 +44,7 @@ state_requests = {
     'COLLECT_ITEM': ITEMS,
     'ROTATE_TO_EXIT': MARKERS,
     'MOVE_TO_EXIT': MARKERS | OBSTACLES,
+    'EXIT_PS': MARKERS,
     'ALL': 0b111111
 }
 
@@ -90,7 +91,7 @@ class Vision(DetectionBase):
         self.wall_detector = Wall(homography_matrix=self.homography_matrix, draw=draw)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix, draw=draw)
         self.obstacle_detector = Obstacle(focal_length=self.focal_length, homography_matrix=self.homography_matrix, draw=draw)
-        self.item_detector = Item(real_item_width=0.02, focal_length=self.focal_length, draw=draw)
+        self.item_detector = Item(real_item_width=0.0375, focal_length=self.focal_length, draw=draw)
 
         #self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
         #self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
@@ -109,6 +110,21 @@ class Vision(DetectionBase):
         """
         self.requested_objects = state_requests.get(state, 0b000000)
         logger.info(f"Updated requested objects for state {state}: {bin(self.requested_objects)}")
+
+    def item_to_size(self, item_type):
+        if item_type == "Bottle":
+            size = 0.02 
+        elif item_type == "Ball":
+            size = 0.045
+        elif item_type == "Cube":
+            size = 0.037
+        elif item_type == "Bowl":
+            size = 0.055
+        elif item_type == "Mug":
+            size = 0.05
+        elif item_type == "Weetbots":
+            size = 0.065
+        return size
 
     def process_image(self):
         """
