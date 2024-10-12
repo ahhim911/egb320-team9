@@ -92,9 +92,15 @@ class Vision(DetectionBase):
         self.obstacle_detector = Obstacle(focal_length=focal_length, homography_matrix=self.homography_matrix, draw=draw)
         self.item_detector = Item(real_item_width=0.045, focal_length=focal_length, draw=draw)
 
+<<<<<<< HEAD
         #self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
         #self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
         #self.thread.start()
+=======
+        # self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
+        self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
+        self.thread.start()
+>>>>>>> 6d8bdf19abbf6074bd9c540b99abbab44b9e22f0
 
     def update_item(self, item_width):
         """
