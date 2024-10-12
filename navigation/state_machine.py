@@ -168,7 +168,7 @@ class StateMachine():
         # self.target_bay = self.final_df['Bay'][self.current_item]
         # self.target_height = self.final_df['Height'][self.current_item]
         # self.target_item= self.final_df['Item Name'][self.current_item]
-        self.target_shelf = 3
+        self.target_shelf = 1
         self.target_row = 1
         self.target_bay = 1
         self.target_height = 0
