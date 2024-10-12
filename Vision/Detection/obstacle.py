@@ -61,10 +61,10 @@ class Obstacle(DetectionBase):
         kernel = np.ones((5, 5), np.uint8)  # You can adjust the size (5, 5) as needed
 
         # Apply the opening operation (erosion followed by dilation) to remove noise
-        #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
         # Apply the closing operation (dilation followed by erosion) to fill small holes
-        #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
         
         return mask
 
@@ -88,6 +88,8 @@ class Obstacle(DetectionBase):
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
+            if y < 30:
+                continue
             distance = self.distance_estimator.estimate_homography_distance((x, y, w, h))
             object_center_x = x + (w // 2)
             bearing = self.distance_estimator.estimate_bearing(object_center_x)

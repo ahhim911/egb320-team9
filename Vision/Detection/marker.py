@@ -7,9 +7,9 @@ from .range_bearing import DistanceEstimation  # Import the DistanceEstimation c
 from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Marker(DetectionBase):
-    def __init__(self, real_marker_width=0.07, focal_length=300, draw=False):
+    def __init__(self, real_marker_height=0.07, focal_length=300, draw=False):
         super().__init__("Marker")
-        self.real_marker_width = real_marker_width  # Real-world width of the marker in meters
+        self.real_marker_height = real_marker_height  # Real-world width of the marker in meters
         self.focal_length = focal_length  # Focal length of the camera in pixels
         self.distance_estimator = DistanceEstimation(focal_length=focal_length)
         self.draw = draw  # Flag to control drawing
@@ -110,11 +110,11 @@ class Marker(DetectionBase):
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
-            marker_width = w  # Use width of bounding box
+            marker_height = h  # Use width of bounding box
             marker_center_x = x + (w / 2)
 
             # Estimate distance and bearing
-            distance = self.distance_estimator.estimate_distance(marker_width, self.real_marker_width)
+            distance = self.distance_estimator.estimate_distance(marker_height, self.real_marker_height)
             bearing = self.distance_estimator.estimate_bearing(marker_center_x)
 
             detected_markers.append({
