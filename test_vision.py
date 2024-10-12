@@ -32,7 +32,7 @@ def main():
     Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4")  # Start the vision processing
 
     # Initial state setup
-    current_state = 'SEARCH_FOR_ITEM'
+    current_state = 'MOVE_TO_ROW'
     item_width = Vision.item_to_size('Weetbots')
     Vision.update_item(item_width)
     Vision.update_requested_objects(current_state)  # Set the initial state

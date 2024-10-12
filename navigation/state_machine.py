@@ -50,7 +50,7 @@ LEFT = 0
 RIGHT = 1
 ON = 1
 OFF = 0
-MIN_SPEED = 80  
+MIN_SPEED = 100  
 
 
 class StateMachine():
@@ -107,7 +107,7 @@ class StateMachine():
     # INITIALIZATION
     #===========================================================================
     def __init__(self):
-        self.goal_bay_position = [0.875, 0.65, 0.375, 0.125] # bay positions in the row
+        self.goal_bay_position = [0.83, 0.58, 0.32, 0.125] # bay positions in the row
         self.row_position_L = [0.38, 1.1, 1.55] # Entry positions for left shelf
         self.row_position_R = [1.55, 1.1, 0.38] # Entry positions for Rigth shelf
         self.ps_return_distance = [0.10, 0.35]
@@ -264,7 +264,7 @@ class StateMachine():
         self.target_item= self.final_df['Item Name'][self.current_item]
 
         # Mockup values
-        # self.target_shelf = 1
+        # self.target_shelf = 2
         # self.target_row = 1
         # self.target_bay = 3
         # self.target_height = 2
@@ -314,12 +314,12 @@ class StateMachine():
         
         # Rotate on the spot
         if self.holding_item:
-            print("Turning Left")
+            print("Turning right")
             # if found
-            self.rotate(LEFT, MIN_SPEED)
+            self.rotate(RIGHT, MIN_SPEED + 5)
         else:
             print("Turning Right")
-            self.rotate(RIGHT, MIN_SPEED)
+            self.rotate(RIGHT, MIN_SPEED + 5)
         if not packStationRangeBearing and not rowMarkerRangeBearing:
             print("No Markers Detected")
             return
@@ -351,6 +351,7 @@ class StateMachine():
         if not rowMarkerRangeBearing:
             self.robot_state = 'SEARCH_FOR_PS'
             self.stop()
+            time.sleep(1)
             self.found_ps = False
         else:
             print("PS RB: ", rowMarkerRangeBearing[0])
@@ -369,7 +370,7 @@ class StateMachine():
                     self.stop()
                     time.sleep(0.1)
                     self.i2c.grip(0)
-                    time.sleep(2)
+                    time.sleep(1)
                     self.holding_item = False
                     self.current_item += 1
                     self.robot_state = 'EXIT_PS'
@@ -426,7 +427,7 @@ class StateMachine():
         if self.shelf_side == LEFT:  # Odd
             # Turn right
             print("Turn Right")
-            self.rotate(RIGHT, MIN_SPEED)   
+            self.rotate(RIGHT, MIN_SPEED + 5)   
 
             if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:    
                 print("Shelf detected(Left): ", shelfRangeBearing[0][0])
@@ -435,7 +436,7 @@ class StateMachine():
                     self.found_shelf = True
         elif self.shelf_side == RIGHT:  
             print("Turn Left")
-            self.rotate(LEFT, MIN_SPEED)
+            self.rotate(LEFT, MIN_SPEED + 5)
 
             if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:
                 print("Shelf detected(Right): ", shelfRangeBearing[-1][1])
@@ -509,9 +510,9 @@ class StateMachine():
                 self.rotation_complete = False
             if not self.rotation_complete:
                 if rowMarkerRangeBearing[2] < -1:
-                    self.rotate(LEFT, MIN_SPEED - 10)
+                    self.rotate(LEFT, MIN_SPEED - 5)
                 elif rowMarkerRangeBearing[2] > 1:
-                    self.rotate(RIGHT, MIN_SPEED - 10)
+                    self.rotate(RIGHT, MIN_SPEED - 5)
             
 
 
@@ -528,11 +529,21 @@ class StateMachine():
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
-        
+        error_angle = 0
+        # Check if shelfRangeBearing has data for left and right shelves
+        if shelfRangeBearing and len(shelfRangeBearing) > 1:
+            print("SHELF: ", shelfRangeBearing)
+            L_angle = shelfRangeBearing[0][1][1]  # Left shelf, right point range
+            R_angle = shelfRangeBearing[-1][0][1]  # Right shelf, left point range
+
+            # Calculate the error angle between the left and right shelves
+            error_angle = R_angle - L_angle
+            print("SHELF ERROR: ", error_angle)
+
         if rowMarkerRangeBearing:
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
             if rowMarkerRangeBearing[0] != self.target_row and rowMarkerRangeBearing[0] != 0:
-                self.robot_state = 'MOVE_TO_EXIT'
+                self.robot_state = 'MOVE_TO_EXIT' # TBC Search_for_row???
                 self.found_row = False
         else:
 
@@ -540,7 +551,10 @@ class StateMachine():
         if self.found_row:
             print("Row Found: ", self.target_row, ", ", rowMarkerRangeBearing )
             self.goal_position['range'] = rowMarkerRangeBearing[1]
-            self.goal_position['bearing'] = rowMarkerRangeBearing[2]
+            # Adjust the goal bearing by including the shelf error angle
+            self.goal_position['bearing'] = (rowMarkerRangeBearing[2] * 1.3) + (error_angle * 400)
+            # self.goal_position['bearing'] = (error_angle * 600)
+            print("GOAL POSITION ANGLE (with shelf correction): ", self.goal_position['bearing'])
             print(self.goal_position)
 
             # Add shelves to obstacles
@@ -609,12 +623,12 @@ class StateMachine():
                         self.rotation_complete = True
                     else:
                         if closest_item[1] < 0:
-                            self.rotate(LEFT, MIN_SPEED)
+                            self.rotate(LEFT, MIN_SPEED-5)
                         else:
-                            self.rotate(RIGHT, MIN_SPEED)                    
+                            self.rotate(RIGHT, MIN_SPEED-5)                    
                 else:
                     logger.info(f"No Closest item")
-                    self.move(1, MIN_SPEED, MIN_SPEED) # Move forward
+                    self.move(0, MIN_SPEED, MIN_SPEED) # Move forward
 
     def move_to_item(self, itemsRB):
         logger.info(f"MOVE TO ITEM")
@@ -670,18 +684,18 @@ class StateMachine():
             if self.target_height != 0:
                 # self.i2c.lift(2)
                 self.i2c.lift(self.target_height + 1)
-                time.sleep(6)
+                time.sleep(3)
                 self.move(0, MIN_SPEED-40, MIN_SPEED-40)
                 time.sleep(0.5)
                 self.stop()
             self.i2c.grip(1)
             time.sleep(2)
-            self.move(1, MIN_SPEED, MIN_SPEED)
-            time.sleep(0.5)
+            self.move(1, MIN_SPEED-20, MIN_SPEED-20) # move backwards
+            time.sleep(0.9)
             self.stop()
             if self.target_height != 0:
                 self.i2c.lift(1)
-                time.sleep(6)
+                time.sleep(3)
             self.robot_state = 'CHECK_ITEM'
             # else:
             #     logger.info(f"No ITEM DETECTED in target height in collect_item")
@@ -722,9 +736,9 @@ class StateMachine():
             #         self.rotate(RIGHT, MIN_SPEED-10)
         else:
             if self.target_shelf % 2 == 1:
-                self.rotate(LEFT, MIN_SPEED+10)
+                self.rotate(LEFT, MIN_SPEED+5)
             else:
-                self.rotate(RIGHT, MIN_SPEED+10)
+                self.rotate(RIGHT, MIN_SPEED+5)
 
 
             
@@ -754,7 +768,7 @@ class StateMachine():
             # flipped the left and right
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstacles=None)
             self.move(1, self.RightmotorSpeed, self.LeftmotorSpeed)
-            if self.goal_position['range'] > 1.25:
+            if self.goal_position['range'] > 1.23:
                 self.robot_state = "SEARCH_FOR_PS"
                 self.found_ps = False
         else: 
@@ -880,10 +894,15 @@ class StateMachine():
         print("MOTORS STOP")
         self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
         self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
+        # print("RESET GRIPPER")
+        # self.i2c.grip(0)
+
         return
 
     def __del__(self):
         self.stop()
+        print("RESET GRIPPER")
+        self.i2c.grip(0)
         time.sleep(0.01)
         self.i2c.led(1,0)
         time.sleep(0.01)
