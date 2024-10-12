@@ -2,7 +2,7 @@ from smbus import SMBus
 import time
 
 addr = 0x08  # I2C address of the Arduino slave (check this with i2cdetect)
-bus = SMBus(0)  # Correct I2C bus for Raspberry Pi (usually 1)
+bus = SMBus(1)  # Correct I2C bus for Raspberry Pi (usually 1)
 
 print("Enter a command to send (e.g., 'P150P 150'): ")
 
@@ -16,7 +16,7 @@ while True:
     
     try:
         print(f"Sending command: {command}")
-        bus.write_i2c_block_data(addr, 0, command)  # Send data to I2C device
+        bus.write_i2c_block_data(addr, 1, command)  # Send data to I2C device
     except IOError as e:
         print(f"Error communicating with I2C device: {e}")
     

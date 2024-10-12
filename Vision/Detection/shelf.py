@@ -37,6 +37,9 @@ class Shelf(DetectionBase):
             shelf_data = self._process_corners(obj)
             if shelf_data:
                 data_list.append(shelf_data)  # Append the corner data for the current shelf
+        # Sort the data_list by the x distance of the left corner (corner_type == 1 for bottom-left)
+        data_list = sorted(data_list, key=lambda shelf: next((corner[3][0] for corner in shelf if corner[0] == 1), float('inf')))
+
         
         # 4. Draw contours and corners if enabled
         final_image = self._draw_if_enabled(RGBframe, detected_shelves, data_list)

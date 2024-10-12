@@ -1,36 +1,28 @@
 import numpy as np
 import math
-import logging
 import matplotlib.pyplot as plt
+import logging
+
+logging.getLogger('matplotlib').setLevel(logging.WARNING)  # Only show warnings and errors for picamera2
+logger = logging.getLogger(__name__)
 
 
 MIN_ROBOT_VEL = 35 # duty cycle
 MAX_ROBOT_VEL = 70 # duty cycle
 GOAL_P = 0.5
 ROT_BIAS = 0.5
-CAMERA_FOV = 60
+CAMERA_FOV = 70
 WORKER_WIDTH_SCALE = 0.15 #m
 
-# Configure the logger
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("vision_system.log", mode='a')
-    ]
-)
-logging.getLogger('matplotlib').setLevel(logging.WARNING)  # Only show warnings and errors for picamera2
-logger = logging.getLogger(__name__)
 
-def calculate_goal_velocities(goal_position, obstacles, draw=False):
+def calculate_goal_velocities(goal_position, obstacles, draw=False, Gain=0.75):
     # Compute bearing to goal 
     goal_deg = goal_position['bearing']
     # Compute both attractive and repulsive field maps
     nav_state = {}
     nav_state['attractive_field'] = compute_attractive_field(goal_deg)
     nav_state['repulsive_field'] = compute_repulsive_field(obstacles)
-
+    
     # Compute residual map (attractive - repulsive)
     nav_state['residual_field'] = np.maximum(nav_state['attractive_field'] - nav_state['repulsive_field'], 0)
 
@@ -60,7 +52,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     """
 
     # Calculate the control signal
-    control_signal = goal_error * 0.75 # Gain
+    control_signal = goal_error * Gain # Gain
 
     # Calculate the motor speeds
     left_motor_speed = MIN_ROBOT_VEL + control_signal
@@ -118,7 +110,7 @@ def compute_attractive_field(goal_deg):
     gradient = 1 / 30 # gradient of the field
     attractive_field = np.maximum(1 - gradient * np.abs(angles), 0) # attractive field
     field = np.zeros(CAMERA_FOV + 1) # field of view
-    field[field_indices.astype(int)] = attractive_field
+    field[field_indices.astype(int) - CAMERA_FOV // 2] = attractive_field
     return field
 	
 def compute_repulsive_field(obstacles):
@@ -130,9 +122,7 @@ def compute_repulsive_field(obstacles):
             if obs_range < 0.8 and obs_range > 0:
                 obs_width = WORKER_WIDTH_SCALE
                 
-                # Convert bearing to degrees and clip to valid range
-                obs_deg = int(np.clip(np.rad2deg(obs_bearing) + CAMERA_FOV / 2, 0, CAMERA_FOV))
-                
+                obs_deg = int(obs_bearing + CAMERA_FOV/2)
                 # Calculate the width of the obstacle in degrees
                 obs_width_rad = 2 * math.atan(obs_width / obs_range)
                 obs_width_deg = int(np.rad2deg(obs_width_rad))
@@ -145,7 +135,7 @@ def compute_repulsive_field(obstacles):
 
                 # Update the repulsive field for the obstacle width
                 angles = np.arange(-obs_width_deg, obs_width_deg + 1)
-                indices = clip_deg_fov(obs_deg + angles, CAMERA_FOV).astype(int)
+                indices = clip_deg_fov(obs_bearing + angles, CAMERA_FOV).astype(int)
                 effects = obs_effect * (1 - np.abs(angles) / obs_width_deg)
                 np.maximum.at(repulsive_field, indices, effects)
 

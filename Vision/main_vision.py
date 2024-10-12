@@ -40,7 +40,7 @@ state_requests = {
     'MOVE_TO_SHELF': SHELVES | OBSTACLES,
     'SEARCH_FOR_ROW': MARKERS,
     'MOVE_TO_ROW': MARKERS | OBSTACLES | SHELVES,
-    'SEARCH_FOR_ITEM': ITEMS,
+    'SEARCH_FOR_ITEM': ITEMS | SHELVES,
     'COLLECT_ITEM': ITEMS,
     'ROTATE_TO_EXIT': MARKERS,
     'MOVE_TO_EXIT': MARKERS | OBSTACLES,
@@ -77,7 +77,7 @@ class Vision(DetectionBase):
         """
         logger.info(f"Starting vision system with path: {path}")
         draw = True
-        focal_length = 300
+        # focal_length = 321
         try:
             self.color_ranges, self.homography_matrix, self.focal_length = self.calibration.load_csv()
         except Exception as e:
@@ -86,11 +86,11 @@ class Vision(DetectionBase):
 
         # Initialize detectors
         self.shelf_detector = Shelf(homography_matrix=self.homography_matrix, draw=draw)
-        self.marker_detector = Marker(focal_length=340, draw=draw)
+        self.marker_detector = Marker(focal_length=self.focal_length, draw=draw)
         self.wall_detector = Wall(homography_matrix=self.homography_matrix, draw=draw)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix, draw=draw)
-        self.obstacle_detector = Obstacle(focal_length=focal_length, homography_matrix=self.homography_matrix, draw=draw)
-        self.item_detector = Item(real_item_width=0.045, focal_length=focal_length, draw=draw)
+        self.obstacle_detector = Obstacle(focal_length=self.focal_length, homography_matrix=self.homography_matrix, draw=draw)
+        self.item_detector = Item(real_item_width=0.045, focal_length=self.focal_length, draw=draw)
 
         #self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
         #self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
@@ -101,7 +101,7 @@ class Vision(DetectionBase):
         Update item width
         """
         logger.debug(f"Updating item width to: {item_width}")
-        self.item_detector = Item(real_item_width=item_width, focal_length=300, draw=False)
+        self.item_detector = Item(real_item_width=item_width, focal_length=self.focal_length, draw=True)
 
     def update_requested_objects(self, state):
         """

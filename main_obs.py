@@ -12,7 +12,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),  # Outputs to the console
-        logging.FileHandler("vision_log.log", mode='a')  # Outputs to a log file
+        logging.FileHandler("test_vision.log", mode='a')  # Outputs to a log file
     ]
 )
 
@@ -34,7 +34,7 @@ def main():
     Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4")  # Start the vision processing
 
     # Initial state setup
-    current_state = 'INIT'
+    current_state = 'SEARCH_FOR_SHELF'
     Vision.update_requested_objects(current_state)  # Set the initial state
     logger.info(f"Set requested objects state to: {current_state}")
 

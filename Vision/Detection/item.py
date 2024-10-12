@@ -80,8 +80,9 @@ class Item(DetectionBase):
             x, y, w, h = cv2.boundingRect(contour)
             distance = self.distance_estimator.estimate_distance(w, self.real_item_width)
             object_center_x = x + (w // 2)
+            object_center_y = y + (h//2)
             bearing = self.distance_estimator.estimate_bearing(object_center_x)
-            level = self.classify_item_level(y, image_height)
+            level = self.classify_item_level(object_center_y, image_height)
 
             detected_objects.append({
                 "position": (x, y, w, h),

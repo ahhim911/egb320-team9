@@ -31,10 +31,10 @@ class CalibrateHomography:
     angle_rad = np.radians(angle_deg)
 
     ground_points = np.array([
-        [-0.2, 0.36],
-        [0.215, 0.365],
-        [0.2, 0.90],
-        [-0.215, 1.29]
+        [-0.20, 0.33], # bottom left
+        [0.21, 0.33], # bottom right
+        [0.21, 1.07], # top right
+        [-0.20, 1.07] # top left
     ], dtype=np.float32)
     def __init__(self):
         # Global variables for calibration

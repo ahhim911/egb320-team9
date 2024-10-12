@@ -110,7 +110,7 @@ class Marker(DetectionBase):
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
-            marker_height = w  # Use width of bounding box
+            marker_height = h  # Use width of bounding box
             marker_center_x = x + (w / 2)
 
             # Estimate distance and bearing
