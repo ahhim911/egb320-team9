@@ -3,7 +3,6 @@ import pandas as pd
 from enum import Enum
 import time 
 
-from Vision.main_vision import Vision
 import navigation.path_planning as navigation
 from i2c.main_i2c import I2C
 
@@ -235,7 +234,7 @@ class StateMachine():
             Warning if the vision system is not set.
         """
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_ITEM'
+        self.robot_state = 'SEARCH_FOR_PS'
         # self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'COLLECT_ITEM'
         self.holding_item = False
@@ -605,7 +604,7 @@ class StateMachine():
             if self.goal_position['range'] - 0.4 < 0.01:
                 self.robot_state = 'INIT'
         else:
-            self.robot_state = 'SEARCH_FOR
+            self.robot_state = 'SEARCH_FOR_PS'
 
 
 
@@ -710,5 +709,3 @@ class StateMachine():
 
     def __del__(self):
         self.stop()
-        self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
-        self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right

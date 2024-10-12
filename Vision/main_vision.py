@@ -48,23 +48,23 @@ state_requests = {
 }
 
 class Vision(DetectionBase):
-    def __init__(self):
+    def __init__(self,camera):
         """
         Initialize the Vision system
         """
         logger.info("Initializing Vision system")
         self.objectRB = [[], [], [], [], [], []]
         self.requested_objects = 0b000000
-        self.camera = None
+        # self.camera = None
         self.stop_event = Event()  # Event to signal threads to stop
         self.thread = None  # Thread for the live feed
         self.is_stopped = False  # To track if the system is already stopped
 
-        try:
-            self.camera = Camera()
-        except Exception as e:
-            logger.error(f"Error initializing camera: {e}")
-            raise  # Exit if the camera can't be initialized
+        self.camera = camera
+        # try:
+        # except Exception as e:
+        #     logger.error(f"Error initializing camera: {e}")
+        #     raise  # Exit if the camera can't be initialized
 
         self.calibration = Calibration()
         self.color_ranges = None
@@ -86,7 +86,7 @@ class Vision(DetectionBase):
 
         # Initialize detectors
         self.shelf_detector = Shelf(homography_matrix=self.homography_matrix, draw=draw)
-        self.marker_detector = Marker(focal_length=focal_length, draw=draw)
+        self.marker_detector = Marker(focal_length=340, draw=draw)
         self.wall_detector = Wall(homography_matrix=self.homography_matrix, draw=draw)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix, draw=draw)
         self.obstacle_detector = Obstacle(focal_length=focal_length, homography_matrix=self.homography_matrix, draw=draw)
@@ -128,32 +128,32 @@ class Vision(DetectionBase):
             # Detection logic based on requested objects
             if self.requested_objects & SHELVES:
                 detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Shelf Mask', shelf_mask)
+                #self.display_detection('Shelf Mask', shelf_mask)
                 self.objectRB[2] = detected_shelves
 
             if self.requested_objects & WALLPOINTS:
                 detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Wall Mask', filled_wall_mask)
+                #self.display_detection('Wall Mask', filled_wall_mask)
                 self.objectRB[5] = detected_walls
 
             if self.requested_objects & MARKERS:
                 detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
-                self.display_detection('Marker Mask', marker_mask)
+                #self.display_detection('Marker Mask', marker_mask)
                 self.objectRB[1] = detected_markers
 
             if self.requested_objects & PACKING_BAY:
                 detected_ramp, ramp_frame, ramp_mask = self.ramp_detector.find_packing_station_ramp(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Ramp Mask', ramp_mask)
+                #self.display_detection('Ramp Mask', ramp_mask)
                 self.objectRB[0] = detected_ramp
 
             if self.requested_objects & OBSTACLES:
                 detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Obstacle Mask', obstacle_mask)
+                #self.display_detection('Obstacle Mask', obstacle_mask)
                 self.objectRB[4] = detected_obstacles
 
             if self.requested_objects & ITEMS:
                 detected_items, item_frame, item_mask = self.item_detector.find_item(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Item Mask', item_mask)
+                #self.display_detection('Item Mask', item_mask)
                 self.objectRB[3] = detected_items
 
             self.display_detection('Detection', RGBframe)
@@ -168,22 +168,17 @@ class Vision(DetectionBase):
         """
         if frame is not None:
             # Disabled display for now, uncomment if needed
-            cv2.imshow(f'{window_name} Mask', frame)
+            cv2.imshow(f'{window_name}', frame)
             pass
 
     def stop(self):
         """
         Stop the live feed and join the thread
         """
-        if not self.is_stopped:  # Only stop if not already stopped
-            logger.info("Stopping Vision system")
-            self.stop_event.set()  # Signal the thread to stop
-            if self.thread:
-                self.thread.join()  # Wait for the thread to finish
-            self.camera.close()  # Close camera resources
-            self.is_stopped = True  # Mark the system as stopped
-        else:
-            logger.info("Vision system already stopped.")
+        logger.info("Stopping Vision system")
+        self.camera.close()  # Close camera resources
+        self.is_stopped = True  # Mark the system as stopped
+        #logger.info("Vision system already stopped.")
 
     def __del__(self):
         """

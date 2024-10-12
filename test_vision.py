@@ -1,6 +1,7 @@
 import logging
 from collections import deque
 from Vision.main_vision import Vision as VisionClass
+from Vision.Camera.camera import Camera
 import time
 from threading import Thread, Event
 
@@ -19,7 +20,8 @@ logger = logging.getLogger(__name__)  # Create a logger for this file
 def main():
     logger.info("Initializing Vision system for testing.")
 
-    Vision = VisionClass()
+    camera = Camera()
+    Vision = VisionClass(camera)
     stop_event = Event()  # Create an event to signal threads to stop
 
     # Start the camera's live feed in a separate thread
@@ -44,7 +46,7 @@ def main():
 
             # Access the attributes of the data
             data = Vision.objectRB
-            #logger.debug(f"Processed data: {data}")
+            logger.debug(f"Processed data: {data}")
 
             elapsed = time.time() - now  # Measure the time taken to process one frame
             fps = 1.0 / elapsed

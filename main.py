@@ -1,61 +1,77 @@
-# from Computer_Vision_Tutorial.live_detection3 import load_color_thresholds, load_focal_length, load_homography_matrix, process_frame
+import logging
+from collections import deque
 from Vision.main_vision import Vision as VisionClass
+from Vision.Camera.camera import Camera
 from navigation.state_machine import StateMachine
 import time
-from threading import Thread
+from threading import Thread, Event
+
+# Step 1: Configure the logger
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the logging level to DEBUG (you can change this to INFO or WARNING)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Outputs to the console
+        logging.FileHandler("test_vision.log", mode='a')  # Outputs to a log file
+    ]
+)
+
+logger = logging.getLogger(__name__)  # Create a logger for this file
 
 def main():
-    # Create the state machine object
+    logger.info("Initializing Vision system for testing.")
+
     state_machine = StateMachine()
-    
-
-    # print('init cam')
-    # picam2 = Picamera2()
-    # picam2.configure(picam2.create_preview_configuration(main={"format": "XRGB8888", "size": (820, 616)}))  # Set a larger resolution
-    # picam2.start()
-
-    # start the vision threads (one is sampling images, one is processing)
-    # thread should update attribute of class to store object RB (Vision.objectRB)
-    Vision = VisionClass()
+    camera = Camera()
+    Vision = VisionClass(camera)
     state_machine.set_vision(Vision)
-    Vision.start("/home/edmond/egb320-team9/Videos/find_collect_item.mp4") # Start the threads (Captrue and Pipeline)
-    #Vision.requested_objects = 0b111111
+    stop_event = Event()  # Create an event to signal threads to stop
+
+    # Start the camera's live feed in a separate thread
+    live_thread = Thread(target=Vision.camera.live_feed, args=(stop_event,))
+    live_thread.start()
+
+    Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4")  # Start the vision processing
+
+    # Initial state setup
+    current_state = 'SEARCH_FOR_SHELF'
+    Vision.update_requested_objects(current_state)  # Set the initial state
+    logger.info(f"Set requested objects state to: {current_state}")
+
+    fps_history = deque(maxlen=10)  # Store the last 10 FPS values
     time.sleep(1)
-    data = [None] * 6
-    print('Start Loop')
-    while True:
-        # Vision.requested_objects = 0b111111
-        now = time.time()   # get the time
-        #print("Run single frame")
-        process_thread = Thread(target=Vision.process_image)
-        process_thread.start()
-        process_thread.join()  # Wait for the thread to complete
-        #print("Process Complete")
 
-        # access the attributes of the data
-        data = Vision.objectRB
-        # print(data)
+    try:
+        while True:
+            now = time.time()  # Get the current time
 
-        # Run State machine and send information back to the vision using "requested_objects"
-        Vision.requested_objects = state_machine.run_state_machine(data)
-        # Vision.requested_objects = 0b000001 # Shelves
-        elapsed = time.time() - now  # how long was it running?
-        fps = 1.0/elapsed
-        print('Elapsed Time: ', elapsed, 'FPS: ', fps)
+            Vision.process_image()  # Process a single frame
 
-    # Stop the camera
+            # Access the attributes of the data
+            data = Vision.objectRB
+            logger.debug(f"Processed data: {data}")
+
+            # Run the state machine and update requested objects
+            Vision.requested_objects = state_machine.run_state_machine(data)
+
+            elapsed = time.time() - now  # Measure the time taken to process one frame
+            fps = 1.0 / elapsed
+            if fps < 100:
+                fps_history.append(fps)
+
+                # Calculate the running average FPS
+                avg_fps = sum(fps_history) / len(fps_history)
+                logger.info(f'Elapsed Time: {elapsed:.3f}, Running Average FPS: {avg_fps:.2f}')
+
+    except KeyboardInterrupt:
+        logger.info("Keyboard Interrupt received. Shutting down, please wait 2 seconds...")
+    finally:
+        stop_event.set()  # Signal the live feed thread to stop
+        live_thread.join()  # Ensure the thread finishes
+        #Vision.camera.close()  # Clean up the camera resources
+        Vision.stop()  # Clean up the camera and Vision system resources
+        logger.info("Vision system shut down gracefully.")
+
 if __name__ == "__main__":
     main()
 
-
-
-
-
-
-
-
-
-
-
-
- 

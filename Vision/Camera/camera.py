@@ -28,7 +28,6 @@ class Camera:
         self.stop_event = Event()
         self.frame_flag = Event()  # Frame flag to signal new frame availability
         self.frame_flag.clear()  # Initially no new frame is available
-
         try:
             self.picam2 = Picamera2()
             if config is None:
@@ -203,9 +202,8 @@ class Camera:
         """
         logger.info("Closing the camera.")
         self.stop_event.set()  # Signal the live_feed to stop
-        if self.picam2:
-            self.picam2.stop()
-            self.picam2.close()
+        self.picam2.stop()
+        self.picam2.close()
         cv2.destroyAllWindows()
 
     def __del__(self):

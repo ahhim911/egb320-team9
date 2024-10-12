@@ -2,7 +2,7 @@ import smbus
 import time
 
 class I2C:
-    def __init__(self, addr=0x08, bus=0):
+    def __init__(self, addr=0x08, bus=1):
         self.addr = addr 
         self.bus = smbus.SMBus(bus)
 
