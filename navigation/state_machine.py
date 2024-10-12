@@ -45,11 +45,62 @@ MIN_SPEED = 60
 
 
 class StateMachine():
+    """
+    StateMachine class for managing the robot's state transitions and actions.
+    Attributes:
+        goal_bay_position (list): Bay positions in the row.
+        row_position_L (list): Entry positions for the left shelf.
+        row_position_R (list): Entry positions for the right shelf.
+        found_shelf (bool): Flag indicating if the shelf is found.
+        rotation_flag (bool): Flag for rotation.
+        pickup_distance (float): Distance for picking up items.
+        shelf_side (str): Side of the shelf.
+        found_row (bool): Flag indicating if the row is found.
+        found_ps (bool): Flag indicating if the packing station is found.
+        at_ps (bool): Flag indicating if at the packing station.
+        action (list): List of actions.
+        final_df (dict): Final DataFrame for item order.
+        goal_position (dict): Goal position for the robot.
+        current_item (int): Index of the current item.
+        draw (bool): Flag for drawing.
+        holding_item (bool): Flag indicating if holding an item.
+        i2c (I2C): I2C communication object.
+        vision (object): Vision system object.
+        robot_state (str): Current state of the robot.
+    Methods:
+        __init__(): Initializes the StateMachine with default values and reads the object order file.
+        set_vision(vision): Sets the vision system object.
+        item_to_size(item_type): Returns the size of the given item type.
+        item_pickup_distance(item_type, height): Returns the pickup distance for the given item type and height.
+        init_state(): Initializes the state machine and sets the initial parameters.
+        search_for_ps(packStationRangeBearing, rowMarkerRangeBearing): Searches for the packing station.
+        move_to_ps(packStationRangeBearing, obstaclesRB): Moves to the packing station.
+        search_for_shelf(rowMarkerRangeBearing, shelfRangeBearing): Searches for the shelf.
+        move_to_shelf(shelfRangeBearing, obstaclesRB): Moves to the shelf.
+        search_for_row(rowMarkerRangeBearing): Searches for the row.
+        move_to_row(rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing): Moves to the row.
+        search_for_item(itemsRB): Searches for the item.
+        move_to_item(itemsRB): Moves to the item.
+        collect_item(itemsRB): Collects the item.
+        check_item(itemsRB): Checks if the item is collected.
+        rotate_to_exit(rowMarkerRangeBearing): Rotates to exit.
+        move_to_exit(rowMarkerRangeBearing): Moves to the exit.
+        run_state_machine(dataRB): Runs the state machine based on the current state and sensor data.
+        move(direction, L_speed, R_speed): Moves the robot in the specified direction with given speeds.
+        rotate(direction, speed): Rotates the robot in the specified direction with given speed.
+        stop(): Stops the robot.
+        __del__(): Destructor to stop the robot and clean up.
+    """
+    #===========================================================================
+      #===========================================================================
+  # STATE FUNCTIONS
+
+    # INITIALIZATION
+    #===========================================================================
     def __init__(self):
-        # item_collection = itemCollection()
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
-        self.row_position_L = [0.4, 1, 1.55] # row positions for left shelf
-        self.row_position_R = [1.55, 1, 0.4] # row positions for left shelf
+        self.row_position_L = [0.4, 1, 1.55] # Entry positions for left shelf
+        self.row_position_R = [1.55, 1, 0.4] # Entry positions for Rigth shelf
         self.found_shelf = False
         self.rotation_flag = False
         self.pickup_distance = 0.2
@@ -118,9 +169,12 @@ class StateMachine():
     def set_vision(self, vision):
         self.vision = vision
 
+    #===========================================================================
+    # HELPER FUNCTIONS
+    #===========================================================================
     def item_to_size(self, item_type):
         if item_type == "Bottle":
-            size = 0.02 # 0.18 PU dis
+            size = 0.02 
         elif item_type == "Ball":
             size = 0.045
         elif item_type == "Cube":
@@ -154,7 +208,32 @@ class StateMachine():
             distance = Weetbots[height]
         return distance
 
+    #===========================================================================
+    # STATE MACHINE
+    #===========================================================================
     def init_state(self):
+        """
+        Initialize the state of the robot.
+        This method sets the initial parameters for the robot's state machine and 
+        switches to the 'SEARCH_FOR_ITEM' state. It initializes the robot's state 
+        variables, sets mockup values for the target item position, and updates 
+        the vision system if available. Additionally, it calculates the pickup 
+        distance for the target item and sets the subtarget shelf based on the 
+        target shelf's parity. Finally, it resets the actuators.
+        Attributes:
+            robot_state (str): The current state of the robot.
+            holding_item (bool): Indicates whether the robot is holding an item.
+            target_shelf (int): The shelf number where the target item is located.
+            target_row (int): The row number where the target item is located.
+            target_bay (int): The bay number where the target item is located.
+            target_height (int): The height of the target item.
+            target_item (str): The name of the target item.
+            subtarget_shelf (int): The shelf number opposite to the target shelf.
+            pickup_distance (float): The distance required to pick up the target item.
+        Prints:
+            Information about the current item being collected.
+            Warning if the vision system is not set.
+        """
         # Set initial parameters and switch to the next state
         self.robot_state = 'SEARCH_FOR_ITEM'
         # self.robot_state = 'MOVE_TO_ROW'
@@ -162,18 +241,21 @@ class StateMachine():
         self.holding_item = False
 
         # Set the target item position
-        print(self.current_item)
+        
         # self.target_shelf = self.final_df['Shelf'][self.current_item]
         # self.target_row = self.final_df['Row'][self.current_item]
         # self.target_bay = self.final_df['Bay'][self.current_item]
         # self.target_height = self.final_df['Height'][self.current_item]
         # self.target_item= self.final_df['Item Name'][self.current_item]
+
+        # Mockup values
         self.target_shelf = 1
         self.target_row = 1
         self.target_bay = 1
         self.target_height = 0
         self.target_item = "Bottle"
-        print("Collecting: ", self.target_item)
+
+        print("Collecting the ", self.current_item + 1, "item : ", self.target_item)
         if self.vision:
             self.vision.update_item(item_width=self.item_to_size(self.target_item))
         else:
@@ -190,6 +272,20 @@ class StateMachine():
         self.i2c.grip(0)
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
+        """
+        Searches for the packing station (PS) and row markers, and updates the robot's state accordingly.
+        Args:
+            packStationRangeBearing (list): A list containing range and bearing information of the packing station.
+            rowMarkerRangeBearing (list): A list containing range and bearing information of the row markers.
+        Behavior:
+            - Rotates the robot on the spot based on whether it is holding an item.
+            - If no markers are detected, prints a message and returns.
+            - Checks if the packing station is detected and updates the `found_ps` attribute.
+            - Checks if the row marker is detected and updates the `found_row` attribute.
+            - If the packing station is found and the row marker's bearing is within 5 degrees, updates the robot state to 'MOVE_TO_PS'.
+            - If the robot is at the packing station, updates the robot state to 'SEARCH_FOR_SHELF'.
+            - If the target row is found and the robot is not holding an item, updates the robot state to 'MOVE_TO_ROW'.
+        """
         
         # Rotate on the spot
         if self.holding_item:
@@ -270,6 +366,9 @@ class StateMachine():
         shelf_corner = None
         if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:
             if self.shelf_side == LEFT:  # Odd
+                print("Turn Right")
+                # Turn right
+                self.rotate(RIGHT, MIN_SPEED)     
                 print("Shelf detected(Left): ", shelfRangeBearing[0][0])
                 shelf_corner = shelfRangeBearing[0][0]
             if self.shelf_side == RIGHT:  
@@ -279,10 +378,7 @@ class StateMachine():
             print("No shelf detecetd")
 
         # Turn direction based on the shelf side
-        if self.shelf_side == LEFT:  # Odd
-            print("Turn Right")
-            # Turn right
-            self.rotate(RIGHT, MIN_SPEED)            
+        if self.shelf_side == LEFT:  # Odd       
             if shelf_corner is not None:
                 if abs(shelf_corner[2]) < 5:
                     self.found_shelf = True
