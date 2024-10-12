@@ -7,34 +7,61 @@ import time
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 import ctypes
+import logging
+from threading import Event
 
 # Initialize Xlib threading for multi-threaded GUI operations
 ctypes.CDLL('libX11.so').XInitThreads()
 
+logger = logging.getLogger(__name__)
+
 class Camera:
     def __init__(self, config=None):
-        print("init cam")
+        """
+        Initialize the camera and configure it.
+        """
+        logger.info("Initializing camera...")
         self.HSVframe = None
         self.RGBframe = None
-        self.picam2 = Picamera2()
-        if config is None:
-            config = self.picam2.create_preview_configuration(
-                main={"format": "XRGB8888", "size": (820, 616)},
-                transform=Transform(vflip=True, hflip=True)
-                )
-        self.picam2.configure(config) # type: ignore
-        self.picam2.start()
-        self.picam2.set_controls({"AnalogueGain": 1,  "ColourGains": (1.4,1.5)})
-        self.running = True
-        print("init cam finished")
+        self.picam2 = None
+        self.stop_event = Event()
 
-    def live_feed(self):
-        while self.running:
-            self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5)
-            self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
+        try:
+            self.picam2 = Picamera2()
+            if config is None:
+                config = self.picam2.create_preview_configuration(
+                    main={"format": "XRGB8888", "size": (820, 616)},
+                    transform=Transform(vflip=True, hflip=True)
+                )
+            self.picam2.configure(config)  # type: ignore
+            self.picam2.start()
+            self.picam2.set_controls({"AnalogueGain": 1, "ColourGains": (1.4, 1.5)})
+            self.running = True
+            logger.info("Camera initialization complete.")
+        except Exception as e:
+            logger.error(f"Error initializing camera: {e}")
+            self.running = False
+            raise
+
+    def live_feed(self, stop_event):
+        """
+        Capture live feed from the camera and update the frames.
+        """
+        logger.info("Starting live feed...")
+        while self.running and not stop_event.is_set():
+            try:
+                self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5)
+                self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
+            except Exception as e:
+                logger.error(f"Error during live feed capture: {e}")
+                break
             
     
     def get_frame(self):
+        """
+        Return the current frames (RGB and HSV).
+        """
+        #logger.debug("Getting current frame.")
         return self.RGBframe, self.HSVframe
     
     def display_frame(self, frame):
@@ -163,11 +190,15 @@ class Camera:
 
 
     def close(self):
-        """Close the camera and release resources."""
-        self.running = False
-        self.picam2.close()
+        """
+        Close the camera and release resources.
+        """
+        logger.info("Closing the camera.")
+        self.stop_event.set()  # Signal the live_feed to stop
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
         cv2.destroyAllWindows()
-
 
     def __del__(self):
         self.close()

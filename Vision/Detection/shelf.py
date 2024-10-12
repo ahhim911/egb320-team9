@@ -40,7 +40,7 @@ class Shelf(DetectionBase):
         
         # 4. Draw contours and corners if enabled
         final_image = self._draw_if_enabled(RGBframe, detected_shelves, data_list)
-        print("SHELF DATA: ", data_list)
+        #print("SHELF DATA: ", data_list)
 
         return data_list, final_image, mask
 
