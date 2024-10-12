@@ -5,7 +5,7 @@ from .range_bearing import DistanceEstimation  # Import the DistanceEstimation c
 from ..Preprocessing.preprocessing import Preprocessing  # Import Preprocessing class
 
 class Wall(DetectionBase):
-    def __init__(self, focal_length=300, homography_matrix=None, draw=True):
+    def __init__(self, focal_length=300, homography_matrix=None, draw=False):
         """
         Initializes the Wall class with optional parameters.
         
@@ -17,7 +17,7 @@ class Wall(DetectionBase):
         super().__init__("Wall")
         self.distance_estimator = DistanceEstimation(homography_matrix=homography_matrix)
         self.focal_length = focal_length
-        self.draw = draw  # Flag to control drawing
+        self.draw = False  # Flag to control drawing
 
     def find_wall(self, image, RGBframe, color_ranges):
         """
@@ -35,23 +35,17 @@ class Wall(DetectionBase):
         # 1. Preprocess Image
         mask = self._preprocess_image(image, color_ranges)
 
-        #local_image = RGBframe.copy()
-
-        grayscale_mask = self._preprocess_grayscale(RGBframe)
-        #cv2.imshow("Grayscale Wall Mask", grayscale_mask)
-
         # 2. Detect Walls
         detected_walls = self._detect_walls(mask)
-        walls = self._detect_walls(grayscale_mask)
 
         # 3. Extract Data (Bearing, Distance to Bottom Center)
-        data_list = [obj["data"] for obj in walls]
+        data_list = [obj["data"] for obj in detected_walls]
 
         # 4. Create filled wall mask
         filled_wall_mask = self._create_filled_wall_mask(mask, detected_walls)
 
         # 5. Draw bounding boxes if enabled
-        final_image = self._draw_if_enabled(RGBframe, walls)
+        final_image = self._draw_if_enabled(RGBframe, detected_walls)
 
         #print("WALL DATA: ", data_list)
 
@@ -59,28 +53,14 @@ class Wall(DetectionBase):
     
     def _preprocess_image(self, image, color_ranges):
         """
-        Preprocess the image by converting it to grayscale and applying thresholding.
+        Preprocess the image by applying thresholding.
         """
         lower_hsv, upper_hsv = color_ranges['Wall']
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
     
         return mask
-    
-    def _preprocess_grayscale(self, image):
-        """
-        Convert the RGB image to grayscale and apply thresholding for wall detection.
-        
-        Args:
-        - image: Input image from the camera.
 
-        Returns:
-        - grayscale_mask: Binary mask from the grayscale image.
-        """
-        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        _, grayscale_mask = cv2.threshold(grayscale, 205, 255, cv2.THRESH_BINARY)
-        return grayscale_mask
-
-    def _detect_walls(self, mask, min_area=1000, solidity_threshold=0.1):
+    def _detect_walls(self, mask, min_area=1000):
         """
         Analyzes contours to detect walls and estimates their distance and bearing.
 
@@ -98,13 +78,6 @@ class Wall(DetectionBase):
         for contour in contours:
             area = cv2.contourArea(contour)
             if area < min_area:
-                continue
-
-            hull = cv2.convexHull(contour)
-            hull_area = cv2.contourArea(hull)
-            solidity = float(area) / hull_area if hull_area > 0 else 0
-
-            if solidity < solidity_threshold:
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)

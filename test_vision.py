@@ -29,11 +29,12 @@ def main():
     Vision.start("/home/edmond/egb320-team9/Videos/row2_exit_backward.mp4")  # Start the vision processing
 
     # Initial state setup
-    current_state = 'ALL'
+    current_state = 'SEARCH_FOR_PS'
     Vision.update_requested_objects(current_state)  # Set the initial state
     logger.info(f"Set requested objects state to: {current_state}")
 
     fps_history = deque(maxlen=10)  # Store the last 10 FPS values
+    time.sleep(1)
 
     try:
         while True:
@@ -43,18 +44,19 @@ def main():
 
             # Access the attributes of the data
             data = Vision.objectRB
-            logger.debug(f"Processed data: {data}")
+            #logger.debug(f"Processed data: {data}")
 
             elapsed = time.time() - now  # Measure the time taken to process one frame
             fps = 1.0 / elapsed
-            fps_history.append(fps)
+            if fps < 100:
+                fps_history.append(fps)
 
-            # Calculate the running average FPS
-            avg_fps = sum(fps_history) / len(fps_history)
-            logger.info(f'Elapsed Time: {elapsed:.3f}, Running Average FPS: {avg_fps:.2f}')
+                # Calculate the running average FPS
+                avg_fps = sum(fps_history) / len(fps_history)
+                logger.info(f'Elapsed Time: {elapsed:.3f}, Running Average FPS: {avg_fps:.2f}')
 
     except KeyboardInterrupt:
-        logger.info("Keyboard Interrupt received. Shutting down...")
+        logger.info("Keyboard Interrupt received. Shutting down, please wait 2 seconds...")
     finally:
         stop_event.set()  # Signal the live feed thread to stop
         live_thread.join()  # Ensure the thread finishes

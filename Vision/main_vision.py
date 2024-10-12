@@ -1,4 +1,3 @@
-import logging
 from .Camera.camera import Camera  # Refers to Camera module in the same Vision directory
 from .Preprocessing.preprocessing import Preprocessing  # Preprocessing module within Vision
 from .Detection.detection import DetectionBase
@@ -9,7 +8,8 @@ from .Detection.packing_station import PackingStationRamp
 from .Detection.obstacle import Obstacle
 from .Detection.item import Item
 from .Calibration.calibration import Calibration
-from threading import Thread, Event
+from threading import Event
+import logging
 import cv2
 
 # Configure the logger
@@ -93,8 +93,8 @@ class Vision(DetectionBase):
         self.item_detector = Item(real_item_width=0.045, focal_length=focal_length, draw=draw)
 
         #self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
-        self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
-        self.thread.start()
+        #self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
+        #self.thread.start()
 
     def update_item(self, item_width):
         """
@@ -116,36 +116,44 @@ class Vision(DetectionBase):
         """
         #logger.debug("Processing image")
         try:
-            RGBframe, HSVframe = self.camera.get_frame()
+            #RGBframe, HSVframe = self.camera.get_frame()
+            RGBframe = self.camera.get_frame()
 
-            if RGBframe is None or HSVframe is None:
-                logger.warning("RGBframe or HSVframe is None, skipping frame processing")
+            if RGBframe is None: # or HSVframe is None:
+                #logger.warning("RGBframe is None, skipping frame processing")
                 return self.objectRB
             
+            HSVframe = cv2.cvtColor(RGBframe, cv2.COLOR_BGR2HSV)            
 
             # Detection logic based on requested objects
             if self.requested_objects & SHELVES:
                 detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
+                self.display_detection('Shelf Mask', shelf_mask)
                 self.objectRB[2] = detected_shelves
 
             if self.requested_objects & WALLPOINTS:
                 detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe, self.color_ranges)
+                self.display_detection('Wall Mask', filled_wall_mask)
                 self.objectRB[5] = detected_walls
 
             if self.requested_objects & MARKERS:
                 detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
+                self.display_detection('Marker Mask', marker_mask)
                 self.objectRB[1] = detected_markers
 
             if self.requested_objects & PACKING_BAY:
                 detected_ramp, ramp_frame, ramp_mask = self.ramp_detector.find_packing_station_ramp(HSVframe, RGBframe, self.color_ranges)
+                self.display_detection('Ramp Mask', ramp_mask)
                 self.objectRB[0] = detected_ramp
 
             if self.requested_objects & OBSTACLES:
                 detected_obstacles, obstacle_frame, obstacle_mask = self.obstacle_detector.find_obstacle(HSVframe, RGBframe, self.color_ranges)
+                self.display_detection('Obstacle Mask', obstacle_mask)
                 self.objectRB[4] = detected_obstacles
 
             if self.requested_objects & ITEMS:
                 detected_items, item_frame, item_mask = self.item_detector.find_item(HSVframe, RGBframe, self.color_ranges)
+                self.display_detection('Item Mask', item_mask)
                 self.objectRB[3] = detected_items
 
             self.display_detection('Detection', RGBframe)

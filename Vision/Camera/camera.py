@@ -23,8 +23,11 @@ class Camera:
         logger.info("Initializing camera...")
         self.HSVframe = None
         self.RGBframe = None
+        self.frame = None
         self.picam2 = None
         self.stop_event = Event()
+        self.frame_flag = Event()  # Frame flag to signal new frame availability
+        self.frame_flag.clear()  # Initially no new frame is available
 
         try:
             self.picam2 = Picamera2()
@@ -50,8 +53,9 @@ class Camera:
         logger.info("Starting live feed...")
         while self.running and not stop_event.is_set():
             try:
-                self.RGBframe = cv2.resize(self.picam2.capture_array(), (0, 0), fx=0.5, fy=0.5)
-                self.HSVframe = cv2.cvtColor(self.RGBframe, cv2.COLOR_BGR2HSV)
+                raw_frame = self.picam2.capture_array()
+                self.frame = cv2.resize(raw_frame, (0, 0), fx=0.5, fy=0.5)
+                self.frame_flag.set()  # Set frame_flag when a new frame is available
             except Exception as e:
                 logger.error(f"Error during live feed capture: {e}")
                 break
@@ -59,10 +63,14 @@ class Camera:
     
     def get_frame(self):
         """
-        Return the current frames (RGB and HSV).
+        Return the current frame only if a new frame is available.
         """
-        #logger.debug("Getting current frame.")
-        return self.RGBframe, self.HSVframe
+        # Check if the frame has been processed or not
+        if self.frame_flag.is_set():
+            self.frame_flag.clear()  # Clear flag after the frame is processed
+            return self.frame
+        else:
+            return None
     
     def display_frame(self, frame):
         """Display a single frame."""

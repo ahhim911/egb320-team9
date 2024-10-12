@@ -39,7 +39,8 @@ class Marker(DetectionBase):
         detected_markers = self._detect_and_classify_markers(marker_on_wall_mask)
 
         if not detected_markers:
-            return None, image, mask  # Return early if no markers detected
+            #print("============ No Marker ============")
+            return None, image, marker_on_wall_mask  # Return early if no markers detected
 
         # 3. Classify Markers based on counts
         marker_type = self._classify_marker_type(detected_markers)
@@ -66,7 +67,7 @@ class Marker(DetectionBase):
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
         return mask
 
-    def _detect_and_classify_markers(self, mask, min_area=30):
+    def _detect_and_classify_markers(self, mask, min_area=20):
         """
         Detects markers, classifies shapes, and calculates distances and bearings.
 
@@ -90,16 +91,23 @@ class Marker(DetectionBase):
                 continue
             circularity = 4 * np.pi * (area / (perimeter ** 2)) # type: ignore
 
-            # Classify shape
-            if circularity >= 0.8:
+            x, y, w, h = cv2.boundingRect(contour)
+            bounding_box_area = w * h  # Area of the bounding box
+            fill_ratio = area / bounding_box_area
+            aspect_ratio = float(w) / h  # Aspect ratio of the bounding box
+
+            # Classify shape based on circularity and aspect ratio
+            if circularity >= 0.83:
                 shape = "Circle"
-            else:
+            elif (0.8 <= fill_ratio <= 1.2) or (0.8 <= aspect_ratio <= 1.2):  # Check if aspect ratio is close to 1
                 # Approximate the contour
-                approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+                approx = cv2.approxPolyDP(contour, 0.05 * perimeter, True)
                 if 4 <= len(approx) <= 8:
                     shape = "Square"
                 else:
-                    continue  # Skip unknown shapes
+                    continue
+            else: 
+                continue
 
             x, y, w, h = cv2.boundingRect(contour)
             marker_width = w  # Use width of bounding box
