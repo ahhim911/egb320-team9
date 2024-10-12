@@ -35,7 +35,6 @@ OBSTACLES =   0b000010
 WALLPOINTS =  0b000001
 
 
-ps_return_distance = [0.27, 0.35]
 
 
 LEFT = 0
@@ -101,6 +100,7 @@ class StateMachine():
         self.goal_bay_position = [0.875, 0.625, 0.375, 0.125] # bay positions in the row
         self.row_position_L = [0.4, 1, 1.55] # Entry positions for left shelf
         self.row_position_R = [1.55, 1, 0.4] # Entry positions for Rigth shelf
+        self.ps_return_distance = [0.27, 0.35]
         self.found_shelf = False
         self.rotation_flag = False
         self.pickup_distance = 0.2
@@ -334,15 +334,16 @@ class StateMachine():
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             if self.holding_item:
-                ps_distance = 0.15
                 self.LeftmotorSpeed = self.LeftmotorSpeed + 40
                 self.RightmotorSpeed = self.RightmotorSpeed + 40
                 self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
-                if self.goal_position['range'] - ps_distance < 0.02:
+                if self.goal_position['range'] - self.ps_return_distance[0] < 0.02:
                     self.stop()
+                    time.sleep(1)
                     self.i2c.grip(0)
+                    time.sleep(1)
                     self.holding_item = False
-                    self.robot_state = 'INIT'
+                    self.robot_state = 'EXIT_PS'
             else:
                 ps_distance = [0.65, 0.9, 1.1]
                 if self.goal_position['range'] - ps_distance[self.target_row - 1] < 0.05: # Middle of the area
@@ -462,8 +463,9 @@ class StateMachine():
             print(self.goal_position)
 
             # Add shelves to obstacles
-            # np.append(obstaclesRB, shelfRangeBearing[0])
-            # np.append(obstaclesRB, shelfRangeBearing[3])
+            if shelfRangeBearing is not None and len(shelfRangeBearing) > 1:
+                np.append(obstaclesRB, shelfRangeBearing[0][2])
+                np.append(obstaclesRB, shelfRangeBearing[1][1])
 
             # Calculate goal velocities
             self.L_dir = '0'
@@ -592,6 +594,19 @@ class StateMachine():
                 self.robot_state = "SEARCH_FOR_PS"
         else: 
             self.robot_state = "ROTATE_TO_EXIT"
+    
+    def exit_ps(self, packStationRangeBearing):
+        if packStationRangeBearing:
+            self.goal_position['range'] = packStationRangeBearing[0]
+            self.goal_position['bearing'] = packStationRangeBearing[1]
+            print(self.goal_position)
+            self.RightmotorSpeed, self.LeftmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
+            self.move(1, self.LeftmotorSpeed, self.RightmotorSpeed)
+            if self.goal_position['range'] - 0.4 < 0.01:
+                self.robot_state = 'INIT'
+        else:
+            self.robot_state = 'SEARCH_FOR
+
 
 
 
