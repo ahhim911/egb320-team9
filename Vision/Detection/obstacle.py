@@ -55,10 +55,20 @@ class Obstacle(DetectionBase):
         Preprocess the image using defined color ranges.
         """
         lower_hsv, upper_hsv = color_ranges['Obstacle']
-        mask, scaled_image = Preprocessing.preprocess(image,lower_hsv=lower_hsv,upper_hsv=upper_hsv)
+        mask, _ = Preprocessing.preprocess(image,lower_hsv=lower_hsv,upper_hsv=upper_hsv)
+
+        # Define a kernel for the morphological operations
+        kernel = np.ones((5, 5), np.uint8)  # You can adjust the size (5, 5) as needed
+
+        # Apply the opening operation (erosion followed by dilation) to remove noise
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+        # Apply the closing operation (dilation followed by erosion) to fill small holes
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        
         return mask
 
-    def _detect_obstacles(self, mask, min_area=400):
+    def _detect_obstacles(self, mask, min_area=600):
         """
         Analyzes contours to detect obstacles and estimates their distance and bearing.
 
