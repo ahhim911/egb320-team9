@@ -48,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 LEFT = 0
 RIGHT = 1
-
+ON = 1
+OFF = 0
 MIN_SPEED = 60
 
 
@@ -107,8 +108,8 @@ class StateMachine():
     #===========================================================================
     def __init__(self):
         self.goal_bay_position = [0.875, 0.65, 0.375, 0.125] # bay positions in the row
-        self.row_position_L = [0.38, 1, 1.55] # Entry positions for left shelf
-        self.row_position_R = [1.55, 1, 0.38] # Entry positions for Rigth shelf
+        self.row_position_L = [0.38, 1.1, 1.55] # Entry positions for left shelf
+        self.row_position_R = [1.55, 1.1, 0.38] # Entry positions for Rigth shelf
         self.ps_return_distance = [0.10, 0.35]
         self.found_shelf = False
         self.rotation_complete = True
@@ -127,26 +128,27 @@ class StateMachine():
         self.holding_item = False
 
         # Read the object order file
-        with open("navigation/Order_1.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
         # Group by 'Height' and find the minimum 'Shelf' for each height
         df['Row'] = df['Shelf'] // 2 + 1
-        min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
+        # min_shelf_by_height = df.loc[df.groupby('Height')['Shelf'].idxmin()]
 
         # Ensure the first item is from Row 3 with the highest Bay number
         # highest_bay_row_3 = df[(df['Row'] == 3)].sort_values(by='Bay', ascending=False).head(1)
         # remaining_rows = df.drop(highest_bay_row_3.index)
 
         # Sort by 'Shelf' in descending order
-        sorted_min_shelf  = min_shelf_by_height.sort_values(by='Height', ascending=False)
-        remaining_rows = df.drop(min_shelf_by_height.index)
-        sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
-        self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
+        # sorted_min_shelf  = min_shelf_by_height.sort_values(by='Height', ascending=False)
+        # remaining_rows = df.drop(min_shelf_by_height.index)
+        # sorted_remaining_rows = remaining_rows.sort_values(by='Shelf', ascending=False)
+        # self.final_df = pd.concat([sorted_min_shelf, sorted_remaining_rows])
 
         # Redefine the index
-        self.final_df = self.final_df.reset_index(drop=True)
+        self.final_df = df
+        # self.final_df = self.final_df.reset_index(drop=True)
 
 		# final_df for Order_1.csv
 		# 	 Item Number  Shelf  Bay  Height Item Name  Row
@@ -172,6 +174,8 @@ class StateMachine():
         # Display the result
         print("Optimised pickup order:")
         print(self.final_df)
+        logger.debug(f"Final: {self.final_df}")
+        
 
         self.robot_state = 'INIT'
 
@@ -244,31 +248,34 @@ class StateMachine():
             Warning if the vision system is not set.
         """
         # Set initial parameters and switch to the next state
-        self.robot_state = 'SEARCH_FOR_PS'
-        # self.robot_state = 'MOVE_TO_EXIT'
+        # self.robot_state = 'SEARCH_FOR_PS'
+        self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'COLLECT_ITEM'
-        self.holding_item = True
+        self.holding_item = False
 
         # Set the target item position
         
-        # self.target_shelf = self.final_df['Shelf'][self.current_item]
-        # self.target_row = self.final_df['Row'][self.current_item]
-        # self.target_bay = self.final_df['Bay'][self.current_item]
-        # self.target_height = self.final_df['Height'][self.current_item]
-        # self.target_item= self.final_df['Item Name'][self.current_item]
+        self.target_shelf = self.final_df['Shelf'][self.current_item]
+        self.target_row = self.final_df['Row'][self.current_item]
+        self.target_bay = self.final_df['Bay'][self.current_item]
+        self.target_height = self.final_df['Height'][self.current_item]
+        self.target_item= self.final_df['Item Name'][self.current_item]
 
         # Mockup values
-        self.target_shelf = 1
-        self.target_row = 1
-        self.target_bay = 0
-        self.target_height = 0
-        self.target_item = "Bottle"
+        # self.target_shelf = 1
+        # self.target_row = 1
+        # self.target_bay = 3
+        # self.target_height = 2
+        # self.target_item = "Bottle"
 
         print("Collecting the ", self.current_item + 1, "item : ", self.target_item)
         if self.vision:
+            logger.debug(f"Updating item: {self.target_item}")
             self.vision.update_item(item_width=self.item_to_size(self.target_item))
+            logger.info("Vision set, item width updated")
         else:
             print("Vision not set")
+            logger.warning("Vision not set==================")
         self.pickup_distance = self.item_pickup_distance(self.target_item, self.target_height)
         # Set the subtarget shelf (Opposite side of the target shelf)
         if self.target_shelf % 2 == 1:  # Odd
@@ -277,8 +284,15 @@ class StateMachine():
             self.subtarget_shelf = self.target_shelf + 1
 
         # Reset the actuators
+        self.i2c.led(1,ON)
+        time.sleep(0.05)
+        self.i2c.led(2,OFF)
+        time.sleep(0.05)
+        self.i2c.led(3,OFF)
+        time.sleep(0.05)
         self.stop()
-        self.i2c.grip(0)
+        time.sleep(0.05)
+        self.i2c.grip(0) # Gripper Open
 
     def search_for_ps(self, packStationRangeBearing, rowMarkerRangeBearing):
         """
@@ -318,8 +332,9 @@ class StateMachine():
         if rowMarkerRangeBearing:
             print("Row: ",rowMarkerRangeBearing)
             self.found_row = rowMarkerRangeBearing[0] == self.target_row and self.target_row != 1
-            if self.found_ps:
+            if self.found_ps and rowMarkerRangeBearing[0] == 0: # PS marker = 0 
                 if abs(rowMarkerRangeBearing[2]) < 5: # 5 deg
+                    self.found_ps = False
                     if self.holding_item:
                         self.robot_state = 'MOVE_TO_PS_MARKER'
                     else:
@@ -333,7 +348,7 @@ class StateMachine():
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_ps_marker(self, rowMarkerRangeBearing, obstaclesRB):
-        if len(rowMarkerRangeBearing) == 0:
+        if not rowMarkerRangeBearing:
             self.robot_state = 'SEARCH_FOR_PS'
             self.stop()
             self.found_ps = False
@@ -349,16 +364,18 @@ class StateMachine():
                 self.LeftmotorSpeed = self.LeftmotorSpeed + 40
                 self.RightmotorSpeed = self.RightmotorSpeed + 40
                 self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
-                if self.goal_position['range'] - self.ps_return_distance[0] < 0.01:
+                if self.goal_position['range'] - 0.26 < 0.01:
+                # if self.goal_position['range'] - self.ps_return_distance[0] < 0.01:
                     self.stop()
                     time.sleep(0.1)
                     self.i2c.grip(0)
-                    time.sleep(5)
+                    time.sleep(2)
                     self.holding_item = False
+                    self.current_item += 1
                     self.robot_state = 'EXIT_PS'
 
 
-    def move_to_ps(self, packStationRangeBearing, obstaclesRB):
+    def move_to_ps(self, packStationRangeBearing, obstaclesRB): # Using Ramp to determine the distance
         self.found_ps = packStationRangeBearing is not None
         print("PS RB: ", packStationRangeBearing)
 
@@ -475,11 +492,24 @@ class StateMachine():
         print("Marker interested: ", self.target_row)
         if rowMarkerRangeBearing:
             print("Marker Detected, ", rowMarkerRangeBearing)
-            self.found_row = rowMarkerRangeBearing[0] == self.target_row and abs(rowMarkerRangeBearing[2]) < 1
+            if rowMarkerRangeBearing[0] == self.target_row and self.rotation_complete:
+                self.stop()
+                time.sleep(0.5)
+                self.rotation_complete = False
+            if not self.rotation_complete:
+                if rowMarkerRangeBearing[2] < -1:
+                    self.rotate(LEFT, MIN_SPEED)
+                elif rowMarkerRangeBearing[2] > 1:
+                    self.rotate(RIGHT, MIN_SPEED)
+
+
+            self.found_row = rowMarkerRangeBearing[0] == self.target_row and abs(rowMarkerRangeBearing[2]) < 10
         # Turn right
-        self.rotate(RIGHT, MIN_SPEED)
+        if self.rotation_complete:
+            self.rotate(RIGHT, MIN_SPEED)
 
         if self.found_row:
+            self.rotation_complete = True
             self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_row(self, rowMarkerRangeBearing, obstaclesRB, shelfRangeBearing):
@@ -530,7 +560,7 @@ class StateMachine():
                     self.move(1, 0, MIN_SPEED) # Turn left
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
-                        if shelfRangeBearing[-1][0][1] < 0.40 and shelfRangeBearing[-1][0][2] < -34:
+                        if shelfRangeBearing[-1][0][1] < 0.34 and shelfRangeBearing[-1][0][2] < -34:
                             logger.info(f"EXIT Step 1 ROTATION")
                             self.rotation_complete = False
             else:
@@ -539,7 +569,7 @@ class StateMachine():
                     self.move(1, MIN_SPEED, 0) # Turn left
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
-                        if shelfRangeBearing[0][0][1] < 0.40 and shelfRangeBearing[0][0][2] < 34:
+                        if shelfRangeBearing[0][1][1] < 0.34 and shelfRangeBearing[0][1][2] < 34:
                             logger.info(f"EXIT Step 1 ROTATION")
                             self.rotation_complete = False
         else:
@@ -556,6 +586,10 @@ class StateMachine():
                     if abs(closest_item[1]) < 2:
                         logger.info(f"EXIT Step 2 ROTATION")
                         self.robot_state = 'MOVE_TO_ITEM'
+                        self.i2c.led(1,OFF)
+                        time.sleep(0.05)
+                        self.i2c.led(2,ON)
+                        time.sleep(0.05)
                         self.stop()
                         self.rotation_complete = True
                     else:
@@ -570,7 +604,7 @@ class StateMachine():
     def move_to_item(self, itemsRB):
         logger.info(f"MOVE TO ITEM")
         if itemsRB is not None:
-            logger.info(f"item detected: ", itemsRB)
+            # logger.info(f"item detected: ", itemsRB)
 
             # find the smallest itemsRB[:][0] with the target_height in itemsRB[:][2]
             target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
@@ -582,12 +616,12 @@ class StateMachine():
                 print(self.goal_position)
                 self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
                 self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
-                if self.goal_position['range'] - self.pickup_distance + 0.03 < 0.01:
+                if self.goal_position['range'] - self.pickup_distance + 0.04 < 0.01:
                     self.robot_state = 'COLLECT_ITEM'
             else:
                 logger.info(f"No target height item, try move backward")
                 print("No target height item, try move backward")
-                self.move(1,MIN_SPEED, MIN_SPEED)
+                self.move(1,MIN_SPEED-10, MIN_SPEED-10)
 
         else:
             logger.info(f"No ITEM DETECTED in MOVE_TO_ITEM")
@@ -616,15 +650,17 @@ class StateMachine():
             self.i2c.grip(0)
             time.sleep(0.1)
             if self.target_height != 0:
-                self.i2c.lift(self.target_height + 1)
+                self.i2c.lift(2)
+                # self.i2c.lift(self.target_height + 1)
                 time.sleep(6)
             self.i2c.grip(1)
             time.sleep(2)
             self.move(1, MIN_SPEED, MIN_SPEED)
             time.sleep(1)
             self.stop()
-            self.i2c.lift(1)
-            time.sleep(6)
+            if self.target_height != 0:
+                self.i2c.lift(1)
+                time.sleep(6)
             self.robot_state = 'CHECK_ITEM'
             # else:
             #     logger.info(f"No ITEM DETECTED in target height in collect_item")
@@ -643,6 +679,11 @@ class StateMachine():
             # target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
             # Check is the item is collected
             # if target_height_itemRB == None:
+            
+            self.i2c.led(2,OFF)
+            time.sleep(0.05)
+            self.i2c.led(3,ON)
+            time.sleep(0.05)
             self.holding_item = True
             self.robot_state = 'ROTATE_TO_EXIT'
 
@@ -683,17 +724,18 @@ class StateMachine():
             self.move(1, self.RightmotorSpeed, self.LeftmotorSpeed)
             if self.goal_position['range'] > 1.2:
                 self.robot_state = "SEARCH_FOR_PS"
+                self.found_ps = False
         else: 
             self.robot_state = "ROTATE_TO_EXIT"
     
-    def exit_ps(self, packStationRangeBearing):
-        if packStationRangeBearing:
-            self.goal_position['range'] = packStationRangeBearing[0]
-            self.goal_position['bearing'] = packStationRangeBearing[1]
+    def exit_ps(self, rowMarkerRangeBearing):
+        if rowMarkerRangeBearing:
+            self.goal_position['range'] = rowMarkerRangeBearing[1]
+            self.goal_position['bearing'] = rowMarkerRangeBearing[2]
             print(self.goal_position)
             self.RightmotorSpeed, self.LeftmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
             self.move(1, self.LeftmotorSpeed, self.RightmotorSpeed)
-            if self.goal_position['range'] - 0.4 < 0.01:
+            if self.goal_position['range'] - 0.5 < 0.01:
                 self.robot_state = 'INIT'
         else:
             self.robot_state = 'SEARCH_FOR_PS'
@@ -754,6 +796,9 @@ class StateMachine():
         elif self.robot_state == 'MOVE_TO_PS_MARKER':
             self.move_to_ps_marker(dataRB[1], dataRB[4])
             request = ROW_MARKERS | OBSTACLES
+        elif self.robot_state == 'EXIT_PS':
+            self.exit_ps(dataRB[1])
+            request = ROW_MARKERS
         # Add other state transitions...
         return request
         
@@ -781,12 +826,14 @@ class StateMachine():
         if direction == LEFT:
             self.L_dir = '1'
             self.R_dir = '0'
+            self.LeftmotorSpeed = speed + 10
+            self.RightmotorSpeed = speed
         elif direction == RIGHT:
             self.L_dir = '0'
             self.R_dir = '1'
+            self.LeftmotorSpeed = speed
+            self.RightmotorSpeed = speed + 10
         
-        self.LeftmotorSpeed = speed
-        self.RightmotorSpeed = speed
         print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
         self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
         self.i2c.DCWrite(2, self.R_dir, self.RightmotorSpeed) #Right
@@ -804,3 +851,9 @@ class StateMachine():
 
     def __del__(self):
         self.stop()
+        time.sleep(0.01)
+        self.i2c.led(1,0)
+        time.sleep(0.01)
+        self.i2c.led(2,0)
+        time.sleep(0.01)
+        self.i2c.led(3,0)

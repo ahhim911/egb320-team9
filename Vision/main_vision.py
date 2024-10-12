@@ -90,7 +90,7 @@ class Vision(DetectionBase):
         self.wall_detector = Wall(homography_matrix=self.homography_matrix, draw=draw)
         self.ramp_detector = PackingStationRamp(homography_matrix=self.homography_matrix, draw=draw)
         self.obstacle_detector = Obstacle(focal_length=self.focal_length, homography_matrix=self.homography_matrix, draw=draw)
-        self.item_detector = Item(real_item_width=0.045, focal_length=self.focal_length, draw=draw)
+        self.item_detector = Item(real_item_width=0.02, focal_length=self.focal_length, draw=draw)
 
         #self.thread = Thread(target=self.camera.play_video, args=(path,))  # Recorded video from files
         #self.thread = Thread(target=self.camera.live_feed, args=(self.stop_event,))
@@ -133,12 +133,12 @@ class Vision(DetectionBase):
 
             if self.requested_objects & WALLPOINTS:
                 detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe, self.color_ranges)
-                #self.display_detection('Wall Mask', filled_wall_mask)
+                # self.display_detection('Wall Mask', filled_wall_mask)
                 self.objectRB[5] = detected_walls
 
             if self.requested_objects & MARKERS:
                 detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
-                #self.display_detection('Marker Mask', marker_mask)
+                # self.display_detection('Marker Mask', marker_mask)
                 self.objectRB[1] = detected_markers
 
             if self.requested_objects & PACKING_BAY:

@@ -84,9 +84,9 @@ class I2C:
         if number not in [1, 2, 3]:
             print("Invalid LED number")
             return
-        if state not in ['on', 'off']:
+        if state not in [1, 0]:
             print("Invalid LED state")
             return
-        # Example: 'L1O' turns on LED 1
-        command = f"L{number}{state[0].upper()}" # 'on' -> 'O', 'off' -> 'F'
+        # Example: 'L11' turns on LED 1
+        command = f"L{number}{state}" # 'on' -> 'O', 'off' -> 'F'
         self.send_command(command)
