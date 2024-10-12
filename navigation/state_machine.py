@@ -38,7 +38,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("vision_system.log", mode='a')
+        logging.FileHandler("state_machine.log", mode='a')
     ]
 )
 logging.getLogger('pandas').setLevel(logging.WARNING)  # Only show warnings and errors for picamera2
@@ -50,7 +50,7 @@ LEFT = 0
 RIGHT = 1
 ON = 1
 OFF = 0
-MIN_SPEED = 60
+MIN_SPEED = 80  
 
 
 class StateMachine():
@@ -205,7 +205,7 @@ class StateMachine():
         Bottle = [0.23, 0.22, 0.2]
         Bowls = [0.23, 0.22, 0.2]
         Ball = [0.225, 0.215, 0.205]
-        Cube = [0.235, 0.225, 0.215]
+        Cube = [0.2, 0.225, 0.215]
         Mug = [0.235, 0.225, 0.215]
         if item_type == "Bottle":
             distance = Bottle[height]
@@ -248,10 +248,12 @@ class StateMachine():
             Warning if the vision system is not set.
         """
         # Set initial parameters and switch to the next state
-        # self.robot_state = 'SEARCH_FOR_PS'
-        self.robot_state = 'MOVE_TO_ROW'
+        self.robot_state = 'SEARCH_FOR_PS'
+        # self.robot_state = 'EXIT_PS'
+        # self.robot_state = 'MOVE_TO_ROW'
+        # self.robot_state = 'MOVE_TO_EXIT'
         # self.robot_state = 'COLLECT_ITEM'
-        self.holding_item = False
+        # self.holding_item = True
 
         # Set the target item position
         
@@ -331,7 +333,7 @@ class StateMachine():
 
         if rowMarkerRangeBearing:
             print("Row: ",rowMarkerRangeBearing)
-            self.found_row = rowMarkerRangeBearing[0] == self.target_row and self.target_row != 1
+            # self.found_row = rowMarkerRangeBearing[0] == self.target_row and self.target_row != 1
             if self.found_ps and rowMarkerRangeBearing[0] == 0: # PS marker = 0 
                 if abs(rowMarkerRangeBearing[2]) < 5: # 5 deg
                     self.found_ps = False
@@ -344,8 +346,6 @@ class StateMachine():
             self.robot_state = 'SEARCH_FOR_SHELF'
 
         
-        if self.found_row and self.holding_item == False:
-            self.robot_state = 'MOVE_TO_ROW'
 
     def move_to_ps_marker(self, rowMarkerRangeBearing, obstaclesRB):
         if not rowMarkerRangeBearing:
@@ -361,8 +361,8 @@ class StateMachine():
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             if self.holding_item:
-                self.LeftmotorSpeed = self.LeftmotorSpeed + 40
-                self.RightmotorSpeed = self.RightmotorSpeed + 40
+                self.LeftmotorSpeed = self.LeftmotorSpeed
+                self.RightmotorSpeed = self.RightmotorSpeed
                 self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
                 if self.goal_position['range'] - 0.26 < 0.01:
                 # if self.goal_position['range'] - self.ps_return_distance[0] < 0.01:
@@ -415,6 +415,7 @@ class StateMachine():
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         # Check if the row marker is found
         self.found_row = False
+        self.found_shelf = False
         if rowMarkerRangeBearing is not None:
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         if self.found_row:
@@ -439,7 +440,9 @@ class StateMachine():
             if shelfRangeBearing is not None and len(shelfRangeBearing) > 0:
                 print("Shelf detected(Right): ", shelfRangeBearing[-1][1])
                 shelf_corner = shelfRangeBearing[-1][1] # Most right shelf, right corner
-                if shelf_corner[2] < 0 and shelf_corner[2] > -10:
+                # if shelf_corner[2] < -10 and shelf_corner[2] > -20:
+                if -20 < shelf_corner[2] < -10:
+                    logger.info("FOUND RIGHT SHELF", shelf_corner[2])
                     self.found_shelf = True
                     # RIGHT SHELF FOUND
         else:
@@ -461,25 +464,33 @@ class StateMachine():
             # if len(shelfRangeBearing[0][0]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
             self.goal_position['range'] = shelfRangeBearing[0][0][1]
-            self.goal_position['bearing'] = shelfRangeBearing[0][0][2]
+            self.goal_position['bearing'] = shelfRangeBearing[0][0][2] - 5 # adding offest to bearing 
             print(self.robot_state, "Going to: LEFT shelf", self.goal_position)
 
             if self.goal_position['range'] - self.row_position_L[self.target_row - 1] < 0.01:
-                print("=================Seach For ROW==============")
+                print("=================Seach For ROW============== LEFT")
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
+            if self.row_position_L[self.target_row - 1] - self.goal_position['range']  > 0.1: #
+                print("TOO CLOSE - CHANGE TO RIGHT")
+                self.robot_state = 'SEARCH_FOR_SHELF'
+                self.shelf_side = RIGHT
 
         elif shelfRangeBearing is not None and self.shelf_side == RIGHT:
             # if len(shelfRangeBearing[1]) >= 2:  # Ensure we have at least [range, bearing]
             self.found_shelf = True
             self.goal_position['range'] = shelfRangeBearing[0][-1][1]
-            self.goal_position['bearing'] = shelfRangeBearing[0][-1][2]
+            self.goal_position['bearing'] = shelfRangeBearing[0][-1][2] + 5
             print(self.robot_state, "Going to: RIGHT shelf", self.goal_position)
 
             if self.goal_position['range'] - self.row_position_R[self.target_row - 1] < 0.01:
-                print("=================Seach For ROW==============")
+                print("=================Seach For ROW============== RIGHT")
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
+            if self.row_position_R[self.target_row - 1] - self.goal_position['range']  > 0.1:
+                print("TOO CLOSE - CHANGE TO LEFT")
+                self.robot_state = 'SEARCH_FOR_SHELF'
+                self.shelf_side = LEFT
         
         # Calculate goal velocities
         self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
@@ -498,15 +509,16 @@ class StateMachine():
                 self.rotation_complete = False
             if not self.rotation_complete:
                 if rowMarkerRangeBearing[2] < -1:
-                    self.rotate(LEFT, MIN_SPEED)
+                    self.rotate(LEFT, MIN_SPEED - 10)
                 elif rowMarkerRangeBearing[2] > 1:
-                    self.rotate(RIGHT, MIN_SPEED)
+                    self.rotate(RIGHT, MIN_SPEED - 10)
+            
 
 
             self.found_row = rowMarkerRangeBearing[0] == self.target_row and abs(rowMarkerRangeBearing[2]) < 10
-        # Turn right
+        # Turn left
         if self.rotation_complete:
-            self.rotate(RIGHT, MIN_SPEED)
+            self.rotate(LEFT, MIN_SPEED)
 
         if self.found_row:
             self.rotation_complete = True
@@ -557,7 +569,7 @@ class StateMachine():
             if self.target_shelf % 2 == 1:
                     print("Start Rotate Right 90deg")
                     # move the right wheel backwards
-                    self.move(1, 0, MIN_SPEED) # Turn left
+                    self.move(1, 0, MIN_SPEED) # Turn right
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
                         if shelfRangeBearing[-1][0][1] < 0.34 and shelfRangeBearing[-1][0][2] < -34:
@@ -565,7 +577,7 @@ class StateMachine():
                             self.rotation_complete = False
             else:
                     print("Start Rotate Left 90deg")
-                    # move the right wheel backwards
+                    # move the left wheel backwards
                     self.move(1, MIN_SPEED, 0) # Turn left
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
@@ -610,18 +622,21 @@ class StateMachine():
             target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
             print("Target height", target_height_itemRB)
             if target_height_itemRB:
-                logger.info(f"Target height item detected: ", target_height_itemRB)
+                print("Target height item detected: ", target_height_itemRB)
                 self.goal_position['range'] = target_height_itemRB[0][0]
                 self.goal_position['bearing'] = target_height_itemRB[0][1]
                 print(self.goal_position)
                 self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
-                self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
-                if self.goal_position['range'] - self.pickup_distance + 0.04 < 0.01:
+                self.move(0, self.LeftmotorSpeed - 15, self.RightmotorSpeed - 15)
+                print("Try to pick up: ", self.target_item, "pickup dis: ", self.pickup_distance + 0.02)
+                print(self.goal_position['range'] - self.pickup_distance + 0.02)
+                if self.goal_position['range'] - self.pickup_distance + 0.02 < 0.01: #TBC
+                    self.stop()
                     self.robot_state = 'COLLECT_ITEM'
             else:
                 logger.info(f"No target height item, try move backward")
                 print("No target height item, try move backward")
-                self.move(1,MIN_SPEED-10, MIN_SPEED-10)
+                self.move(1,MIN_SPEED-20, MIN_SPEED-20)
 
         else:
             logger.info(f"No ITEM DETECTED in MOVE_TO_ITEM")
@@ -650,8 +665,8 @@ class StateMachine():
             self.i2c.grip(0)
             time.sleep(0.1)
             if self.target_height != 0:
-                self.i2c.lift(2)
-                # self.i2c.lift(self.target_height + 1)
+                # self.i2c.lift(2)
+                self.i2c.lift(self.target_height + 1)
                 time.sleep(6)
             self.i2c.grip(1)
             time.sleep(2)
@@ -707,13 +722,24 @@ class StateMachine():
 
 
             
-    def move_to_exit(self, rowMarkerRangeBearing):
+    def move_to_exit(self, rowMarkerRangeBearing, shelfRangeBearing):
         # Facing to Row marker
+        error_angle = 0
+        if shelfRangeBearing and len(shelfRangeBearing) > 1:
+            print("SHELF: ", shelfRangeBearing)
+            L_angle = shelfRangeBearing[0][1][1] # Left shelf right point, bearing
+            R_angle = shelfRangeBearing[-1][0][1]
+
+            error_angle = L_angle - R_angle
+            print("SHELF ERROR: ",error_angle)
+
         if rowMarkerRangeBearing:
             print(rowMarkerRangeBearing)    
             self.goal_position['range'] = rowMarkerRangeBearing[1]
-            self.goal_position['bearing'] = rowMarkerRangeBearing[2]
-            print(self.goal_position)
+            # self.goal_position['bearing'] =  (error_angle * 500)
+            self.goal_position['bearing'] = rowMarkerRangeBearing[2] + (error_angle * 400)
+            print("GOAL POSITION ANGLE: ",self.goal_position['bearing'])
+            #print(self.goal_position)
 
             # Add shelves to obstacles
             # np.append(obstaclesRB, shelfRangeBearing[0])
@@ -722,7 +748,7 @@ class StateMachine():
             # flipped the left and right
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstacles=None)
             self.move(1, self.RightmotorSpeed, self.LeftmotorSpeed)
-            if self.goal_position['range'] > 1.2:
+            if self.goal_position['range'] > 1.25:
                 self.robot_state = "SEARCH_FOR_PS"
                 self.found_ps = False
         else: 
@@ -735,10 +761,11 @@ class StateMachine():
             print(self.goal_position)
             self.RightmotorSpeed, self.LeftmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
             self.move(1, self.LeftmotorSpeed, self.RightmotorSpeed)
-            if self.goal_position['range'] - 0.5 < 0.01:
+            if 0.5 - self.goal_position['range'] < 0.01:
                 self.robot_state = 'INIT'
         else:
-            self.robot_state = 'SEARCH_FOR_PS'
+            self.move(1, MIN_SPEED, MIN_SPEED)
+            # self.robot_state = 'INIT'
 
 
 
@@ -791,8 +818,8 @@ class StateMachine():
             self.rotate_to_exit(dataRB[1])
             request = ROW_MARKERS
         elif self.robot_state == 'MOVE_TO_EXIT':
-            self.move_to_exit(dataRB[1])
-            request = ROW_MARKERS
+            self.move_to_exit(dataRB[1], dataRB[2])
+            request = ROW_MARKERS | SHELVES
         elif self.robot_state == 'MOVE_TO_PS_MARKER':
             self.move_to_ps_marker(dataRB[1], dataRB[4])
             request = ROW_MARKERS | OBSTACLES
@@ -826,13 +853,13 @@ class StateMachine():
         if direction == LEFT:
             self.L_dir = '1'
             self.R_dir = '0'
-            self.LeftmotorSpeed = speed + 10
-            self.RightmotorSpeed = speed
+            self.LeftmotorSpeed = speed - 10
+            self.RightmotorSpeed = speed - 25
         elif direction == RIGHT:
             self.L_dir = '0'
             self.R_dir = '1'
-            self.LeftmotorSpeed = speed
-            self.RightmotorSpeed = speed + 10
+            self.LeftmotorSpeed = speed - 25
+            self.RightmotorSpeed = speed - 10
         
         print("Moving: ", self.L_dir, self.LeftmotorSpeed, self.R_dir, self.RightmotorSpeed)
         self.i2c.DCWrite(1, self.L_dir, self.LeftmotorSpeed) #Left
@@ -856,4 +883,4 @@ class StateMachine():
         time.sleep(0.01)
         self.i2c.led(2,0)
         time.sleep(0.01)
-        self.i2c.led(3,0)
+        self.i2c.led(3,0),

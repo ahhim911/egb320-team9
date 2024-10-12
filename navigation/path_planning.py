@@ -4,11 +4,11 @@ import logging
 import matplotlib.pyplot as plt
 
 
-MIN_ROBOT_VEL = 35 # duty cycle
+MIN_ROBOT_VEL = 50 # duty cycle
 MAX_ROBOT_VEL = 70 # duty cycle
 GOAL_P = 0.5
 ROT_BIAS = 0.5
-CAMERA_FOV = 60
+CAMERA_FOV = 70
 WORKER_WIDTH_SCALE = 0.15 #m
 
 # Configure the logger
@@ -35,7 +35,7 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
     nav_state['residual_field'] = np.maximum(nav_state['attractive_field'] - nav_state['repulsive_field'], 0)
 
     # Find heading angle by finding the index of the max value in the residual field
-    heading_angle = np.argmax(nav_state['residual_field'])
+    heading_angle = np.argmax(nav_state['residual_field']) - CAMERA_FOV//2
 
     goal_error = heading_angle #- CAMERA_FOV/2
     print("HA: ",heading_angle, "ERROR: ", goal_error)
@@ -90,9 +90,9 @@ def calculate_goal_velocities(goal_position, obstacles, draw=False):
         plt.clf()  # Clear the current figure
         
         # Flip the fields
-        nav_state['attractive_field'] = np.flip(nav_state['attractive_field'])
-        nav_state['repulsive_field'] = np.flip(nav_state['repulsive_field'])
-        nav_state['residual_field'] = np.flip(nav_state['residual_field'])
+        # nav_state['attractive_field'] = np.flip(nav_state['attractive_field'])
+        # nav_state['repulsive_field'] = np.flip(nav_state['repulsive_field'])
+        # nav_state['residual_field'] = np.flip(nav_state['residual_field'])
 
         plt.plot(nav_state['attractive_field'], label='Attractive Field')
         plt.plot(nav_state['repulsive_field'], label='Repulsive Field')
@@ -114,7 +114,7 @@ def clip_deg_fov(deg, fov):
 
 def compute_attractive_field(goal_deg):
     angles = np.arange(-CAMERA_FOV//2, CAMERA_FOV//2 + 1) # angles from -30 to 30
-    field_indices = clip_deg_fov(goal_deg + angles, CAMERA_FOV) # indices from 0 to 60
+    field_indices = clip_deg_fov(goal_deg + CAMERA_FOV//2 + angles, CAMERA_FOV) # indices from 0 to 60
     gradient = 1 / 30 # gradient of the field
     attractive_field = np.maximum(1 - gradient * np.abs(angles), 0) # attractive field
     field = np.zeros(CAMERA_FOV + 1) # field of view
