@@ -145,17 +145,17 @@ class Vision(DetectionBase):
             # Detection logic based on requested objects
             if self.requested_objects & SHELVES:
                 detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Shelf Mask', shelf_mask)
+                # self.display_detection('Shelf Mask', shelf_mask)
                 self.objectRB[2] = detected_shelves
 
             if self.requested_objects & WALLPOINTS:
                 detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe, self.color_ranges)
-                self.display_detection('Wall Mask', filled_wall_mask)
+                # self.display_detection('Wall Mask', filled_wall_mask)
                 self.objectRB[5] = detected_walls
 
             if self.requested_objects & MARKERS:
                 detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
-                self.display_detection('Marker Mask', marker_mask)
+                # self.display_detection('Marker Mask', marker_mask)
                 self.objectRB[1] = detected_markers
 
             if self.requested_objects & PACKING_BAY:

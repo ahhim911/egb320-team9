@@ -129,7 +129,7 @@ class StateMachine():
         self.holding_item = False
 
         # Read the object order file
-        with open("navigation/Order_3.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/Order_4.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
@@ -265,11 +265,11 @@ class StateMachine():
         self.target_item= self.final_df['Item Name'][self.current_item]
 
         # Mockup values
-        # self.target_shelf = 3
-        # self.target_row = 2
+        # self.target_shelf = 0
+        # self.target_row = 1
         # self.target_bay = 3
-        # self.target_height = 2
-        # self.target_item = "Weetbots"
+        # self.target_height = 0
+        # self.target_item = "Cube"
 
         print("Collecting the ", self.current_item + 1, "item : ", self.target_item)
         if self.vision:
@@ -611,6 +611,10 @@ class StateMachine():
                 self.wait_for_shelf_alignment = True
                 self.stop()
                 time.sleep(0.3)
+                # if self.target_bay == 3:
+                #     self.move(0,MIN_SPEED-40,MIN_SPEED-40)
+                #     time.sleep(1.5)
+                    
         else:
             self.found_row = False
             self.robot_state = 'SEARCH_FOR_ROW'
