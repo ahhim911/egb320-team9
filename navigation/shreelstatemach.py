@@ -374,7 +374,7 @@ class StateMachine:
             self.rotate("R", 50)
         if rowMarkerRangeBearing[0] != None:
             print(rowMarkerRangeBearing)    
-            if abs(rowMarkerRangeBearing[2]) < 1:
+            if abs(rowMarkerRangeBearing[2]) < 10:
                 self.found_row = True
 
         # Facing to Row marker

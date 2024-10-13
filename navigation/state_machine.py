@@ -50,7 +50,7 @@ LEFT = 0
 RIGHT = 1
 ON = 1
 OFF = 0
-MIN_SPEED = 95
+MIN_SPEED = 87
 
 
 class StateMachine():
@@ -107,7 +107,7 @@ class StateMachine():
     # INITIALIZATION
     #===========================================================================
     def __init__(self):
-        self.goal_bay_position = [0.8, 0.58, 0.32, 0.125] # bay positions in the row
+        self.goal_bay_position = [0.8, 0.58, 0.32, 0.18] # bay positions in the row
         self.row_position_L = [0.38, 1, 1.55] # Entry positions for left shelf
         self.row_position_R = [1.55, 1, 0.40] # Entry positions for Right shelf
         self.ps_return_distance = [0.10, 0.35]
@@ -258,18 +258,18 @@ class StateMachine():
 
         # Set the target item position
         
-        self.target_shelf = self.final_df['Shelf'][self.current_item]
-        self.target_row = self.final_df['Row'][self.current_item]
-        self.target_bay = self.final_df['Bay'][self.current_item]
-        self.target_height = self.final_df['Height'][self.current_item]
-        self.target_item= self.final_df['Item Name'][self.current_item]
+        # self.target_shelf = self.final_df['Shelf'][self.current_item]
+        # self.target_row = self.final_df['Row'][self.current_item]
+        # self.target_bay = self.final_df['Bay'][self.current_item]
+        # self.target_height = self.final_df['Height'][self.current_item]
+        # self.target_item= self.final_df['Item Name'][self.current_item]
 
         # Mockup values
-        # self.target_shelf = 2
-        # self.target_row = 1
-        # self.target_bay = 3
-        # self.target_height = 2
-        # self.target_item = "Bottle"
+        self.target_shelf = 3
+        self.target_row = 2
+        self.target_bay = 3
+        self.target_height = 2
+        self.target_item = "Weetbots"
 
         print("Collecting the ", self.current_item + 1, "item : ", self.target_item)
         if self.vision:
@@ -525,7 +525,8 @@ class StateMachine():
         print("Marker interested: ", self.target_row)
         if rowMarkerRangeBearing:
             print("Marker Detected, ", rowMarkerRangeBearing)
-            if rowMarkerRangeBearing[0] == self.target_row and self.rotation_complete:
+            #if rowMarkerRangeBearing[0] == self.target_row and self.rotation_complete:
+            if rowMarkerRangeBearing[0] is not None and self.rotation_complete:
                 self.stop()
                 time.sleep(0.5)
                 self.rotation_complete = False
@@ -537,7 +538,7 @@ class StateMachine():
             
 
 
-            self.found_row = rowMarkerRangeBearing[0] == self.target_row and abs(rowMarkerRangeBearing[2]) < 10
+            self.found_row = abs(rowMarkerRangeBearing[2]) < 10
         # Turn left
         if self.rotation_complete and self.shelf_side == RIGHT:
             self.rotate(LEFT, MIN_SPEED + 5)
@@ -562,8 +563,9 @@ class StateMachine():
             print("SHELF ERROR: ", error_angle)
 
         if rowMarkerRangeBearing:
-            self.found_row = rowMarkerRangeBearing[0] == self.target_row
-            if rowMarkerRangeBearing[0] != self.target_row and rowMarkerRangeBearing[0] != 0:
+            #self.found_row = rowMarkerRangeBearing[0] == self.target_row
+            self.found_row = rowMarkerRangeBearing[0] is not None
+            if rowMarkerRangeBearing[0] is None and rowMarkerRangeBearing[0] != 0:
                 self.robot_state = 'MOVE_TO_EXIT' # TBC Search_for_row???
                 self.found_row = False
         else:
@@ -573,8 +575,8 @@ class StateMachine():
             print("Row Found: ", self.target_row, ", ", rowMarkerRangeBearing )
             self.goal_position['range'] = rowMarkerRangeBearing[1]
             # Adjust the goal bearing by including the shelf error angle
-            self.goal_position['bearing'] = (rowMarkerRangeBearing[2] * 1.3) + (error_angle * 400)
-            # self.goal_position['bearing'] = (error_angle * 600)
+            self.goal_position['bearing'] = (rowMarkerRangeBearing[2] * 1.3) + (error_angle * 200)
+            #self.goal_position['bearing'] = (error_angle * 500)
             print("GOAL POSITION ANGLE (with shelf correction): ", self.goal_position['bearing'])
             print(self.goal_position)
 
@@ -681,7 +683,7 @@ class StateMachine():
 
                     # Now that we have the correct closest item, check if the bearing is centered
                     if closest_item:
-                        if abs(closest_item[1]) < 2:
+                        if abs(closest_item[1]) < 4:
                             logger.info(f"EXIT Step 2 ROTATION")
                             self.robot_state = 'MOVE_TO_ITEM'
                             self.i2c.led(1,OFF)
@@ -732,7 +734,7 @@ class StateMachine():
                 distance_to_item = self.goal_position['range'] - self.pickup_distance + 0.00
                 print(f"Distance to item: {distance_to_item}")
 
-                if distance_to_item <= 0.015:
+                if distance_to_item <= 0.0173:
                     logger.info("Item within range and bearing aligned. Stopping to collect.")
                     self.stop()
                     self.robot_state = 'COLLECT_ITEM'
@@ -756,7 +758,7 @@ class StateMachine():
             # time.sleep(1)
 
             print("Collecting item")
-            self.i2c.grip(0)
+            self.i2c.grip(0) #
             time.sleep(0.1)
             if self.target_height == 2: # Level 3 Move Forward Longer Duration
                 self.i2c.lift(self.target_height + 1)
@@ -778,7 +780,7 @@ class StateMachine():
             time.sleep(1.6)
             self.move(1, MIN_SPEED-20, MIN_SPEED-20) # move backwards
             if self.target_height == 2: # Level 3 Move Backward Longer Duration
-                time.sleep(1.1)
+                time.sleep(1.2)
             else:
                 time.sleep(0.9)
             self.stop()
