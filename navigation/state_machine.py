@@ -203,7 +203,7 @@ class StateMachine():
     
     def item_pickup_distance(self, item_type, height):
         Weetbots = [0.17, 0.2, 0.19]
-        Bottle = [0.18, 0.19, 0.18]
+        Bottle = [0.17, 0.19, 0.18]
         Bowls = [0.18, 0.2, 0.2]
         Ball = [0.18, 0.19, 0.19]
         Cube = [0.15, 0.17, 0.17]
@@ -415,7 +415,7 @@ class StateMachine():
                     self.holding_item = False
                     self.robot_state = 'EXIT_PS'
             else:
-                ps_distance = [0.65, 0.9, 1.1]
+                ps_distance = [0.65, 0.9, 1]
                 if self.goal_position['range'] - ps_distance[self.target_row - 1] < 0.05: # Middle of the area
                     self.robot_state = 'SEARCH_FOR_SHELF'
                     if self.target_row == 3:
@@ -672,11 +672,11 @@ class StateMachine():
                         # We have two closest items, prioritize based on the bearing
                         if self.target_shelf % 2 == 0:
                             # Even shelf: prioritize smaller bearing
-                            closest_item = min(closest_items, key=lambda x: abs(x[1]))
+                            closest_item = min(closest_items, key=lambda x: x[1])
                             print(f"Even shelf: Prioritizing smaller bearing: {closest_item}")
                         else:
                             # Odd shelf: prioritize larger bearing
-                            closest_item = max(closest_items, key=lambda x: abs(x[1]))
+                            closest_item = max(closest_items, key=lambda x: x[1])
                             print(f"Odd shelf: Prioritizing larger bearing: {closest_item}")
 
                     # Now that we have the correct closest item, check if the bearing is centered
@@ -701,23 +701,39 @@ class StateMachine():
 
     def move_to_item(self, itemsRB):
         logger.info(f"MOVE TO ITEM")
-        if itemsRB is not None:
+        if itemsRB is not None and len(itemsRB) > 0:
             # logger.info(f"item detected: ", itemsRB)
 
-            # find the smallest itemsRB[:][0] with the target_height in itemsRB[:][2]
             target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
             print("Target height", target_height_itemRB)
             if target_height_itemRB:
-                print("Target height item detected: ", target_height_itemRB)
-                self.goal_position['range'] = target_height_itemRB[0][0]
-                self.goal_position['bearing'] = target_height_itemRB[0][1] * 2.5
+                # Sort items by range (get the two closest items)
+                closest_items = sorted(target_height_itemRB, key=lambda x: x[0])[:2]  # Get the two closest items by range
+                print("Closest items:", closest_items)
+
+                if len(closest_items) == 1:
+                    # Only one item available, pick it
+                    closest_item = closest_items[0]
+                else:
+                    # We have two closest items, prioritize based on the bearing
+                    closest_item = min(closest_items, key=lambda x: abs(x[1]))
+                    print(f"Prioritizing smaller bearing: {closest_item}")
+
+                self.goal_position['range'] = closest_item[0]
+                self.goal_position['bearing'] = closest_item[1] * 2.5
                 print(self.goal_position)
+
+                 # Calculate motor speeds for moving towards the item
                 self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
                 self.move(0, self.LeftmotorSpeed - 15, self.RightmotorSpeed - 15)
-                logger.debug(f"Try to pick up: {self.target_item}, pickup dis: {self.pickup_distance + 0.00}")
+                
+                # Check if robot is close enough to stop and collect the item
+                logger.debug(f"Trying to pick up: {self.target_item}, pickup dis: {self.pickup_distance}")
+                distance_to_item = self.goal_position['range'] - self.pickup_distance + 0.00
+                print(f"Distance to item: {distance_to_item}")
 
-                print(self.goal_position['range'] - self.pickup_distance + 0.00)
-                if self.goal_position['range'] - self.pickup_distance + 0.00 <= 0.015: #TBC
+                if distance_to_item <= 0.015:
+                    logger.info("Item within range and bearing aligned. Stopping to collect.")
                     self.stop()
                     self.robot_state = 'COLLECT_ITEM'
             else:
