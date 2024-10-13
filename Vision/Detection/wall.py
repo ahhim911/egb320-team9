@@ -83,17 +83,17 @@ class Wall(DetectionBase):
             x, y, w, h = cv2.boundingRect(contour)
 
             # Estimate homography distance and bearing for the bottom center
-            distance = self.distance_estimator.estimate_homography_distance((x, y, w, h))
-            bottom_center_x = x + (w // 2)
-            bearing = self.distance_estimator.estimate_bearing(bottom_center_x)
+            # distance = self.distance_estimator.estimate_homography_distance((x, y, w, h))
+            #bottom_center_x = x + (w // 2)
+            #bearing = self.distance_estimator.estimate_bearing(bottom_center_x)
 
             # Store position, distance, and bearing with "data"
             detected_objects.append({
                 "position": (x, y, w, h),
-                "distance": distance,
-                "bearing": bearing,
+                "distance": 0,
+                "bearing": 0,
                 "contour": contour,
-                "data": [distance, bearing]  # Data for easy access
+                "data": [0, 0]  # Data for easy access
             })
 
         return detected_objects

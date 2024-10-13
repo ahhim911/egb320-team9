@@ -67,7 +67,7 @@ class Marker(DetectionBase):
         mask, _ = Preprocessing.preprocess(image, lower_hsv=lower_hsv, upper_hsv=upper_hsv)
         return mask
 
-    def _detect_and_classify_markers(self, mask, min_area=20):
+    def _detect_and_classify_markers(self, mask, min_area=15):
         """
         Detects markers, classifies shapes, and calculates distances and bearings.
 
@@ -97,9 +97,9 @@ class Marker(DetectionBase):
             aspect_ratio = float(w) / h  # Aspect ratio of the bounding box
 
             # Classify shape based on circularity and aspect ratio
-            if circularity >= 0.83:
+            if circularity >= 0.8:
                 shape = "Circle"
-            elif (0.8 <= fill_ratio <= 1.2) or (0.8 <= aspect_ratio <= 1.2):  # Check if aspect ratio is close to 1
+            elif (0.8 <= fill_ratio <= 1.2) or (0.65 <= aspect_ratio <= 1.2):  # Check if aspect ratio is close to 1
                 # Approximate the contour
                 approx = cv2.approxPolyDP(contour, 0.05 * perimeter, True)
                 if 4 <= len(approx) <= 8:

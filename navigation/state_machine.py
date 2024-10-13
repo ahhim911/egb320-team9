@@ -50,7 +50,7 @@ LEFT = 0
 RIGHT = 1
 ON = 1
 OFF = 0
-MIN_SPEED = 100  
+MIN_SPEED = 95
 
 
 class StateMachine():
@@ -107,12 +107,13 @@ class StateMachine():
     # INITIALIZATION
     #===========================================================================
     def __init__(self):
-        self.goal_bay_position = [0.83, 0.58, 0.32, 0.125] # bay positions in the row
-        self.row_position_L = [0.38, 1.1, 1.55] # Entry positions for left shelf
-        self.row_position_R = [1.55, 1.1, 0.38] # Entry positions for Rigth shelf
+        self.goal_bay_position = [0.8, 0.58, 0.32, 0.125] # bay positions in the row
+        self.row_position_L = [0.38, 1, 1.55] # Entry positions for left shelf
+        self.row_position_R = [1.55, 1, 0.40] # Entry positions for Right shelf
         self.ps_return_distance = [0.10, 0.35]
         self.found_shelf = False
         self.rotation_complete = True
+        self.wait_for_shelf_alignment = False
         self.pickup_distance = 0.2
         self.shelf_side = None
         self.found_row = False
@@ -128,7 +129,7 @@ class StateMachine():
         self.holding_item = False
 
         # Read the object order file
-        with open("navigation/Order_2.csv", mode="r", encoding='utf-8-sig') as csv_file:
+        with open("navigation/Order_3.csv", mode="r", encoding='utf-8-sig') as csv_file:
             # Load the CSV into a DataFrame, automatically using the first row as column names
             df = pd.read_csv(csv_file)
 
@@ -201,12 +202,12 @@ class StateMachine():
         return size
     
     def item_pickup_distance(self, item_type, height):
-        Weetbots = [0.18, 0.2, 0.17]
-        Bottle = [0.19, 0.19, 0.19]
+        Weetbots = [0.17, 0.2, 0.19]
+        Bottle = [0.18, 0.19, 0.18]
         Bowls = [0.18, 0.2, 0.2]
-        Ball = [0.18, 0.18, 0.18]
+        Ball = [0.18, 0.19, 0.19]
         Cube = [0.15, 0.17, 0.17]
-        Mug = [0.18, 0.19, 0.26]
+        Mug = [0.17, 0.19, 0.26]
         if item_type == "Bottle":
             distance = Bottle[height]
         elif item_type == "Ball":
@@ -249,10 +250,10 @@ class StateMachine():
         """
         # Set initial parameters and switch to the next state
         self.robot_state = 'SEARCH_FOR_PS'
-        # self.robot_state = 'EXIT_PS'
         # self.robot_state = 'MOVE_TO_ROW'
         # self.robot_state = 'MOVE_TO_EXIT'
         # self.robot_state = 'COLLECT_ITEM'
+        # self.robot_state = 'EXIT_PS'
         # self.holding_item = True
 
         # Set the target item position
@@ -316,10 +317,13 @@ class StateMachine():
         if self.holding_item:
             print("Turning right")
             # if found
-            self.rotate(RIGHT, MIN_SPEED + 5)
+            self.rotate(RIGHT, MIN_SPEED + 10)
+        elif self.found_ps == True:
+            self.rotate(RIGHT, MIN_SPEED - 10)
         else:
             print("Turning Right")
             self.rotate(RIGHT, MIN_SPEED + 5)
+
         if not packStationRangeBearing and not rowMarkerRangeBearing:
             print("No Markers Detected")
             return
@@ -335,12 +339,20 @@ class StateMachine():
             print("Row: ",rowMarkerRangeBearing)
             # self.found_row = rowMarkerRangeBearing[0] == self.target_row and self.target_row != 1
             if self.found_ps and rowMarkerRangeBearing[0] == 0: # PS marker = 0 
-                if abs(rowMarkerRangeBearing[2]) < 5: # 5 deg
+                if abs(rowMarkerRangeBearing[2]) < 10: # -10 to 10 deg
                     self.found_ps = False
                     if self.holding_item:
                         self.robot_state = 'MOVE_TO_PS_MARKER'
                     else:
                         self.robot_state = 'MOVE_TO_PS'
+
+        elif self.found_ps: # if it doesnt see the PS marker or the bearing isnt within range
+            if abs(packStationRangeBearing[0][1]) < 2: # check PS ramp bearing
+                self.found_ps = False
+                if self.holding_item:
+                    self.robot_state = 'MOVE_TO_PS_MARKER'
+                else:
+                    self.robot_state = 'MOVE_TO_PS'
 
         if self.at_ps:
             self.robot_state = 'SEARCH_FOR_SHELF'
@@ -356,7 +368,7 @@ class StateMachine():
         else:
             print("PS RB: ", rowMarkerRangeBearing[0])
             self.goal_position['range'] = rowMarkerRangeBearing[1]
-            self.goal_position['bearing'] = rowMarkerRangeBearing[2]
+            self.goal_position['bearing'] = rowMarkerRangeBearing[2] * 2
             print(self.goal_position)
 
             # Calculate goal velocities
@@ -408,10 +420,13 @@ class StateMachine():
                     self.robot_state = 'SEARCH_FOR_SHELF'
                     if self.target_row == 3:
                         self.shelf_side = RIGHT # Will turn left to find Right shelf (5)
-                        # can rotate to the left faster with time delay
+                        # can rotate to the left faster with time delay (not practical*)
                     else:
                         self.shelf_side = LEFT # Will turn right to find Left shelf (0)
                     self.stop()
+                elif self.target_row == 3:
+                    self.move(0,MIN_SPEED,MIN_SPEED)
+                    
 
     def search_for_shelf(self, rowMarkerRangeBearing, shelfRangeBearing):
         # Check if the row marker is found
@@ -473,9 +488,15 @@ class StateMachine():
                 self.robot_state = 'SEARCH_FOR_ROW'
                 self.stop()
             if self.row_position_L[self.target_row - 1] - self.goal_position['range']  > 0.1: #
-                print("TOO CLOSE - CHANGE TO RIGHT")
-                self.robot_state = 'SEARCH_FOR_SHELF'
-                self.shelf_side = RIGHT
+                if self.target_row == 1:
+                    print("TOO CLOSE - Move Backwards (row 1)")
+                    self.move(1, MIN_SPEED - 20, MIN_SPEED - 20)  # Move backward at a slower speed
+                else:
+                    print("TOO CLOSE - CHANGE TO RIGHT")
+                    self.move(1, MIN_SPEED, MIN_SPEED)
+                    time.sleep(1)
+                    self.robot_state = 'SEARCH_FOR_SHELF'
+                    self.shelf_side = RIGHT
 
         elif shelfRangeBearing is not None and self.shelf_side == RIGHT:
             # if len(shelfRangeBearing[1]) >= 2:  # Ensure we have at least [range, bearing]
@@ -508,11 +529,11 @@ class StateMachine():
                 self.stop()
                 time.sleep(0.5)
                 self.rotation_complete = False
-            if not self.rotation_complete:
-                if rowMarkerRangeBearing[2] < -1:
-                    self.rotate(LEFT, MIN_SPEED - 5)
-                elif rowMarkerRangeBearing[2] > 1:
-                    self.rotate(RIGHT, MIN_SPEED - 5)
+            if rowMarkerRangeBearing[0] != 0 and not self.rotation_complete:
+                if rowMarkerRangeBearing[2] < -10:
+                    self.rotate(LEFT, MIN_SPEED - 15)
+                elif rowMarkerRangeBearing[2] > 10:
+                    self.rotate(RIGHT, MIN_SPEED - 15)
             
 
 
@@ -570,7 +591,9 @@ class StateMachine():
             if self.goal_position['range'] - self.goal_bay_position[self.target_bay] < 0.01:
                 self.robot_state = 'SEARCH_FOR_ITEM'
                 self.rotation_complete = True
+                self.wait_for_shelf_alignment = True
                 self.stop()
+                time.sleep(0.3)
         else:
             self.found_row = False
             self.robot_state = 'SEARCH_FOR_ROW'
@@ -583,52 +606,98 @@ class StateMachine():
         # Rotate to the bay
         if self.rotation_complete:
             logger.info(f"Step 1 Rotation")
-            if self.target_shelf % 2 == 1:
+            if self.target_shelf % 2 == 1: # shelf is odd
                     print("Start Rotate Right 90deg")
                     # move the right wheel backwards
-                    self.move(1, 0, MIN_SPEED) # Turn right
+                    self.move(1, 0, MIN_SPEED+10) # Turn right
+
+                    # Now check for the alignment condition
+                    if self.wait_for_shelf_alignment and self.target_bay >= 2 and shelfRangeBearing:
+                        left_corner_bearing = shelfRangeBearing[-1][0][2]  # Left corner bearing
+                        # Ensure the left corner is aligned within 0 to 15 degrees
+                        if 0 <= left_corner_bearing <= 15:
+                            print("Shelf aligned :)")
+                            self.wait_for_shelf_alignment = False  # Alignment complete, proceed
+
+                    # Return early if still waiting for alignment
+                    if self.wait_for_shelf_alignment:
+                        print("waiting for shelf alignment")
+                        return
+                    
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
-                        if shelfRangeBearing[-1][0][1] < 0.40 and shelfRangeBearing[-1][0][2] <= -33:
+                        if shelfRangeBearing[-1][0][1] <= 0.41 and shelfRangeBearing[-1][0][2] <= -33:
                             logger.info(f"EXIT Step 1 ROTATION")
                             self.rotation_complete = False
             else:
                     print("Start Rotate Left 90deg")
                     # move the left wheel backwards
-                    self.move(1, MIN_SPEED, 0) # Turn left
+                    self.move(1, MIN_SPEED+10, 0) # Turn left
+
+                    # Now check for the alignment condition
+                    if self.wait_for_shelf_alignment and self.target_bay >= 2 and shelfRangeBearing:
+                        right_corner_bearing = shelfRangeBearing[0][1][2]  # right corner bearing
+                        # Ensure the right corner is aligned within -15 to 0 degrees
+                        if -15 <= right_corner_bearing <= 0:
+                            print("Shelf aligned :)")
+                            self.wait_for_shelf_alignment = False  # Alignment complete, proceed
+
+                    # Return early if still waiting for alignment
+                    if self.wait_for_shelf_alignment:
+                        print("waiting for shelf alignment")
+                        return
+                    
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
-                        if shelfRangeBearing[0][1][1] < 0.40 and shelfRangeBearing[0][1][2] >= 33:
+                        if shelfRangeBearing[0][1][1] <= 0.41 and shelfRangeBearing[0][1][2] >= 33:
                             logger.info(f"EXIT Step 1 ROTATION")
                             self.rotation_complete = False
         else:
             logger.info(f"Step 2 Rotation")
             print(f"itemsRB: {itemsRB}")
             # Check the closest item bearing is in the middle
-            if itemsRB is not None:
-                # find the smallest itemsRB[:][0] with the target_height in itemsRB[:][2]
+            if itemsRB is not None and len(itemsRB) > 0:
+                # Find all items at the target height
                 target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
-                closest_item = min(target_height_itemRB, key=lambda x: x[0]) if target_height_itemRB else None 
-                print("Closest item: ", closest_item)
-                # closest_item = min(target_height_itemRB, key=lambda x: x[0]) if target_height_itemRB else None
-                if closest_item:
-                    if abs(closest_item[1]) < 2:
-                        logger.info(f"EXIT Step 2 ROTATION")
-                        self.robot_state = 'MOVE_TO_ITEM'
-                        self.i2c.led(1,OFF)
-                        time.sleep(0.05)
-                        self.i2c.led(2,ON)
-                        time.sleep(0.05)
-                        self.stop()
-                        self.rotation_complete = True
+
+                if target_height_itemRB:
+                    # Sort items by range (get the two closest items)
+                    closest_items = sorted(target_height_itemRB, key=lambda x: x[0])[:2]  # Get the two closest items by range
+                    print("Closest items:", closest_items)
+
+                    if len(closest_items) == 1:
+                        # Only one item available, pick it
+                        closest_item = closest_items[0]
                     else:
-                        if closest_item[1] < 0:
-                            self.rotate(LEFT, MIN_SPEED-5)
+                        # We have two closest items, prioritize based on the bearing
+                        if self.target_shelf % 2 == 0:
+                            # Even shelf: prioritize smaller bearing
+                            closest_item = min(closest_items, key=lambda x: abs(x[1]))
+                            print(f"Even shelf: Prioritizing smaller bearing: {closest_item}")
                         else:
-                            self.rotate(RIGHT, MIN_SPEED-5)                    
-                else:
-                    logger.info(f"No Closest item")
-                    self.move(0, MIN_SPEED, MIN_SPEED) # Move forward
+                            # Odd shelf: prioritize larger bearing
+                            closest_item = max(closest_items, key=lambda x: abs(x[1]))
+                            print(f"Odd shelf: Prioritizing larger bearing: {closest_item}")
+
+                    # Now that we have the correct closest item, check if the bearing is centered
+                    if closest_item:
+                        if abs(closest_item[1]) < 2:
+                            logger.info(f"EXIT Step 2 ROTATION")
+                            self.robot_state = 'MOVE_TO_ITEM'
+                            self.i2c.led(1,OFF)
+                            time.sleep(0.05)
+                            self.i2c.led(2,ON)
+                            time.sleep(0.05)
+                            self.stop()
+                            self.rotation_complete = True
+                        else:
+                            if closest_item[1] < 0:
+                                self.rotate(LEFT, MIN_SPEED-5)
+                            else:
+                                self.rotate(RIGHT, MIN_SPEED-5)                    
+                    else:
+                        logger.info(f"No Closest item")
+                        self.move(0, MIN_SPEED, MIN_SPEED) # Move forward
 
     def move_to_item(self, itemsRB):
         logger.info(f"MOVE TO ITEM")
@@ -641,16 +710,18 @@ class StateMachine():
             if target_height_itemRB:
                 print("Target height item detected: ", target_height_itemRB)
                 self.goal_position['range'] = target_height_itemRB[0][0]
-                self.goal_position['bearing'] = target_height_itemRB[0][1]
+                self.goal_position['bearing'] = target_height_itemRB[0][1] * 2.5
                 print(self.goal_position)
                 self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, [])
                 self.move(0, self.LeftmotorSpeed - 15, self.RightmotorSpeed - 15)
-                logger.debug("Try to pick up: ", self.target_item, "pickup dis: ", self.pickup_distance + 0.00)
+                logger.debug(f"Try to pick up: {self.target_item}, pickup dis: {self.pickup_distance + 0.00}")
+
                 print(self.goal_position['range'] - self.pickup_distance + 0.00)
                 if self.goal_position['range'] - self.pickup_distance + 0.00 <= 0.015: #TBC
                     self.stop()
                     self.robot_state = 'COLLECT_ITEM'
             else:
+                # if self.target_height ==
                 logger.info(f"No target height item, try move backward")
                 print("No target height item, try move backward")
                 self.move(1,MIN_SPEED-20, MIN_SPEED-20)
@@ -664,34 +735,36 @@ class StateMachine():
     def collect_item(self, itemsRB):
         logger.info(f"COLLECT ITEM")
         if itemsRB is not None:
-            logger.info(f"item detected: ", itemsRB)
-            # find the smallest itemsRB[:][0] with the target_height in itemsRB[:][2]
-            # target_height_itemRB = [item for item in itemsRB if item[2] == self.target_height + 1]
-            # if target_height_itemRB:
-            #     if target_height_itemRB[0][1] > 0.25:
-            #         self.rotate(LEFT, MIN_SPEED)
-            #     elif target_height_itemRB[0][1] < -0.25:
-            #         self.rotate(RIGHT, MIN_SPEED)
-            #     else:
-            #         logger.info(f"Collecting item")
             
             self.stop()
-            time.sleep(1)
+            # time.sleep(1)
 
             print("Collecting item")
             self.i2c.grip(0)
             time.sleep(0.1)
-            if self.target_height != 0:
-                # self.i2c.lift(2)
+            if self.target_height == 2: # Level 3 Move Forward Longer Duration
+                self.i2c.lift(self.target_height + 1)
+                print("Lifting")
+                time.sleep(4)
+                if self.target_item != 'Bottle':
+                    self.move(0, MIN_SPEED-20, MIN_SPEED-20) # move forward
+                    time.sleep(0.6)
+                    self.stop()
+            if self.target_height == 1: # Level 2 Move Forward Shorter Duration
                 self.i2c.lift(self.target_height + 1)
                 time.sleep(3)
-                self.move(0, MIN_SPEED-40, MIN_SPEED-40)
-                time.sleep(0.5)
-                self.stop()
+                if self.target_item != 'Bottle':
+                    self.move(0, MIN_SPEED-20, MIN_SPEED-20) # move forward
+                    time.sleep(0.4)
+                    self.stop()
             self.i2c.grip(1)
-            time.sleep(2)
+            print("Grip")
+            time.sleep(1.6)
             self.move(1, MIN_SPEED-20, MIN_SPEED-20) # move backwards
-            time.sleep(0.9)
+            if self.target_height == 2: # Level 3 Move Backward Longer Duration
+                time.sleep(1.1)
+            else:
+                time.sleep(0.9)
             self.stop()
             if self.target_height != 0:
                 self.i2c.lift(1)
@@ -720,7 +793,13 @@ class StateMachine():
             self.i2c.led(3,ON)
             time.sleep(0.05)
             self.holding_item = True
-            self.robot_state = 'ROTATE_TO_EXIT'
+            self.robot_state = 'ROTATE_TO_EXIT' # should create a retry method if it misses it?
+            # call check item inside the rotate_to_exit state
+            # should check if item is in level 1 with a bearing between -5 and 5 degrees
+            # IF true then proceed to move to exit, but if false initiate search for item again
+            # but only retry once, so have a retry flag that is set within the move to row state
+            # and cleared once the retry has occurred, so going to the rotate to exit state it should be set to false.
+
 
     def rotate_to_exit(self, rowMarkerRangeBearing):
         logger.info(f"ROTATE TO EXIT")
@@ -736,9 +815,9 @@ class StateMachine():
             #         self.rotate(RIGHT, MIN_SPEED-10)
         else:
             if self.target_shelf % 2 == 1:
-                self.rotate(LEFT, MIN_SPEED+5)
+                self.rotate(LEFT, MIN_SPEED)
             else:
-                self.rotate(RIGHT, MIN_SPEED+5)
+                self.rotate(RIGHT, MIN_SPEED)
 
 
             

@@ -41,6 +41,7 @@ state_requests = {
     'SEARCH_FOR_ROW': MARKERS,
     'MOVE_TO_ROW': MARKERS | OBSTACLES | SHELVES,
     'SEARCH_FOR_ITEM': ITEMS | SHELVES,
+    'MOVE_TO_ITEM': ITEMS,
     'COLLECT_ITEM': ITEMS,
     'ROTATE_TO_EXIT': MARKERS,
     'MOVE_TO_EXIT': MARKERS | OBSTACLES,
@@ -149,12 +150,12 @@ class Vision(DetectionBase):
 
             if self.requested_objects & WALLPOINTS:
                 detected_walls, wall_frame, filled_wall_mask = self.wall_detector.find_wall(HSVframe, RGBframe, self.color_ranges)
-                # self.display_detection('Wall Mask', filled_wall_mask)
+                self.display_detection('Wall Mask', filled_wall_mask)
                 self.objectRB[5] = detected_walls
 
             if self.requested_objects & MARKERS:
                 detected_markers, marker_frame, marker_mask = self.marker_detector.find_marker(HSVframe, RGBframe, self.color_ranges, filled_wall_mask=filled_wall_mask)
-                # self.display_detection('Marker Mask', marker_mask)
+                self.display_detection('Marker Mask', marker_mask)
                 self.objectRB[1] = detected_markers
 
             if self.requested_objects & PACKING_BAY:
