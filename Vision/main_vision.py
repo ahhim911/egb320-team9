@@ -145,7 +145,7 @@ class Vision(DetectionBase):
             # Detection logic based on requested objects
             if self.requested_objects & SHELVES:
                 detected_shelves, shelf_frame, shelf_mask = self.shelf_detector.find_shelf(HSVframe, RGBframe, self.color_ranges)
-                #self.display_detection('Shelf Mask', shelf_mask)
+                self.display_detection('Shelf Mask', shelf_mask)
                 self.objectRB[2] = detected_shelves
 
             if self.requested_objects & WALLPOINTS:

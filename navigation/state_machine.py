@@ -108,8 +108,8 @@ class StateMachine():
     #===========================================================================
     def __init__(self):
         self.goal_bay_position = [0.8, 0.58, 0.32, 0.18] # bay positions in the row
-        self.row_position_L = [0.38, 1, 1.55] # Entry positions for left shelf
-        self.row_position_R = [1.55, 1, 0.40] # Entry positions for Right shelf
+        self.row_position_L = [0.38, 1.1, 1.55] # Entry positions for left shelf
+        self.row_position_R = [1.55, 1.1, 0.40] # Entry positions for Right shelf
         self.ps_return_distance = [0.10, 0.35]
         self.found_shelf = False
         self.rotation_complete = True
@@ -207,7 +207,7 @@ class StateMachine():
         Bowls = [0.18, 0.2, 0.2]
         Ball = [0.18, 0.19, 0.19]
         Cube = [0.15, 0.17, 0.17]
-        Mug = [0.17, 0.19, 0.26]
+        Mug = [0.17, 0.21, 0.26]
         if item_type == "Bottle":
             distance = Bottle[height]
         elif item_type == "Ball":
@@ -258,18 +258,18 @@ class StateMachine():
 
         # Set the target item position
         
-        # self.target_shelf = self.final_df['Shelf'][self.current_item]
-        # self.target_row = self.final_df['Row'][self.current_item]
-        # self.target_bay = self.final_df['Bay'][self.current_item]
-        # self.target_height = self.final_df['Height'][self.current_item]
-        # self.target_item= self.final_df['Item Name'][self.current_item]
+        self.target_shelf = self.final_df['Shelf'][self.current_item]
+        self.target_row = self.final_df['Row'][self.current_item]
+        self.target_bay = self.final_df['Bay'][self.current_item]
+        self.target_height = self.final_df['Height'][self.current_item]
+        self.target_item= self.final_df['Item Name'][self.current_item]
 
         # Mockup values
-        self.target_shelf = 3
-        self.target_row = 2
-        self.target_bay = 3
-        self.target_height = 2
-        self.target_item = "Weetbots"
+        # self.target_shelf = 3
+        # self.target_row = 2
+        # self.target_bay = 3
+        # self.target_height = 2
+        # self.target_item = "Weetbots"
 
         print("Collecting the ", self.current_item + 1, "item : ", self.target_item)
         if self.vision:
@@ -318,8 +318,8 @@ class StateMachine():
             print("Turning right")
             # if found
             self.rotate(RIGHT, MIN_SPEED + 10)
-        elif self.found_ps == True:
-            self.rotate(RIGHT, MIN_SPEED - 10)
+        # elif self.found_ps == True:
+        #     self.rotate(RIGHT, MIN_SPEED - 10)
         else:
             print("Turning Right")
             self.rotate(RIGHT, MIN_SPEED + 5)
@@ -345,17 +345,22 @@ class StateMachine():
                         self.robot_state = 'MOVE_TO_PS_MARKER'
                     else:
                         self.robot_state = 'MOVE_TO_PS'
-
-        elif self.found_ps: # if it doesnt see the PS marker or the bearing isnt within range
+                
+        if packStationRangeBearing and len(packStationRangeBearing[0]) > 1: # if it doesnt see the PS marker or the bearing isnt within range
             if abs(packStationRangeBearing[0][1]) < 2: # check PS ramp bearing
                 self.found_ps = False
-                if self.holding_item:
-                    self.robot_state = 'MOVE_TO_PS_MARKER'
-                else:
-                    self.robot_state = 'MOVE_TO_PS'
+                # if self.holding_item:
+                #     self.robot_state = 'MOVE_TO_PS_MARKER'
+                # else:
 
-        if self.at_ps:
-            self.robot_state = 'SEARCH_FOR_SHELF'
+                self.robot_state = 'MOVE_TO_PS'
+            elif packStationRangeBearing[0][1] < 0:
+                self.rotate(LEFT, MIN_SPEED - 10)
+            elif packStationRangeBearing[0][1] > 0:
+                self.rotate(RIGHT, MIN_SPEED - 10)
+
+        # if self.at_ps:
+        #     self.robot_state = 'SEARCH_FOR_SHELF'
 
         
 
@@ -388,7 +393,13 @@ class StateMachine():
                     self.robot_state = 'EXIT_PS'
 
 
-    def move_to_ps(self, packStationRangeBearing, obstaclesRB): # Using Ramp to determine the distance
+    def move_to_ps(self, packStationRangeBearing, obstaclesRB, rowMarkerRangeBearing): # Using Ramp to determine the distance
+
+        if rowMarkerRangeBearing and self.holding_item:
+            if rowMarkerRangeBearing[0] == 0:
+                self.robot_state = 'MOVE_TO_PS_MARKER'
+                return
+
         self.found_ps = packStationRangeBearing is not None
         print("PS RB: ", packStationRangeBearing)
 
@@ -645,13 +656,13 @@ class StateMachine():
                             self.wait_for_shelf_alignment = False  # Alignment complete, proceed
 
                     # Return early if still waiting for alignment
-                    if self.wait_for_shelf_alignment:
-                        print("waiting for shelf alignment")
-                        return
+                    # if self.wait_for_shelf_alignment:
+                    #     print("waiting for shelf alignment")
+                    #     return
                     
                     if shelfRangeBearing:
                         print("SHELF: ", shelfRangeBearing)
-                        if shelfRangeBearing[0][1][1] <= 0.41 and shelfRangeBearing[0][1][2] >= 33:
+                        if shelfRangeBearing[0][1][1] <= 0.41 and shelfRangeBearing[0][1][2] >= 30:
                             logger.info(f"EXIT Step 1 ROTATION")
                             self.rotation_complete = False
         else:
@@ -905,8 +916,8 @@ class StateMachine():
             self.search_for_ps(dataRB[0], dataRB[1])
             request = PACKING_BAY | ROW_MARKERS
         elif self.robot_state == 'MOVE_TO_PS':
-            self.move_to_ps(dataRB[0], dataRB[4])
-            request = PACKING_BAY | OBSTACLES
+            self.move_to_ps(dataRB[0], dataRB[4], dataRB[1])
+            request = PACKING_BAY | OBSTACLES | ROW_MARKERS
         elif self.robot_state == 'SEARCH_FOR_SHELF':
             self.search_for_shelf(dataRB[1], dataRB[2])
             request = ROW_MARKERS | SHELVES
