@@ -415,16 +415,17 @@ class StateMachine():
             # Calculate goal velocities
             self.LeftmotorSpeed, self.RightmotorSpeed = navigation.calculate_goal_velocities(self.goal_position, obstaclesRB)
             if self.holding_item:
-                self.LeftmotorSpeed = self.LeftmotorSpeed + 50
-                self.RightmotorSpeed = self.RightmotorSpeed + 50
-                self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
-                if self.goal_position['range'] - self.ps_return_distance[0] < 0.01:
-                    self.stop()
-                    time.sleep(0.1)
-                    self.i2c.grip(0)
-                    time.sleep(5)
-                    self.holding_item = False
-                    self.robot_state = 'EXIT_PS'
+                #self.LeftmotorSpeed = self.LeftmotorSpeed + 50
+                #self.RightmotorSpeed = self.RightmotorSpeed + 50
+                #self.move(0, self.LeftmotorSpeed, self.RightmotorSpeed)
+                #if self.goal_position['range'] - self.ps_return_distance[0] < 0.01:
+                #    self.stop()
+                #    time.sleep(0.1)
+                #    self.i2c.grip(0)
+                #    time.sleep(5)
+                #    self.holding_item = False
+                #    self.robot_state = 'EXIT_PS'
+                pass
             else:
                 ps_distance = [0.65, 0.9, 1]
                 if self.goal_position['range'] - ps_distance[self.target_row - 1] < 0.05: # Middle of the area
@@ -447,7 +448,8 @@ class StateMachine():
             self.found_row = rowMarkerRangeBearing[0] == self.target_row
         if self.found_row:
             self.stop()
-            self.robot_state = 'MOVE_TO_ROW'
+            #self.robot_state = 'MOVE_TO_ROW'
+            self.robot_state = 'SEARCH_FOR_ROW'
 
         shelf_corner = None
         if self.shelf_side == LEFT:  # Odd
@@ -549,7 +551,7 @@ class StateMachine():
             
 
 
-            self.found_row = abs(rowMarkerRangeBearing[2]) < 10
+            self.found_row = abs(rowMarkerRangeBearing[2]) <= 10
         # Turn left
         if self.rotation_complete and self.shelf_side == RIGHT:
             self.rotate(LEFT, MIN_SPEED + 5)
@@ -573,15 +575,17 @@ class StateMachine():
             error_angle = R_angle - L_angle
             print("SHELF ERROR: ", error_angle)
 
-        if rowMarkerRangeBearing:
-            #self.found_row = rowMarkerRangeBearing[0] == self.target_row
-            self.found_row = rowMarkerRangeBearing[0] is not None
-            if rowMarkerRangeBearing[0] is None and rowMarkerRangeBearing[0] != 0:
-                self.robot_state = 'MOVE_TO_EXIT' # TBC Search_for_row???
-                self.found_row = False
-        else:
-
+        if rowMarkerRangeBearing is None:
             return
+        #    #self.found_row = rowMarkerRangeBearing[0] == self.target_row
+        #    self.found_row = rowMarkerRangeBearing[0] is not None
+        #    if rowMarkerRangeBearing[0] is None and rowMarkerRangeBearing[0] != 0:
+        #        self.robot_state = 'MOVE_TO_EXIT' # TBC Search_for_row???
+        #        self.found_row = False
+            #pass
+        #else:
+
+            #return
         if self.found_row:
             print("Row Found: ", self.target_row, ", ", rowMarkerRangeBearing )
             self.goal_position['range'] = rowMarkerRangeBearing[1]
