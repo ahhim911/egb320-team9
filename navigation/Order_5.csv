@@ -1,0 +1,13 @@
+﻿Item Number,Shelf,Bay,Height,Item Name
+1,0,0,0,Cube
+1,1,1,0,Cube
+1,1,0,0,Wheetbots
+1,0,1,0,Wheetbots
+1,0,0,1,Bottle
+1,1,1,1,Bottle
+1,1,0,1,Mug
+1,0,1,1,Mug
+1,0,0,2,Ball
+1,1,1,2,Ball
+1,1,0,2,Bowl
+1,0,1,2,Bowl
